@@ -84,15 +84,24 @@ interface custom_function {
     operations : allowed_stack_components[],
 }
 
-let func_1 : custom_function = {
-    func_name : 'test_func1',
-    input_type: [data_types.dt_number, data_types.dt_number],
-    output_type: [data_types.dt_series],
-    param_idx: [false, false, false, false, false, false, true, true],
-    func_idx: [true, true, true, false, false, true, false, false],
-    operations: [9, 0, 2, 2, 4, 1, 0, 1],
-}
+// let func_1 : custom_function = {
+//     func_name : 'test_func1',
+//     input_type: [data_types.dt_number, data_types.dt_number],
+//     output_type: [data_types.dt_series],
+//     param_idx: [false, false, false, false, false, false, true, true],
+//     func_idx: [true, true, true, false, false, true, false, false],
+//     operations: [9, 0, 2, 2, 4, 1, 0, 1],
+// }
 
+let func_2 : custom_function = {
+    func_name : 'test_func2',
+    input_type: [data_types.dt_number, data_types.dt_number],
+    output_type: [data_types.dt_number],
+    param_idx: [false, false, true, true],
+    func_idx: [true, true, false, false],
+    operations: [0, 1, 1, 0],
+}
+export { func_2 };
 // series : [[1, 2], [2, 4], [3, 5]]
 
 class FuncArgError extends Error {
@@ -114,7 +123,7 @@ let builtin_func_dict : {[ind: number] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_addition',
         func : (...args : allowed_stack_components[]) => {
-            if (!is_number(args[0]) || !is_number(args[1]) || args.length != 2)
+            if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 0: scalar_addition receives two scalars as parameters')
             return Number(args[0]) + Number(args[1]);
         }
@@ -125,7 +134,7 @@ let builtin_func_dict : {[ind: number] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_subtraction',
         func : (...args : allowed_stack_components[]) => {
-            if (!is_number(args[0]) || !is_number(args[1]) || args.length != 2)
+            if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 1: scalar_substrating receives two scalars as parameters')
             return Number(args[0]) - Number(args[1]);
         }
@@ -136,7 +145,7 @@ let builtin_func_dict : {[ind: number] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_multiplication',
         func : (...args : allowed_stack_components[]) => {
-            if (!is_number(args[0]) || !is_number(args[1]) || args.length != 2)
+            if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 2: scalar_multiplication receives two scalars as parameters')
             return Number(args[0]) * Number(args[1]);
         }
@@ -147,7 +156,7 @@ let builtin_func_dict : {[ind: number] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_division',
         func : (...args : allowed_stack_components[]) => {
-            if (!is_number(args[0]) || !is_number(args[1]) || args.length != 2)
+            if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 3: scalar_division receives two scalars as parameters')
             return Number(args[0]) / Number(args[1]);
         }
@@ -158,7 +167,7 @@ let builtin_func_dict : {[ind: number] : builtin_function} = {
         param_count: 2, 
         func_name : 'number_to_function_points',
         func : (...args : allowed_stack_components[]) => {
-            if (!is_number(args[0]) || !is_integer(args[1]) || args.length != 2)
+            if (!is_number(args[0]) || !is_integer(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 4: number_to_function_points receives one scalar and one integer as parameters')
             const val : number = Number(args[0]);
             const length : number = Number(args[1]);
@@ -211,65 +220,78 @@ function type_check(expected: data_types, actual: allowed_stack_components) {
 
 }
 
-function func_interpreter(func : custom_function, ...args: allowed_stack_components[]) {
+export function func_interpreter(func : custom_function, ...args: allowed_stack_components[]) {
     
     // TODO: check that the length of the arrays match
 
     // check declared param types and actual param types
-    if (args.length != func.input_type.length) 
+    if (args.length !== func.input_type.length) 
         throw new FuncArgError(`function ${func.func_name}: expecting ${func.input_type.length} parameters, received ${args.length}`);
     
 
 
     let operations_local : allowed_stack_components[] = [];
-    func.operations.forEach(val => operations_local.push(Object.assign({}, val)));
+    func.operations.forEach(val => operations_local.push(val));
     let param_idx_local = Object.assign([], func.param_idx)
     let func_idx_local = Object.assign([], func.func_idx)
-
+    console.log(operations_local)
+    console.log(func.operations)
+    // console.log(param_idx_local);
     // stores intermediate results
-    let val_stack : any[] = [];
+    let val_stack : allowed_stack_components[] = [];
 
     // stores values to return
-    let ret_vals : any[] = [];
+    let ret_vals : allowed_stack_components[] = [];
 
     while (operations_local.length > 0) {
+        console.log(val_stack)
         let top = operations_local.pop();
         // this two cannot be true at the same time
         let is_func = func_idx_local.pop();
         let is_param = param_idx_local.pop();
         if (is_func) {
+            console.log(top);
             if (!is_integer(top)) {
                 throw new Error('Function index must be an integer')
             }
-            if (Number(top) == 0) { // return a value
-                let ret_val : any = val_stack.pop();
-                if (ret_val == undefined) 
+            if (Number(top) === 0) { // return a value
+                let ret_val : allowed_stack_components | undefined = val_stack.pop();
+                if (ret_val === undefined) 
                     throw new Error(`Error when evaluating return value`);
-                ret_vals.push(val_stack.pop());
+                // console.log(ret_val);
+                ret_vals.push(ret_val);
                 continue;
             }
             let param_count = builtin_func_dict[Number(top)].param_count;
+            console.log(param_count);
             let args : allowed_stack_components[] = [];
             while (param_count > 0) {
                 let arg = val_stack.pop();
-                if (arg == undefined) 
+                if (arg === undefined) 
                     throw new Error(`Error when evaluating built-in function ${top}`);
                 args.push(arg);
                 param_count--;
             }
+            console.log(args);
             let eval_res : allowed_stack_components = builtin_func_dict[Number(top)].func(...args);
+            console.log(eval_res);
             val_stack.push(eval_res);
         } else if (is_param) {
             if (!is_integer(top)) {
                 throw new Error('Function argument index must be an integer');
             }
             val_stack.push(args[Number(top)]);
+            console.log(val_stack);
         }
 
     }
+    console.log(ret_vals);
+    return ret_vals
 
     
 }
+
+
 
 /*
 let operations_copy : allowed_stack_ops[] = [...func_1.operations];
