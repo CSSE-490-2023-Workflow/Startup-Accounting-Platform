@@ -1,0 +1,23 @@
+{
+    "type" : "builtin-function",
+    "name" : "return",
+    "param" : [
+        {
+            "type" : "builtin-function",
+            "name" : "plus",
+            "param" : [
+                
+                {
+                    "type" : "numeric",
+                    "value" : 3.0
+                },
+                {
+                    "type" : "numeric",
+                    "value" : 2.0
+                }
+            ]
+        }
+    ]
+}
+
+// This is 3.0 + 2.0

@@ -28,7 +28,20 @@ let declared_type_to_actual_type : {[ind: number] : ((to_check : allowed_stack_c
     },
 
     1 : (to_check: allowed_stack_components) => {
-        return !isNaN(Number(to_check));
+        if (!Array.isArray(to_check)) 
+            return false;
+        let res: boolean = true;
+        to_check.forEach((val: any) => {
+            if (!Array.isArray(val)) {
+                res = false;
+            }
+            if (val.length != 2) {
+                res = false;
+            }
+            res &&= !isNaN(Number(val[0]));
+            res &&= !isNaN(Number(val[1]));
+        })
+        return res;
     },
 
     2 : (to_check: allowed_stack_components) => {
@@ -168,7 +181,7 @@ let builtin_func_dict : {[ind: number] : builtin_function} = {
         func_name : 'number_to_function_points',
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_integer(args[1]) || args.length !== 2)
-                throw new FuncArgError('Built in function 4: number_to_function_points receives one scalar and one integer as parameters')
+                throw new FuncArgError('Built in function 5: number_to_function_points receives one scalar and one integer as parameters')
             const val : number = Number(args[0]);
             const length : number = Number(args[1]);
             /**
@@ -181,6 +194,22 @@ let builtin_func_dict : {[ind: number] : builtin_function} = {
                 series_out[i] = [i, val];
             }
             return series_out;
+        }
+    },
+
+    //apply interest rate
+    6 : {
+        param_count : 2,
+        func_name : 'apply_interest_rate',
+        func : (...args : allowed_stack_components[]) => {
+            if (!declared_type_to_actual_type[0](args[0]) || !declared_type_to_actual_type[1](args[1]))
+                throw new FuncArgError('Built in function 6: apply_interest_rate receives one scalar and one function points series as parameters');
+            const rate : any = args[0];
+            const ser  : any = args[1];
+            for (let i = 1; i < ser.length; i++) {
+                ser[i][1] = (1 + rate) * ser[i - 1][1];
+            }
+            return ser;
         }
     }
 
@@ -286,12 +315,16 @@ export function func_interpreter(func : custom_function, ...args: allowed_stack_
 
     }
     console.log(ret_vals);
-    return ret_vals
+    return ret_vals;
 
     
 }
 
 
+let rate = 0.1;
+let arr : func_pt_series = [[1, 9], [2, 9], [3, 9]];
+let res = builtin_func_dict[6].func(rate, arr);
+console.log(res);
 
 /*
 let operations_copy : allowed_stack_ops[] = [...func_1.operations];
