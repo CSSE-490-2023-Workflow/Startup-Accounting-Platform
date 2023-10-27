@@ -26,11 +26,7 @@ function NumberInput(props: IProps) {
       }
   }
   }, [])
-  return (
-    <div className="App">
-      <input onChange={handleChange} value = {inpValue}></input>
-    </div>
-  );
+  return <input onChange={handleChange} value = {inpValue}></input>;
 }
 
 export default NumberInput;

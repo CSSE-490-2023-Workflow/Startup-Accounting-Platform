@@ -1,32 +1,24 @@
-import React, { ChangeEvent, useCallback, useState } from 'react';
+ import { useCallback, useState } from 'react';
 import logo from './logo.svg';
 import './App.css';
-import NumberInput from './Components/NumberInput';
-import { func_interpreter, func_2} from './engine/engine'
+import PageButton from './Components/PageButton';
+import Addition from './Components/Addition';
+import Interest from './Components/Interest';
 
 function App() {
-  const [inputs, setInputs] = useState([0,0])
-  const [result, setResult] = useState(0)
-  const handleAdd = useCallback(() => {
-    setResult(Number(func_interpreter(func_2, ...inputs)[0]))
-  }, [])
-  const handleChange = useCallback((ind: number, value: number) => {
-    inputs[ind] = value
-    setInputs(inputs)
+  const [page, setPage] = useState(0)
+  const handlePageChange = useCallback((val: number) => {
+    setPage(val)
   }, [])
   return (
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
-          Startup Accounting Platform
-        <label>
-          First number: <NumberInput handleStateChange={handleChange} ind={0} inValue={0}/>
-        </label>
-        <label>
-          Second number: <NumberInput handleStateChange={handleChange} ind={1} inValue={0}/>
-        </label>
-        <button onClick={handleAdd}>Add</button>
-        <p>Sum: {result}</p>
+            Startup Accounting Platform
+        <PageButton onClick={handlePageChange} value={0} name="Addition Page" />
+        <PageButton onClick={handlePageChange} value={1} name="Interest Page" />
+        {page == 0 && <Addition/>}
+        {page == 1 && <Interest/>}
       </header>
     </div>
   );
