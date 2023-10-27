@@ -1,23 +1,21 @@
 {
-    "type" : "builtin-function",
+    "type" : "builtin_function",
     "name" : "return",
     "param" : [
         {
-            "type" : "builtin-function",
-            "name" : "plus",
+            "type" : "builtin_function",
+            "name" : "scalar_addition",
             "param" : [
                 
                 {
-                    "type" : "numeric",
+                    "type" : "constant",
                     "value" : 3.0
                 },
                 {
-                    "type" : "numeric",
+                    "type" : "constant",
                     "value" : 2.0
                 }
             ]
         }
     ]
 }
-
-// This is 3.0 + 2.0

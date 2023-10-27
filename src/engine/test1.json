@@ -1,0 +1,37 @@
+{
+    "type" : "builtin_function",
+    "name" : "return",
+    "param" : [
+        {
+            "type" : "builtin_function",
+            "name" : "scalar_addition",
+            "param" : [
+                {
+                    "type" : "builtin_function",
+                    "name" : "scalar_multiplication",
+                    "param" : [
+                        {
+                            "type" : "builtin_function",
+                            "name" : "return",
+                            "param" : [
+                                {
+                                    "type" : "constant",
+                                    "value" : 8.0
+                                }
+                            ]
+                        },
+
+                        {
+                            "type" : "argument",
+                            "index" : 1
+                        }
+                    ]
+                },
+                {
+                    "type" : "argument",
+                    "index" : 0
+                }
+            ]
+        }
+    ]
+}

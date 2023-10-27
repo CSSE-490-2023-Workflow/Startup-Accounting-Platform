@@ -1,74 +1,4 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.func_interpreter = exports.func_2 = void 0;
-// consider adding constraints to the first item, if it's a time
-// maybe create a custom datatype that represents a time?
-function to_series(val, length) {
-    /**
-     * Converts a number to an array of length 2 tuples
-     * outputs: [[0, val], [1, val], [2, val], ... , [length-1, val]]
-     */
-    // check if length is integer
-    var series_out = [];
-    for (var i = 0; i < length; i++) {
-        series_out[i] = [i, val];
-    }
-    return series_out;
-}
-var data_types;
-(function (data_types) {
-    data_types[data_types["dt_number"] = 0] = "dt_number";
-    data_types[data_types["dt_func_pt_series"] = 1] = "dt_func_pt_series";
-    data_types[data_types["dt_series"] = 2] = "dt_series";
-})(data_types || (data_types = {}));
-//type checking function for each data type
-var declared_type_to_actual_type = {
-    0: function (to_check) {
-        return !isNaN(Number(to_check));
-    },
-    1: function (to_check) {
-        if (!Array.isArray(to_check))
-            return false;
-        var res = true;
-        to_check.forEach(function (val) {
-            if (!Array.isArray(val)) {
-                res = false;
-            }
-            if (val.length != 2) {
-                res = false;
-            }
-            res && (res = !isNaN(Number(val[0])));
-            res && (res = !isNaN(Number(val[1])));
-        });
-        return res;
-    },
-    2: function (to_check) {
-        if (!Array.isArray(to_check))
-            return false;
-        var res = true;
-        to_check.forEach(function (val) {
-            res && (res = !isNaN(Number(to_check)));
-        });
-        return res;
-    }
-};
-var test_var = [2, 4.0, 4.9];
-console.log(declared_type_to_actual_type[2](test_var));
 // let func_1 : custom_function = {
 //     func_name : 'test_func1',
 //     input_type: [data_types.dt_number, data_types.dt_number],
@@ -77,125 +7,30 @@ console.log(declared_type_to_actual_type[2](test_var));
 //     func_idx: [true, true, true, false, false, true, false, false],
 //     operations: [9, 0, 2, 2, 4, 1, 0, 1],
 // }
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.func_interpreter_new = exports.func_interpreter_new_caller = exports.func_interpreter = exports.func_2 = void 0;
+var datatype_def_1 = require("./datatype_def");
+var builtin_func_def_1 = require("./builtin_func_def");
+var error_def_1 = require("./error_def");
 var func_2 = {
     func_name: 'test_func2',
-    input_type: [data_types.dt_number, data_types.dt_number],
-    output_type: [data_types.dt_number],
+    input_type: [datatype_def_1.data_types.dt_number, datatype_def_1.data_types.dt_number],
+    output_type: [datatype_def_1.data_types.dt_number],
     param_idx: [false, false, true, true],
     func_idx: [true, true, false, false],
     operations: [0, 1, 1, 0],
 };
 exports.func_2 = func_2;
 // series : [[1, 2], [2, 4], [3, 5]]
-var FuncArgError = /** @class */ (function (_super) {
-    __extends(FuncArgError, _super);
-    function FuncArgError(msg) {
-        return _super.call(this, msg) || this;
-    }
-    return FuncArgError;
-}(Error));
-var builtin_func_dict = {
-    //addition for scalars
-    1: {
-        param_count: 2,
-        func_name: 'scalar_addition',
-        func: function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
-                throw new FuncArgError('Built in function 0: scalar_addition receives two scalars as parameters');
-            return Number(args[0]) + Number(args[1]);
-        }
-    },
-    //subtraction
-    2: {
-        param_count: 2,
-        func_name: 'scalar_subtraction',
-        func: function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
-                throw new FuncArgError('Built in function 1: scalar_substrating receives two scalars as parameters');
-            return Number(args[0]) - Number(args[1]);
-        }
-    },
-    //multiplication
-    3: {
-        param_count: 2,
-        func_name: 'scalar_multiplication',
-        func: function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
-                throw new FuncArgError('Built in function 2: scalar_multiplication receives two scalars as parameters');
-            return Number(args[0]) * Number(args[1]);
-        }
-    },
-    //division
-    4: {
-        param_count: 2,
-        func_name: 'scalar_division',
-        func: function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
-                throw new FuncArgError('Built in function 3: scalar_division receives two scalars as parameters');
-            return Number(args[0]) / Number(args[1]);
-        }
-    },
-    //number to function points
-    5: {
-        param_count: 2,
-        func_name: 'number_to_function_points',
-        func: function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            if (!is_number(args[0]) || !is_integer(args[1]) || args.length !== 2)
-                throw new FuncArgError('Built in function 5: number_to_function_points receives one scalar and one integer as parameters');
-            var val = Number(args[0]);
-            var length = Number(args[1]);
-            /**
-             * Converts a number to an array of length 2 tuples
-             * outputs: [[0, val], [1, val], [2, val], ... , [length-1, val]]
-             */
-            // check if length is integer
-            var series_out = [];
-            for (var i = 0; i < length; i++) {
-                series_out[i] = [i, val];
-            }
-            return series_out;
-        }
-    },
-    //apply interest rate
-    6: {
-        param_count: 2,
-        func_name: 'apply_interest_rate',
-        func: function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            if (!declared_type_to_actual_type[0](args[0]) || !declared_type_to_actual_type[1](args[1]))
-                throw new FuncArgError('Built in function 6: apply_interest_rate receives one scalar and one function points series as parameters');
-            var rate = args[0];
-            var ser = args[1];
-            for (var i = 1; i < ser.length; i++) {
-                ser[i][1] = (1 + rate) * ser[i - 1][1];
-            }
-            return ser;
-        }
-    }
-};
 /*
 builtin_func_dict[0] = {param_count: 2, func : (p0: allowed_stack_components, p1 : allowed_stack_components) => {
     let p0_is_num : boolean = !isNaN(Number(p0));
@@ -216,14 +51,6 @@ builtin_func_dict[0] = {param_count: 2, func : (p0: allowed_stack_components, p1
     return p0 + p1;
 }}
 */
-function is_number(val) {
-    return !isNaN(Number(val));
-}
-function is_integer(val) {
-    return Number.isInteger(Number(val));
-}
-function type_check(expected, actual) {
-}
 function func_interpreter(func) {
     // TODO: check that the length of the arrays match
     var _a;
@@ -233,13 +60,13 @@ function func_interpreter(func) {
     }
     // check declared param types and actual param types
     if (args.length !== func.input_type.length)
-        throw new FuncArgError("function ".concat(func.func_name, ": expecting ").concat(func.input_type.length, " parameters, received ").concat(args.length));
+        throw new error_def_1.FuncArgError("function ".concat(func.func_name, ": expecting ").concat(func.input_type.length, " parameters, received ").concat(args.length));
     var operations_local = [];
     func.operations.forEach(function (val) { return operations_local.push(val); });
     var param_idx_local = Object.assign([], func.param_idx);
     var func_idx_local = Object.assign([], func.func_idx);
-    console.log(operations_local);
-    console.log(func.operations);
+    //console.log(operations_local)
+    //console.log(func.operations)
     // console.log(param_idx_local);
     // stores intermediate results
     var val_stack = [];
@@ -253,7 +80,7 @@ function func_interpreter(func) {
         var is_param = param_idx_local.pop();
         if (is_func) {
             console.log(top_1);
-            if (!is_integer(top_1)) {
+            if (!(0, datatype_def_1.is_integer)(top_1)) {
                 throw new Error('Function index must be an integer');
             }
             if (Number(top_1) === 0) { // return a value
@@ -264,7 +91,7 @@ function func_interpreter(func) {
                 ret_vals.push(ret_val);
                 continue;
             }
-            var param_count = builtin_func_dict[Number(top_1)].param_count;
+            var param_count = builtin_func_def_1.id_to_builtin_func[Number(top_1)].param_count;
             console.log(param_count);
             var args_1 = [];
             while (param_count > 0) {
@@ -275,12 +102,12 @@ function func_interpreter(func) {
                 param_count--;
             }
             console.log(args_1);
-            var eval_res = (_a = builtin_func_dict[Number(top_1)]).func.apply(_a, args_1);
+            var eval_res = (_a = builtin_func_def_1.id_to_builtin_func[Number(top_1)]).func.apply(_a, args_1);
             console.log(eval_res);
             val_stack.push(eval_res);
         }
         else if (is_param) {
-            if (!is_integer(top_1)) {
+            if (!(0, datatype_def_1.is_integer)(top_1)) {
                 throw new Error('Function argument index must be an integer');
             }
             val_stack.push(args[Number(top_1)]);
@@ -291,13 +118,76 @@ function func_interpreter(func) {
     return ret_vals;
 }
 exports.func_interpreter = func_interpreter;
-var rate = 0.1;
-var arr = [[1, 9], [2, 9], [3, 9]];
-var res = builtin_func_dict[6].func(rate, arr);
-console.log(res);
+function func_interpreter_new_caller(func_str) {
+    var args = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        args[_i - 1] = arguments[_i];
+    }
+    var ret = [];
+    func_interpreter_new.apply(void 0, __spreadArray([func_str, ret], args, false));
+    return ret;
+}
+exports.func_interpreter_new_caller = func_interpreter_new_caller;
+function func_interpreter_new(func_str, ret) {
+    var _a;
+    var args = [];
+    for (var _i = 2; _i < arguments.length; _i++) {
+        args[_i - 2] = arguments[_i];
+    }
+    var func_content = JSON.parse(func_str);
+    console.log(func_content);
+    if (func_content['type'] == 'builtin_function' && func_content['name'] == 'return') {
+        console.log("in function, return");
+        console.log(func_content['param'][0]);
+        var eval_res = func_interpreter_new.apply(void 0, __spreadArray([JSON.stringify(func_content['param'][0]), ret], args, false));
+        console.log('pushed', eval_res);
+        ret.push(eval_res);
+        return eval_res;
+    }
+    else if (func_content['type'] == 'builtin_function') {
+        console.log("in function, not return");
+        var param_arr = [];
+        for (var _b = 0, _c = func_content['param']; _b < _c.length; _b++) {
+            var func_param = _c[_b];
+            console.log('func_param', func_param);
+            var func_param_eval_res = func_interpreter_new.apply(void 0, __spreadArray([JSON.stringify(func_param), ret], args, false));
+            console.log('func_param_eval_res', func_param_eval_res);
+            param_arr.push(func_param_eval_res);
+        }
+        var func_eval_res = (_a = builtin_func_def_1.name_to_builtin_func[func_content['name']]).func.apply(_a, param_arr);
+        return func_eval_res;
+    }
+    else if (func_content['type'] == 'constant') {
+        console.log('in constant');
+        return func_content['value'];
+    }
+    else if (func_content['type'] == 'argument') {
+        console.log("in argument");
+        return args[func_content['index']];
+    }
+    else {
+        throw new error_def_1.FuncArgError("Unrecognized function component type : ".concat(func_content));
+    }
+}
+exports.func_interpreter_new = func_interpreter_new;
+var test = require("./test.json");
+var test1 = require("./test1.json");
+var test2 = require("./test2.json");
+var test_func_str = JSON.stringify(test);
+var test_func_str1 = JSON.stringify(test1);
+var test_func_str2 = JSON.stringify(test2);
+//console.log(func_interpreter_new_caller(test_func_str1, 9, 11))
+console.log('final return value', func_interpreter_new_caller(test_func_str2, 0.1, 7, 4));
 /*
+let rate = 0.1;
+let arr : func_pt_series = [[1, 9], [2, 9], [3, 9]];
+let res = builtin_func_dict[6].func(rate, arr);
+console.log(res);
+
+
 let operations_copy : allowed_stack_ops[] = [...func_1.operations];
 console.log(func_1);
 test_func(operations_copy);
 console.log(func_1);
 */
+//console.log(name_to_builtin_func['apply_interest_rate'].func_name)
