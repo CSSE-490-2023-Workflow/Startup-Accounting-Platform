@@ -143,6 +143,7 @@ export function func_interpreter_new(func_str : string, ret: allowed_stack_compo
             param_arr.push(func_param_eval_res);
         }
         const func_eval_res : allowed_stack_components = name_to_builtin_func[func_content['name']].func(...param_arr);
+        console.log(func_eval_res);
         return func_eval_res;
     } else if (func_content['type'] == 'constant') {
         console.log('in constant');
