@@ -3,10 +3,10 @@ import NumberInput from './NumberInput';
 import { func_interpreter, func_2} from '../engine/engine'
 
 function Interest() {
-  const [inputs, setInputs] = useState([0,0])
-  const [result, setResult] = useState(0)
-  const handleAdd = useCallback(() => {
-    setResult(Number(func_interpreter(func_2, ...inputs)[0]))
+  const [inputs, setInputs] = useState([0, 0, 0, 0, 0])
+  const [result, setResult] = useState([])
+  const handleInterest = useCallback(() => {
+    setResult([])
   }, [])
   const handleChange = useCallback((ind: number, value: number) => {
     inputs[ind] = value
@@ -15,13 +15,22 @@ function Interest() {
   return (
     <>
         <label>
-          First number: <NumberInput handleStateChange={handleChange} ind={0} inValue={0}/>
+          Initial Amount: <NumberInput handleStateChange={handleChange} ind={0} inValue={0}/>
         </label>
         <label>
-          Second number: <NumberInput handleStateChange={handleChange} ind={1} inValue={0}/>
+          Interest Rate: <NumberInput handleStateChange={handleChange} ind={1} inValue={0}/>
         </label>
-        <button onClick={handleAdd}>Add</button>
-        <p>Sum: {result}</p>
+        <label>
+          Start Time: <NumberInput handleStateChange={handleChange} ind={2} inValue={0}/>
+        </label>
+        <label>
+          End Time: <NumberInput handleStateChange={handleChange} ind={3} inValue={0}/>
+        </label>
+        <label>
+          Interval: <NumberInput handleStateChange={handleChange} ind={4} inValue={0}/>
+        </label>
+        <button onClick={handleInterest}>Calculate</button>
+        <p>Values at each time: {result}</p>
     </>
   );
 }
