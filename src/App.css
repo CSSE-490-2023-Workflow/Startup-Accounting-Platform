@@ -28,6 +28,18 @@
   color: #61dafb;
 }
 
+tr {
+  border: 1px solid black;
+}
+
+td {
+  border: 1px solid black;
+}
+
+th {
+  padding: 10px; 
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
@@ -35,4 +47,14 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.cash-flow-container {
+  display: flex;
+  justify-content: space-around;
+}
+
+.cash-flow-table {
+  width: 30%; 
+  margin: 10px;
 }
