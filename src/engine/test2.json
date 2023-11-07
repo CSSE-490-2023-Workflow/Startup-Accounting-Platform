@@ -1,0 +1,30 @@
+{
+    "type" : "builtin_function",
+    "name" : "return",
+    "param" : [
+        {
+            "type" : "builtin_function",
+            "name" : "apply_interest_rate",
+            "param" : [
+                {
+                    "type" : "argument",
+                    "index" : 0
+                },
+                {
+                    "type" : "builtin_function",
+                    "name" : "scalar_to_function_points",
+                    "param" : [
+                        {
+                            "type" : "argument",
+                            "index" : 1
+                        },
+                        {   
+                            "type" : "argument",
+                            "index" : 2
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

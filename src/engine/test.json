@@ -1,0 +1,21 @@
+{
+    "type" : "builtin_function",
+    "name" : "return",
+    "param" : [
+        {
+            "type" : "builtin_function",
+            "name" : "scalar_addition",
+            "param" : [
+                
+                {
+                    "type" : "constant",
+                    "value" : 3.0
+                },
+                {
+                    "type" : "constant",
+                    "value" : 2.0
+                }
+            ]
+        }
+    ]
+}
