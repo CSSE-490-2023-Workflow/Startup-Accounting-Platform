@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import NumberInput from './NumberInput';
 import { func_interpreter, func_2, func_interpreter_new_caller } from '../engine/engine'
-import { XYPlot, XAxis, YAxis, HorizontalGridLines, LineSeries } from 'react-vis';
+import { XYPlot, XAxis, YAxis, HorizontalGridLines, LineSeries, HorizontalBarSeries, VerticalBarSeries } from 'react-vis';
 
 
 function Interest() {
@@ -88,13 +88,15 @@ function Interest() {
           </table>
 
           <XYPlot
-            width={300}
-            height={300}>
+            width={200}
+            height={200}
+            xDomain={[0,5.5]}
+            yDomain={[0,150]}>
             <HorizontalGridLines />
-            <LineSeries
+            <VerticalBarSeries
               data={op[0].map(([index, value], k) => (
                 {x: index, y: value}
-              ))} />
+              ))} barWidth={0.2} />
             <XAxis />
             <YAxis />
           </XYPlot>
