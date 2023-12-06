@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import NumberInput from './NumberInput';
 import { func_interpreter, func_2, func_interpreter_new_caller } from '../engine/engine'
+import { XYPlot, XAxis, YAxis, HorizontalGridLines, LineSeries } from 'react-vis';
 
 
 function Interest() {
@@ -68,26 +69,43 @@ function Interest() {
       <p>Values at each time: {JSON.stringify(op)}</p>
 
       {op && op.length > 0 && (
-        <table style={{ border: '1px solid black' }}>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {op[0].map(([index, value], k) => (
-              <tr key={k}>
-                <td>{index}</td>
-                <td>{value.toFixed(2)}</td>
+        <div>
+          <table style={{ border: '1px solid black' }}>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Amount</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {op[0].map(([index, value], k) => (
+                <tr key={k}>
+                  <td>{index}</td>
+                  <td>{value.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <XYPlot
+            width={300}
+            height={300}>
+            <HorizontalGridLines />
+            <LineSeries
+              data={op[0].map(([index, value], k) => (
+                {x: index, y: value}
+              ))} />
+            <XAxis />
+            <YAxis />
+          </XYPlot>
+
+        </div>
+
+
 
       )}
 
-    
+
     </>
   );
 }
