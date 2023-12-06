@@ -88,17 +88,21 @@ function Interest() {
           </table>
 
           <XYPlot
-            width={200}
-            height={200}
-            xDomain={[0,5.5]}
+          margin={{left: 100}}
+            width={700}
+            height={500}
+            xDomain={[0,6]}
             yDomain={[0,150]}>
-            <HorizontalGridLines />
+            <HorizontalGridLines/>
             <VerticalBarSeries
               data={op[0].map(([index, value], k) => (
                 {x: index, y: value}
-              ))} barWidth={0.2} />
-            <XAxis />
-            <YAxis />
+              ))} 
+              barWidth={0.2} />
+            <XAxis
+            style={{line: {stroke: "white"}, ticks: {stroke: "white"}, text: {stroke: "white"}}}/>
+            <YAxis
+            style={{line: {stroke: "white"}, ticks: {stroke: "white"}, text: {stroke: "white"}}}/>
           </XYPlot>
 
         </div>
