@@ -6,6 +6,7 @@ import Addition from './Components/Addition';
 import Interest from './Components/Interest';
 import Calculator from './Components/Calculator';
 import CashFlow from './Components/CashFlow';
+import LoginButton from "./Auth/firebase";
 
 function App() {
   const [page, setPage] = useState(0)
@@ -25,6 +26,7 @@ function App() {
         {page == 1 && <Interest/>}
         {page == 2 && <Calculator/>}
         {page == 3 && <CashFlow/>}
+        <LoginButton/>
       </header>
     </div>
   );
