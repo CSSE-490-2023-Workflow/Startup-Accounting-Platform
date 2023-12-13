@@ -1,3 +1,4 @@
+"use strict";
 // let func_1 : custom_function = {
 //     func_name : 'test_func1',
 //     input_type: [data_types.dt_number, data_types.dt_number],
@@ -6,23 +7,30 @@
 //     func_idx: [true, true, true, false, false, true, false, false],
 //     operations: [9, 0, 2, 2, 4, 1, 0, 1],
 // }
-
-import {data_types, declared_type_verifier, is_integer, is_number} from './datatype_def'
-import type {func_pt, func_pt_series, series, allowed_stack_components, custom_function, builtin_function} from './datatype_def'
-import { id_to_builtin_func, name_to_builtin_func } from './builtin_func_def';
-import { FuncArgError } from './error_def';
-
-let func_2 : custom_function = {
-    func_name : 'test_func2',
-    input_type: [data_types.dt_number, data_types.dt_number],
-    output_type: [data_types.dt_number],
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.func_interpreter_new = exports.func_interpreter_new_caller = exports.func_2 = void 0;
+var datatype_def_1 = require("./datatype_def");
+var builtin_func_def_1 = require("./builtin_func_def");
+var error_def_1 = require("./error_def");
+var func_2 = {
+    func_name: 'test_func2',
+    input_type: [datatype_def_1.data_types.dt_number, datatype_def_1.data_types.dt_number],
+    output_type: [datatype_def_1.data_types.dt_number],
     param_idx: [false, false, true, true],
     func_idx: [true, true, false, false],
     operations: [0, 1, 1, 0],
-}
-export { func_2 };
+};
+exports.func_2 = func_2;
 // series : [[1, 2], [2, 4], [3, 5]]
-
 /*
 builtin_func_dict[0] = {param_count: 2, func : (p0: allowed_stack_components, p1 : allowed_stack_components) => {
     let p0_is_num : boolean = !isNaN(Number(p0));
@@ -43,7 +51,6 @@ builtin_func_dict[0] = {param_count: 2, func : (p0: allowed_stack_components, p1
     return p0 + p1;
 }}
 */
-
 //deprecated
 /*
 export function func_interpreter(func : custom_function, ...args: allowed_stack_components[]) {
@@ -51,7 +58,7 @@ export function func_interpreter(func : custom_function, ...args: allowed_stack_
     // TODO: check that the length of the arrays match
 
     // check declared param types and actual param types
-    if (args.length !== func.input_type.length) 
+    if (args.length !== func.input_type.length)
         throw new FuncArgError(`function ${func.func_name}: expecting ${func.input_type.length} parameters, received ${args.length}`);
     
 
@@ -82,7 +89,7 @@ export function func_interpreter(func : custom_function, ...args: allowed_stack_
             }
             if (Number(top) === 0) { // return a value
                 let ret_val : allowed_stack_components | undefined = val_stack.pop();
-                if (ret_val === undefined) 
+                if (ret_val === undefined)
                     throw new Error(`Error when evaluating return value`);
                 // console.log(ret_val);
                 ret_vals.push(ret_val);
@@ -93,7 +100,7 @@ export function func_interpreter(func : custom_function, ...args: allowed_stack_
             let args : allowed_stack_components[] = [];
             while (param_count > 0) {
                 let arg = val_stack.pop();
-                if (arg === undefined) 
+                if (arg === undefined)
                     throw new Error(`Error when evaluating built-in function ${top}`);
                 args.push(arg);
                 param_count--;
@@ -117,55 +124,63 @@ export function func_interpreter(func : custom_function, ...args: allowed_stack_
     
 }
 */
-
-
-export function func_interpreter_new_caller(func_str : string, ...args: any[]) {
-    let ret : allowed_stack_components[] = [];
-    func_interpreter_new(func_str, ret, ...args);
+function func_interpreter_new_caller(func_str) {
+    var args = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        args[_i - 1] = arguments[_i];
+    }
+    var ret = [];
+    func_interpreter_new.apply(void 0, __spreadArray([func_str, ret], args, false));
     return ret;
 }
-
-export function func_interpreter_new(func_str : string, ret: allowed_stack_components[], ...args: any[]) {
-    const func_content = JSON.parse(func_str);
+exports.func_interpreter_new_caller = func_interpreter_new_caller;
+function func_interpreter_new(func_str, ret) {
+    var _a;
+    var args = [];
+    for (var _i = 2; _i < arguments.length; _i++) {
+        args[_i - 2] = arguments[_i];
+    }
+    var func_content = JSON.parse(func_str);
     console.log(func_content);
     if (func_content['type'] == 'builtin_function' && func_content['name'] == 'return') {
         console.log("in function, return");
         console.log(func_content['param'][0]);
-        const ret_arr : allowed_stack_components[] = [];
-        for (const func_param of func_content['param']) {
-            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), ret, ...args);
+        var ret_arr = [];
+        for (var _b = 0, _c = func_content['param']; _b < _c.length; _b++) {
+            var func_param = _c[_b];
+            var eval_res = func_interpreter_new.apply(void 0, __spreadArray([JSON.stringify(func_param), ret], args, false));
             console.log('pushed', eval_res);
             ret.push(eval_res);
         }
         return ret;
-    } else if (func_content['type'] == 'builtin_function') {
+    }
+    else if (func_content['type'] == 'builtin_function') {
         console.log("in function, not return");
-        let param_arr : allowed_stack_components[] = [];
-        for (const func_param of func_content['param']) {
+        var param_arr = [];
+        for (var _d = 0, _e = func_content['param']; _d < _e.length; _d++) {
+            var func_param = _e[_d];
             console.log('func_param', func_param);
-            const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), ret, ...args);
+            var func_param_eval_res = func_interpreter_new.apply(void 0, __spreadArray([JSON.stringify(func_param), ret], args, false));
             console.log('func_param_eval_res', func_param_eval_res);
             param_arr.push(func_param_eval_res);
         }
-        const func_eval_res : allowed_stack_components[] = name_to_builtin_func[func_content['name']].func(...param_arr);
-
+        var func_eval_res = (_a = builtin_func_def_1.name_to_builtin_func[func_content['name']]).func.apply(_a, param_arr);
         console.log(func_eval_res);
         return func_eval_res.length == 1 ? func_eval_res[0] : func_eval_res;
-    } else if (func_content['type'] == 'constant') {
+    }
+    else if (func_content['type'] == 'constant') {
         console.log('in constant');
         return func_content['value'];
-    } else if (func_content['type'] == 'argument') {
+    }
+    else if (func_content['type'] == 'argument') {
         console.log("in argument");
         return args[func_content['index']];
-    } else {
-        throw new FuncArgError(`Unrecognized function component type : ${func_content}`);
     }
-
+    else {
+        throw new error_def_1.FuncArgError("Unrecognized function component type : ".concat(func_content));
+    }
 }
-
-
-
-
+exports.func_interpreter_new = func_interpreter_new;
 /*
 let rate = 0.1;
 let arr : func_pt_series = [[1, 9], [2, 9], [3, 9]];
@@ -178,7 +193,4 @@ console.log(func_1);
 test_func(operations_copy);
 console.log(func_1);
 */
-
 //console.log(name_to_builtin_func['apply_interest_rate'].func_name)
-
-

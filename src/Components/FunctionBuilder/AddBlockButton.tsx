@@ -3,11 +3,13 @@ import { data_types } from '../../engine/datatype_def'
 
 function AddBlockButton(props: any) {
   const onClick = props.onClick;
+  const defaultAttr = props.defaultAttr;
+  const buttonText = props.buttonText;
   const localOnClick = useCallback(() => {
-    onClick("new input", data_types.dt_number);
+    onClick(...defaultAttr);
   }, [onClick])
 
-  return <button onClick={localOnClick}>Add Input Block</button>;
+  return <button onClick={localOnClick}>{buttonText}</button>;
 }
 
 export default AddBlockButton;
