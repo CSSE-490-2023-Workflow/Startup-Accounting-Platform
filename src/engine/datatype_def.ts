@@ -10,6 +10,14 @@ type series = Array<number>
 
 type allowed_stack_components = number | func_pt_series | series 
 
+const data_type_enum_to_name: string[] = ["Number", "Function Points", "Series"];
+
+const data_type_name_to_enum : {[name: string] : number} = {};   
+
+data_type_name_to_enum["Number"] = data_types.dt_number;
+data_type_name_to_enum["Function Points"] = data_types.dt_func_pt_series;
+data_type_name_to_enum["Series"] = data_types.dt_series;
+
 //type checking function for each data type
 let declared_type_verifier : {[ind: number] : ((to_check : allowed_stack_components) => boolean)} = {
 
@@ -78,4 +86,5 @@ export function is_integer(val: any) {
 //export * from './datatype_def'
 
 export {data_types, declared_type_verifier}
+export { data_type_enum_to_name, data_type_name_to_enum }
 export type {func_pt, func_pt_series, series, allowed_stack_components, custom_function, builtin_function}
