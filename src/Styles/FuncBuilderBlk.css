@@ -1,9 +1,10 @@
-.input-block {
+.func-builder-block {
   width: 100px;
   border: 2px solid green;
   display: flex;
   flex-direction: column;
   margin: 10px;
+  font-size: small;
 }
 
 .input-block-name {
@@ -12,12 +13,4 @@
 
 .input-block-type {
   width: fill-available;
-}
-
-.func-block {
-  width: 100px;
-  border: 2px solid green;
-  display: flex;
-  flex-direction: column;
-  margin: 10px;
 }

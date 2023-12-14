@@ -6,6 +6,7 @@ import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
 import '../../Styles/FuncBuilderBlk.css'
 import * as utils from './utils.json'
+import OutputBlock from './OutputBlock';
 
 interface InputBlockDS {
   blockId: number
@@ -21,6 +22,12 @@ interface FuncBlockDS {
   outputTypes: data_types[]
 }
 
+interface OutputBlockDS {
+  blockId: number
+  outputName: string
+  outputType: data_types
+}
+
 const config = utils;
 
 function FuncBuilderMain() {
@@ -28,10 +35,11 @@ function FuncBuilderMain() {
   //const [result, setResult] = useState(0)
   const [inputBlocks, setInputBlocks] = useState<InputBlockDS[]>([])
   const [funcBlocks, setFuncBlocks] = useState<FuncBlockDS[]>([])
+  const [outputBlocks, setOutputBlocks] = useState<OutputBlockDS[]>([])
   const [currBlockId, setCurrBlockId] = useState(0)
 
   /**
-   * Input Block Logics
+   * Input block Logics
    */
   const addInputBlock = useCallback((inputName: string, inputType: data_types) => {
     const newId = currBlockId + 1;
@@ -51,13 +59,13 @@ function FuncBuilderMain() {
     setInputBlocks(localInputBlocks) 
   }, [inputBlocks, setInputBlocks])
 
-  const editInputBlock = useCallback((inputId: number, inputName: string, inputType: data_types) => {
+  const editInputBlock = useCallback((blkId: number, inputName: string, inputType: data_types) => {
     if (config.debug_mode_FuncBuilder == 1) {
-      console.log('edit callback', inputId, inputName, inputType);
+      console.log('edit callback', blkId, inputName, inputType);
       console.log("current input blocks in parents", inputBlocks);
     }
     const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS) => {
-      if (blk.blockId == inputId) {
+      if (blk.blockId == blkId) {
         blk.inputName = inputName;
         blk.inputType = inputType;
       }
@@ -66,6 +74,46 @@ function FuncBuilderMain() {
     setInputBlocks(tmp) 
   }, [inputBlocks, setInputBlocks])
 
+  /**
+   * Output block logics
+   */
+  const addOutputBlock = useCallback((outputName: string, outputType: data_types) => {
+    const newId = currBlockId + 1;
+    setCurrBlockId(newId);
+    const newBlock : OutputBlockDS = {
+      blockId: newId,
+      outputName: outputName,
+      outputType: outputType
+    }
+    setOutputBlocks([...outputBlocks, newBlock]) 
+  }, [currBlockId, outputBlocks, setCurrBlockId, setOutputBlocks])
+
+  const removeOutputBlock = useCallback((blkId: number) => {
+    const localOutputBlocks = outputBlocks.filter((blk) => {
+      return blk.blockId != blkId
+    })
+    setOutputBlocks(localOutputBlocks) 
+  }, [outputBlocks, setOutputBlocks])
+
+  const editOutputBlock = useCallback((blkId: number, outputName: string, outputType: data_types) => {
+    if (config.debug_mode_FuncBuilder == 1) {
+      console.log('edit callback', blkId, outputName, outputType);
+      console.log("current output blocks in parents", outputBlocks);
+    }
+    const tmp: OutputBlockDS[] = outputBlocks.map((blk: OutputBlockDS) => {
+      if (blk.blockId == blkId) {
+        blk.outputName = outputName;
+        blk.outputType = outputType;
+      }
+      return blk;
+    })
+    setOutputBlocks(tmp) 
+  }, [outputBlocks, setOutputBlocks])
+
+
+  /**
+   * Function block logics
+   */
   //right now this is hard-coded for built-in functions only
   const addFuncBlock = useCallback((funcId: number) => {
     const newId = currBlockId + 1;
@@ -141,14 +189,28 @@ function FuncBuilderMain() {
     
   })
 
+  const outputBlocksList = outputBlocks.map((blk: OutputBlockDS) => {
+    return (
+      <OutputBlock
+        blockId={blk.blockId}
+        outputName={blk.outputName}
+        outputTYpe={blk.outputType}
+        updateBlkCB={editOutputBlock} 
+        removeBlkCB={removeOutputBlock}
+      />
+    )
+  })
+
 
   return (
     <>
         <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block" defaultAttr={["new input", data_types.dt_number]}/>
         <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={[1]}/>
+        <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", data_types.dt_number]}/>
         <h3>Function Builder</h3>
         {inputBlocksList}
         {funcBlocksList}
+        {outputBlocksList}
     </>
   );
 }

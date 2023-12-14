@@ -15,13 +15,19 @@ function FuncBlock(props: any) {
     <option value={id}>{func_name}</option>
   ))
 
+  function handleRemoveBlock(e: any) {
+    removeCB(blkId);
+  }
+
   return (
-    <div className="func-block">
-      <div className="func-block-id">{funcId}</div>
+    <div className="func-block func-builder-block">
+      <div className="func-block-id">{blkId}</div>
+      <button className='block-remove' onClick={handleRemoveBlock}>Remove Block</button>
       <div className="func-block-title">{funcName}</div>
       <select className="func-block-func-select" value={funcId} onChange={handleFuncChange}>
         {func_options}
       </select>
+      <div className="func-block-func-id">Current Function Id: {funcId}</div>
     </div>
   );
 }
