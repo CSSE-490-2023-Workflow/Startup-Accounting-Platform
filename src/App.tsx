@@ -1,35 +1,73 @@
-import { useCallback, useState } from 'react';
-import logo from './logo.svg';
-import './App.css';
-import PageButton from './Components/PageButton';
-import Addition from './Components/Addition';
-import Interest from './Components/Interest';
-import Calculator from './Components/Calculator';
-import CashFlow from './Components/CashFlow';
+import cx from 'clsx';
+import {useCallback, useState} from 'react';
+import {
+    Container,
+    Group,
+    Tabs,
+    Burger,
+    useMantineTheme,
+} from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+
+import classes from './HeaderTabs.module.css';
 import LoginButton from "./Auth/firebase";
+import Demo from "./Demo";
 
-function App() {
-  const [page, setPage] = useState(0)
-  const handlePageChange = useCallback((val: number) => {
-    setPage(val)
-  }, [])
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-            Startup Accounting Platform
-        <PageButton onClick={handlePageChange} value={0} name="Addition Page" />
-        <PageButton onClick={handlePageChange} value={1} name="Interest Page" />
-        <PageButton onClick={handlePageChange} value={2} name="Calculator Page" />
-        <PageButton onClick={handlePageChange} value={3} name="Cash Flow Page" />
-        {page == 0 && <Addition/>}
-        {page == 1 && <Interest/>}
-        {page == 2 && <Calculator/>}
-        {page == 3 && <CashFlow/>}
-        <LoginButton/>
-      </header>
-    </div>
-  );
+
+const tabs = [
+    'Demo',
+    'Workflows',
+    'Templates',
+    'Functions'
+];
+
+export function App() {
+    const theme = useMantineTheme();
+    const [opened, { toggle }] = useDisclosure(false);
+    const [activeTab, setActiveTab] = useState('Demo')
+
+    const handleTabChange = useCallback((tabName: string | null) => {
+        if(!tabName)
+            return;
+        setActiveTab(tabName);
+    }, []);
+
+    const items = tabs.map((tab) => (
+        <Tabs.Tab value={tab}>
+            {tab}
+        </Tabs.Tab>
+    ));
+
+    return (
+        <div className={classes.header}>
+            <Container className={classes.mainSection} size="md">
+                <Group justify="space-between">
+
+                    <h1>SAP</h1>
+
+                    <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm" />
+
+                    <LoginButton></LoginButton>
+                </Group>
+            </Container>
+            <Container size="md">
+                <Tabs
+                    defaultValue="Demo"
+                    variant="outline"
+                    visibleFrom="sm"
+                    classNames={{
+                        root: classes.tabs,
+                        list: classes.tabsList,
+                        tab: classes.tab,
+                    }}
+                    onChange={handleTabChange}
+                >
+                    <Tabs.List>{items}</Tabs.List>
+                </Tabs>
+            </Container>
+            <div>
+                {activeTab === 'Demo' && <Demo />}
+            </div>
+        </div>
+    );
 }
-
-export default App;

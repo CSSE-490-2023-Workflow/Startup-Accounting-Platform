@@ -1,7 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import { initializeApp } from "firebase/app";
 //import { getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
+import {Button, MantineTheme, useMantineTheme} from "@mantine/core";
+import {Avatar, Group, Menu, rem, Text, UnstyledButton} from "@mantine/core";
+import cx from "clsx";
+import classes from "../HeaderTabs.module.css";
+import {
+    IconChevronDown,
+    IconHeart, IconLogout,
+    IconMessage, IconPlayerPause,
+    IconSettings,
+    IconStar,
+    IconSwitchHorizontal, IconTrash
+} from "@tabler/icons-react";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAZ24dgD9s7XyQa0jPFHYvkxJKksiruOOs",
@@ -20,6 +32,15 @@ const provider = new GoogleAuthProvider();
 
 const LoginButton = () => {
     const [user, setUser] = useState(auth.currentUser);
+    const [userMenuOpened, setUserMenuOpened] = useState(false);
+    const theme: MantineTheme = useMantineTheme();
+
+    const handleLogout = useCallback(() => {
+        auth.signOut().then(() => {
+            setUser(null);
+        })
+    }, []);
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser: any) => {
@@ -40,16 +61,53 @@ const LoginButton = () => {
 
     if(user) {
         return (
-            <label>
-                Logged in as {user.displayName}
-            </label>
+            <Menu
+                width={260}
+                position="bottom-end"
+                transitionProps={{ transition: 'pop-top-right' }}
+                onClose={() => setUserMenuOpened(false)}
+                onOpen={() => setUserMenuOpened(true)}
+                withinPortal
+            >
+                <Menu.Target>
+                    <UnstyledButton
+                        className={cx(classes.user, { [classes.userActive]: userMenuOpened })}
+                    >
+                        <Group gap={7}>
+                            <Avatar src={user.photoURL} alt={user.displayName || ""} radius="xl" size={20} />
+                            <Text fw={500} size="sm" lh={1} mr={3}>
+                                {user.displayName}
+                            </Text>
+                            <IconChevronDown style={{ width: rem(12), height: rem(12) }} stroke={1.5} />
+                        </Group>
+                    </UnstyledButton>
+                </Menu.Target>
+                <Menu.Dropdown>
+                    <Menu.Label>Settings</Menu.Label>
+                    <Menu.Item
+                        leftSection={
+                            <IconSettings style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
+                        }
+                    >
+                        Account settings
+                    </Menu.Item>
+                    <Menu.Item
+                        leftSection={
+                            <IconLogout style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
+                        }
+                        onClick={handleLogout}
+                    >
+                        Logout
+                    </Menu.Item>
+                </Menu.Dropdown>
+            </Menu>
         )
     }
 
     return (
-        <button onClick={signInWithGoogle}>
+        <Button onClick={signInWithGoogle}>
             Sign in with Google
-        </button>
+        </Button>
     );
 }
 
