@@ -2,17 +2,14 @@ import React, {useState, useEffect, useCallback} from 'react';
 import { initializeApp } from "firebase/app";
 //import { getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
-import {Button, MantineTheme, useMantineTheme} from "@mantine/core";
+import {Button} from "@mantine/core";
 import {Avatar, Group, Menu, rem, Text, UnstyledButton} from "@mantine/core";
 import cx from "clsx";
 import classes from "../HeaderTabs.module.css";
 import {
     IconChevronDown,
-    IconHeart, IconLogout,
-    IconMessage, IconPlayerPause,
+    IconLogout,
     IconSettings,
-    IconStar,
-    IconSwitchHorizontal, IconTrash
 } from "@tabler/icons-react";
 
 const firebaseConfig = {
@@ -33,7 +30,6 @@ const provider = new GoogleAuthProvider();
 const LoginButton = () => {
     const [user, setUser] = useState(auth.currentUser);
     const [userMenuOpened, setUserMenuOpened] = useState(false);
-    const theme: MantineTheme = useMantineTheme();
 
     const handleLogout = useCallback(() => {
         auth.signOut().then(() => {

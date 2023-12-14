@@ -1,11 +1,9 @@
-import cx from 'clsx';
 import {useCallback, useState} from 'react';
 import {
     Container,
     Group,
     Tabs,
     Burger,
-    useMantineTheme,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 
@@ -22,7 +20,6 @@ const tabs = [
 ];
 
 export function App() {
-    const theme = useMantineTheme();
     const [opened, { toggle }] = useDisclosure(false);
     const [activeTab, setActiveTab] = useState('Demo')
 
