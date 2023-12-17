@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
 import './Demo.css';
-import PageButton from './Components/PageButton';
-import Addition from './Components/Addition';
-import Interest from './Components/Interest';
-import Calculator from './Components/Calculator';
-import CashFlow from './Components/CashFlow';
+import PageButton from '../../Components/PageButton';
+import Addition from '../../Components/Addition';
+import Interest from '../../Components/Interest';
+import Calculator from '../../Components/Calculator';
+import CashFlow from '../../Components/CashFlow';
 
 function Demo() {
   const [page, setPage] = useState(0)

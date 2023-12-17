@@ -1,70 +1,26 @@
-import {useCallback, useState} from 'react';
 import {
-    Container,
-    Group,
-    Tabs,
-    Burger,
-} from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+    BrowserRouter as Router,
+    Route,
+    Link,
+    Navigate, Routes, BrowserRouter
+} from 'react-router-dom'
+import {Home} from "./Home";
+import {AuthContext, AuthProvider, LoginButton} from "./auth/firebase";
+import React, {useContext} from "react";
+import {LoginPage} from "./pages/LoginPage/LoginPage";
+import PrivateRoute from "./PrivateRoute";
 
-import classes from './HeaderTabs.module.css';
-import LoginButton from "./Auth/firebase";
-import Demo from "./Demo";
-
-
-const tabs = [
-    'Demo',
-    'Workflows',
-    'Templates',
-    'Functions'
-];
-
-export function App() {
-    const [opened, { toggle }] = useDisclosure(false);
-    const [activeTab, setActiveTab] = useState('Demo')
-
-    const handleTabChange = useCallback((tabName: string | null) => {
-        if(!tabName)
-            return;
-        setActiveTab(tabName);
-    }, []);
-
-    const items = tabs.map((tab) => (
-        <Tabs.Tab value={tab}>
-            {tab}
-        </Tabs.Tab>
-    ));
-
+function App() {
     return (
-        <div className={classes.header}>
-            <Container className={classes.mainSection} size="md">
-                <Group justify="space-between">
-
-                    <h1>SAP</h1>
-
-                    <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm" />
-
-                    <LoginButton></LoginButton>
-                </Group>
-            </Container>
-            <Container size="md">
-                <Tabs
-                    defaultValue="Demo"
-                    variant="outline"
-                    visibleFrom="sm"
-                    classNames={{
-                        root: classes.tabs,
-                        list: classes.tabsList,
-                        tab: classes.tab,
-                    }}
-                    onChange={handleTabChange}
-                >
-                    <Tabs.List>{items}</Tabs.List>
-                </Tabs>
-            </Container>
-            <div>
-                {activeTab === 'Demo' && <Demo />}
-            </div>
-        </div>
-    );
+        <BrowserRouter>
+            <Routes>
+                <Route path='/' element={<PrivateRoute/>}>
+                    <Route path='/' element={<Home/>}/>
+                </Route>
+                <Route path="/login" element={<LoginPage/>} />
+            </Routes>
+        </BrowserRouter>
+    )
 }
+
+export default App
