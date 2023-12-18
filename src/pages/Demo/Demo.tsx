@@ -5,6 +5,7 @@ import Addition from '../../Components/Addition';
 import Interest from '../../Components/Interest';
 import Calculator from '../../Components/Calculator';
 import CashFlow from '../../Components/CashFlow';
+import FuncBuilderMain from '../../Components/FunctionBuilder/FuncBuilderMain';
 
 function Demo() {
   const [page, setPage] = useState(0)

@@ -12,6 +12,7 @@ import {UserMenu} from "./auth/firebase";
 import Demo from "./pages/Demo/Demo";
 import {WEBSITE_NAME_ABBREV} from "./constants/constants";
 import Models from "./pages/Models/Models";
+import Functions from "./pages/Functions/Functions";
 
 
 const tabs = [
@@ -69,6 +70,7 @@ export function Home() {
             <div>
                 {activeTab === 'Demo' && <Demo/>}
                 {activeTab === 'Models' && <Models/>}
+                {activeTab === 'Functions' && <Functions/>}
             </div>
         </div>
 )
