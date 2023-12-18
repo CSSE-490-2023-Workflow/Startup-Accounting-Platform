@@ -11,13 +11,14 @@ import classes from './HeaderTabs.module.css';
 import {UserMenu} from "./auth/firebase";
 import Demo from "./pages/Demo/Demo";
 import {WEBSITE_NAME_ABBREV} from "./constants/constants";
+import Models from "./pages/Models/Models";
 
 
 const tabs = [
     'Demo',
-    'Workflows',
-    'Templates',
-    'Functions'
+    'Models',
+    'Functions',
+    'Workflows'
 ];
 
 export function Home() {
@@ -37,35 +38,39 @@ export function Home() {
     ));
 
     return (
-        <div className={classes.header}>
-            <Container className={classes.mainSection} size="md">
-                <Group justify="space-between">
+        <div>
+            <div className={classes.header}>
+                <Container className={classes.mainSection} size="md">
+                    <Group justify="space-between">
 
-                    <h1>{WEBSITE_NAME_ABBREV}</h1>
+                        <h1>{WEBSITE_NAME_ABBREV}</h1>
 
-                    <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm" />
+                        <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm"/>
 
-                    <UserMenu></UserMenu>
-                </Group>
-            </Container>
-            <Container size="md">
-                <Tabs
-                    defaultValue="Demo"
-                    variant="outline"
-                    visibleFrom="sm"
-                    classNames={{
-                        root: classes.tabs,
-                        list: classes.tabsList,
-                        tab: classes.tab,
-                    }}
-                    onChange={handleTabChange}
-                >
-                    <Tabs.List>{items}</Tabs.List>
-                </Tabs>
-            </Container>
+                        <UserMenu></UserMenu>
+                    </Group>
+                </Container>
+                <Container size="md">
+                    <Tabs
+                        defaultValue="Demo"
+                        variant="outline"
+                        visibleFrom="sm"
+                        classNames={{
+                            root: classes.tabs,
+                            list: classes.tabsList,
+                            tab: classes.tab,
+                        }}
+                        onChange={handleTabChange}
+                    >
+                        <Tabs.List>{items}</Tabs.List>
+                    </Tabs>
+                </Container>
+            </div>
             <div>
-                {activeTab === 'Demo' && <Demo />}
+                {activeTab === 'Demo' && <Demo/>}
+                {activeTab === 'Models' && <Models/>}
             </div>
         </div>
-    );
+)
+    ;
 }
