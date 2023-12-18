@@ -17,7 +17,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.func_interpreter_new = exports.func_interpreter_new_caller = exports.func_interpreter = exports.func_2 = void 0;
+exports.func_interpreter_new = exports.func_interpreter_new_caller = exports.func_2 = void 0;
 var datatype_def_1 = require("./datatype_def");
 var builtin_func_def_1 = require("./builtin_func_def");
 var error_def_1 = require("./error_def");
@@ -51,73 +51,79 @@ builtin_func_dict[0] = {param_count: 2, func : (p0: allowed_stack_components, p1
     return p0 + p1;
 }}
 */
-function func_interpreter(func) {
+//deprecated
+/*
+export function func_interpreter(func : custom_function, ...args: allowed_stack_components[]) {
+    
     // TODO: check that the length of the arrays match
-    var _a;
-    var args = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-        args[_i - 1] = arguments[_i];
-    }
+
     // check declared param types and actual param types
     if (args.length !== func.input_type.length)
-        throw new error_def_1.FuncArgError("function ".concat(func.func_name, ": expecting ").concat(func.input_type.length, " parameters, received ").concat(args.length));
-    var operations_local = [];
-    func.operations.forEach(function (val) { return operations_local.push(val); });
-    var param_idx_local = Object.assign([], func.param_idx);
-    var func_idx_local = Object.assign([], func.func_idx);
+        throw new FuncArgError(`function ${func.func_name}: expecting ${func.input_type.length} parameters, received ${args.length}`);
+    
+
+
+    let operations_local : allowed_stack_components[] = [];
+    func.operations.forEach(val => operations_local.push(val));
+    let param_idx_local = Object.assign([], func.param_idx)
+    let func_idx_local = Object.assign([], func.func_idx)
     //console.log(operations_local)
     //console.log(func.operations)
     // console.log(param_idx_local);
     // stores intermediate results
-    var val_stack = [];
+    let val_stack : allowed_stack_components[] = [];
+
     // stores values to return
-    var ret_vals = [];
+    let ret_vals : allowed_stack_components[] = [];
+
     while (operations_local.length > 0) {
-        console.log(val_stack);
-        var top_1 = operations_local.pop();
+        console.log(val_stack)
+        let top = operations_local.pop();
         // this two cannot be true at the same time
-        var is_func = func_idx_local.pop();
-        var is_param = param_idx_local.pop();
+        let is_func = func_idx_local.pop();
+        let is_param = param_idx_local.pop();
         if (is_func) {
-            console.log(top_1);
-            if (!(0, datatype_def_1.is_integer)(top_1)) {
-                throw new Error('Function index must be an integer');
+            console.log(top);
+            if (!is_integer(top)) {
+                throw new Error('Function index must be an integer')
             }
-            if (Number(top_1) === 0) { // return a value
-                var ret_val = val_stack.pop();
+            if (Number(top) === 0) { // return a value
+                let ret_val : allowed_stack_components | undefined = val_stack.pop();
                 if (ret_val === undefined)
-                    throw new Error("Error when evaluating return value");
+                    throw new Error(`Error when evaluating return value`);
                 // console.log(ret_val);
                 ret_vals.push(ret_val);
                 continue;
             }
-            var param_count = builtin_func_def_1.id_to_builtin_func[Number(top_1)].param_count;
+            let param_count = id_to_builtin_func[Number(top)].param_count;
             console.log(param_count);
-            var args_1 = [];
+            let args : allowed_stack_components[] = [];
             while (param_count > 0) {
-                var arg = val_stack.pop();
+                let arg = val_stack.pop();
                 if (arg === undefined)
-                    throw new Error("Error when evaluating built-in function ".concat(top_1));
-                args_1.push(arg);
+                    throw new Error(`Error when evaluating built-in function ${top}`);
+                args.push(arg);
                 param_count--;
             }
-            console.log(args_1);
-            var eval_res = (_a = builtin_func_def_1.id_to_builtin_func[Number(top_1)]).func.apply(_a, args_1);
+            console.log(args);
+            let eval_res : allowed_stack_components[] = id_to_builtin_func[Number(top)].func(...args);
             console.log(eval_res);
             val_stack.push(eval_res);
-        }
-        else if (is_param) {
-            if (!(0, datatype_def_1.is_integer)(top_1)) {
+        } else if (is_param) {
+            if (!is_integer(top)) {
                 throw new Error('Function argument index must be an integer');
             }
-            val_stack.push(args[Number(top_1)]);
+            val_stack.push(args[Number(top)]);
             console.log(val_stack);
         }
+
     }
     console.log(ret_vals);
     return ret_vals;
+
+    
 }
-exports.func_interpreter = func_interpreter;
+*/
 function func_interpreter_new_caller(func_str) {
     var args = [];
     for (var _i = 1; _i < arguments.length; _i++) {
@@ -139,23 +145,28 @@ function func_interpreter_new(func_str, ret) {
     if (func_content['type'] == 'builtin_function' && func_content['name'] == 'return') {
         console.log("in function, return");
         console.log(func_content['param'][0]);
-        var eval_res = func_interpreter_new.apply(void 0, __spreadArray([JSON.stringify(func_content['param'][0]), ret], args, false));
-        console.log('pushed', eval_res);
-        ret.push(eval_res);
-        return eval_res;
+        var ret_arr = [];
+        for (var _b = 0, _c = func_content['param']; _b < _c.length; _b++) {
+            var func_param = _c[_b];
+            var eval_res = func_interpreter_new.apply(void 0, __spreadArray([JSON.stringify(func_param), ret], args, false));
+            console.log('pushed', eval_res);
+            ret.push(eval_res);
+        }
+        return ret;
     }
     else if (func_content['type'] == 'builtin_function') {
         console.log("in function, not return");
         var param_arr = [];
-        for (var _b = 0, _c = func_content['param']; _b < _c.length; _b++) {
-            var func_param = _c[_b];
+        for (var _d = 0, _e = func_content['param']; _d < _e.length; _d++) {
+            var func_param = _e[_d];
             console.log('func_param', func_param);
             var func_param_eval_res = func_interpreter_new.apply(void 0, __spreadArray([JSON.stringify(func_param), ret], args, false));
             console.log('func_param_eval_res', func_param_eval_res);
             param_arr.push(func_param_eval_res);
         }
         var func_eval_res = (_a = builtin_func_def_1.name_to_builtin_func[func_content['name']]).func.apply(_a, param_arr);
-        return func_eval_res;
+        console.log(func_eval_res);
+        return func_eval_res.length == 1 ? func_eval_res[0] : func_eval_res;
     }
     else if (func_content['type'] == 'constant') {
         console.log('in constant');
@@ -170,14 +181,6 @@ function func_interpreter_new(func_str, ret) {
     }
 }
 exports.func_interpreter_new = func_interpreter_new;
-var test = require("./test.json");
-var test1 = require("./test1.json");
-var test2 = require("./test2.json");
-var test_func_str = JSON.stringify(test);
-var test_func_str1 = JSON.stringify(test1);
-var test_func_str2 = JSON.stringify(test2);
-//console.log(func_interpreter_new_caller(test_func_str1, 9, 11))
-console.log('final return value', func_interpreter_new_caller(test_func_str2, 0.1, 7, 4));
 /*
 let rate = 0.1;
 let arr : func_pt_series = [[1, 9], [2, 9], [3, 9]];

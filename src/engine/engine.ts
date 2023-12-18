@@ -44,7 +44,8 @@ builtin_func_dict[0] = {param_count: 2, func : (p0: allowed_stack_components, p1
 }}
 */
 
-
+//deprecated
+/*
 export function func_interpreter(func : custom_function, ...args: allowed_stack_components[]) {
     
     // TODO: check that the length of the arrays match
@@ -98,7 +99,7 @@ export function func_interpreter(func : custom_function, ...args: allowed_stack_
                 param_count--;
             }
             console.log(args);
-            let eval_res : allowed_stack_components = id_to_builtin_func[Number(top)].func(...args);
+            let eval_res : allowed_stack_components[] = id_to_builtin_func[Number(top)].func(...args);
             console.log(eval_res);
             val_stack.push(eval_res);
         } else if (is_param) {
@@ -115,6 +116,7 @@ export function func_interpreter(func : custom_function, ...args: allowed_stack_
 
     
 }
+*/
 
 
 export function func_interpreter_new_caller(func_str : string, ...args: any[]) {
@@ -129,10 +131,13 @@ export function func_interpreter_new(func_str : string, ret: allowed_stack_compo
     if (func_content['type'] == 'builtin_function' && func_content['name'] == 'return') {
         console.log("in function, return");
         console.log(func_content['param'][0]);
-        const eval_res : any = func_interpreter_new(JSON.stringify(func_content['param'][0]), ret, ...args);
-        console.log('pushed', eval_res);
-        ret.push(eval_res);
-        return eval_res;
+        const ret_arr : allowed_stack_components[] = [];
+        for (const func_param of func_content['param']) {
+            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), ret, ...args);
+            console.log('pushed', eval_res);
+            ret.push(eval_res);
+        }
+        return ret;
     } else if (func_content['type'] == 'builtin_function') {
         console.log("in function, not return");
         let param_arr : allowed_stack_components[] = [];
@@ -142,9 +147,10 @@ export function func_interpreter_new(func_str : string, ret: allowed_stack_compo
             console.log('func_param_eval_res', func_param_eval_res);
             param_arr.push(func_param_eval_res);
         }
-        const func_eval_res : allowed_stack_components = name_to_builtin_func[func_content['name']].func(...param_arr);
+        const func_eval_res : allowed_stack_components[] = name_to_builtin_func[func_content['name']].func(...param_arr);
+
         console.log(func_eval_res);
-        return func_eval_res;
+        return func_eval_res.length == 1 ? func_eval_res[0] : func_eval_res;
     } else if (func_content['type'] == 'constant') {
         console.log('in constant');
         return func_content['value'];
@@ -158,16 +164,6 @@ export function func_interpreter_new(func_str : string, ret: allowed_stack_compo
 }
 
 
-import * as test from './test.json';
-import * as test1 from './test1.json'
-import * as test2 from './test2.json'
-
-const test_func_str = JSON.stringify(test);
-const test_func_str1 = JSON.stringify(test1);
-const test_func_str2 = JSON.stringify(test2);
-
-//console.log(func_interpreter_new_caller(test_func_str1, 9, 11))
-console.log('final return value', func_interpreter_new_caller(test_func_str2, 0.1, 7, 4))
 
 
 /*
