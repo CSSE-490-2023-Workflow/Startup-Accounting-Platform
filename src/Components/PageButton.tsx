@@ -1,4 +1,5 @@
 import React, { ChangeEvent, useCallback, useState} from 'react';
+import {Button} from "@mantine/core";
 
 interface IProps {
     onClick: (val: number) => void
@@ -12,7 +13,7 @@ function PageButton(props: IProps) {
     onClick(value);
   }, [])
 
-  return <button onClick={localOnClick}>{name}</button>;
+  return <Button onClick={localOnClick}>{name}</Button>;
 }
 
 export default PageButton;
