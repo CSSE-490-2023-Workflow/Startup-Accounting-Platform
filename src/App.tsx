@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import logo from './logo.svg';
-import './App.css';
 import '@mantine/core/styles.css';
 import { createTheme, MantineProvider } from '@mantine/core';
 import PageButton from './Components/PageButton';
@@ -8,8 +7,13 @@ import Addition from './Components/Addition';
 import Interest from './Components/Interest';
 import Calculator from './Components/Calculator';
 import CashFlow from './Components/CashFlow';
-import LoginButton from "./Auth/firebase";
 import FuncBuilderMain from './Components/FunctionBuilder/FuncBuilderMain';
+import {Home} from "./Home";
+import {LoginPage} from "./pages/LoginPage/LoginPage";
+import PrivateRoute from "./PrivateRoute";
+import {
+  Route, Routes, BrowserRouter
+} from 'react-router-dom'
 
 const theme = createTheme({
   /** Put your mantine theme override here */
@@ -21,7 +25,16 @@ function App() {
     setPage(val)
   }, [])
   return (
-    <MantineProvider theme={theme}>
+    <div>
+    <BrowserRouter>
+            <Routes>
+                <Route path='/' element={<PrivateRoute/>}>
+                    <Route path='/' element={<Home/>}/>
+                </Route>
+                <Route path="/login" element={<LoginPage/>} />
+            </Routes>
+        </BrowserRouter>
+    {/* <MantineProvider theme={theme}>
       <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
@@ -36,12 +49,13 @@ function App() {
           {page == 2 && <Calculator/>}
           {page == 3 && <CashFlow/>}
           {page == 4 && <FuncBuilderMain/>}
-          <LoginButton/>
         </header>
       </div>
-    </MantineProvider>
+    </MantineProvider> */}
+    </div>
     
   );
 }
 
-export default App;
+
+export default App
