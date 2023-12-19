@@ -5,6 +5,7 @@ import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
 import '../../Styles/FuncBuilderBlk.css'
+//import '../../lib/font-awesome-4.7.0/css/font-awesome.min.css'
 import * as utils from './utils.json'
 import OutputBlock from './OutputBlock';
 

@@ -14,5 +14,5 @@ const CardPage: React.FC<CardPageProps> = ({ cards }) => {
         </div>
     )
 }
-
+    
 export default CardPage
