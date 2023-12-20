@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import NumberInput from './NumberInput';
-import { func_interpreter, func_2, func_interpreter_new_caller } from '../engine/engine'
+import { func_2, func_interpreter_new_caller } from '../engine/engine'
 import { XYPlot, XAxis, YAxis, HorizontalGridLines, LineSeries, HorizontalBarSeries, VerticalBarSeries } from 'react-vis';
 
 

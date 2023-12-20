@@ -1,12 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.declared_type_verifier = exports.data_types = exports.is_integer = exports.is_number = void 0;
+exports.data_type_name_to_enum = exports.data_type_enum_name_pairs = exports.declared_type_verifier = exports.data_types = exports.is_integer = exports.is_number = void 0;
 var data_types;
 (function (data_types) {
     data_types[data_types["dt_number"] = 0] = "dt_number";
     data_types[data_types["dt_func_pt_series"] = 1] = "dt_func_pt_series";
     data_types[data_types["dt_series"] = 2] = "dt_series";
 })(data_types || (exports.data_types = data_types = {}));
+var data_type_enum_name_pairs = [
+    [data_types.dt_number, "Number"],
+    [data_types.dt_func_pt_series, "Function Points"],
+    [data_types.dt_series, "Series"]
+];
+exports.data_type_enum_name_pairs = data_type_enum_name_pairs;
+var data_type_name_to_enum = {};
+exports.data_type_name_to_enum = data_type_name_to_enum;
+data_type_name_to_enum["Number"] = data_types.dt_number;
+data_type_name_to_enum["Function Points"] = data_types.dt_func_pt_series;
+data_type_name_to_enum["Series"] = data_types.dt_series;
 //type checking function for each data type
 var declared_type_verifier = {
     0: function (to_check) {
