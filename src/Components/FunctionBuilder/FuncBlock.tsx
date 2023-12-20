@@ -29,6 +29,9 @@ function FuncBlock(props: any) {
   // the side output nodes are on
   const [ outputNodeDir, setOutputNodeDir ] = useState(direction.right)
 
+  const [ showSideMenu, setShowSideMenu ] = useState([true, true, true, true]);
+  //const [ showSideMenu, setShowSideMenu ] = useState(false);
+
   const changeParamNodeDir : any = useCallback((newDir: direction) => {
     setParamNodeDir(newDir);
   }, [setParamNodeDir])
@@ -112,7 +115,6 @@ function FuncBlock(props: any) {
     )
   })
 
-
   const sideMenus = nodeMenuDir.map((dir) => {
 
     const sideMenuSelections: any = (
@@ -123,7 +125,12 @@ function FuncBlock(props: any) {
               label="Inputs"
               variant="subtle"
               className='node-menu-item'
-              onClick={() => {console.log('dir changed', dir); changeParamNodeDir(dir)}}
+              onClick={() => {
+                changeParamNodeDir(dir);
+                let tmp = showSideMenu.map(e => false);
+                setShowSideMenu(tmp);
+                
+              }}
               active
             />  
             <hr className='solid-divider' />
@@ -132,28 +139,40 @@ function FuncBlock(props: any) {
               label="Outputs"
               variant="subtle"
               className='node-menu-item'
-              onClick={() => changeOutputNodeDir(dir)}
+              onClick={() => {
+                
+                changeParamNodeDir(dir);
+                let tmp = showSideMenu.map(e => false);
+                setShowSideMenu(tmp);
+                
+              }}
               active
             />
           </div>  
         </>
     )
 
-    const menuStyle: any = {};
+    const sideMenuBtnWrapperStyle: any = {};
     const sideMenuBtnStyle : any = {};
+    const sideMenuStyle : any = {
+      padding: '5px'
+    };
+    let menuDir: any = '';
     sideMenuBtnStyle.svgW = 100;
     sideMenuBtnStyle.svgH = 10;
 
     if (dir === direction.bot || dir === direction.top) {
-      menuStyle.width = '100';
-      menuStyle.height = '10';
+      sideMenuBtnWrapperStyle.width = '100';
+      sideMenuBtnWrapperStyle.height = '10';
       sideMenuBtnStyle.svgW = '100';
       sideMenuBtnStyle.svgH = '10';
-      menuStyle.position = 'absolute';
-      menuStyle.left = '26%';
-      menuStyle.backgroundColor = '#fff';
+      sideMenuBtnWrapperStyle.position = 'absolute';
+      sideMenuBtnWrapperStyle.left = '26%';
+      sideMenuBtnWrapperStyle.backgroundColor = '#fff';
       if (dir === direction.bot) {
-        menuStyle.bottom = '10px';
+        menuDir = 'bottom';
+        sideMenuStyle.transform = 'translateX(50px)'
+        sideMenuBtnWrapperStyle.bottom = '10px';
         sideMenuBtnStyle.line1x1 = 75;
         sideMenuBtnStyle.line1y1 = 2;
         sideMenuBtnStyle.line1x2 = 50;
@@ -163,7 +182,9 @@ function FuncBlock(props: any) {
         sideMenuBtnStyle.line2x2 = 50;
         sideMenuBtnStyle.line2y2 = 8;
       } else { // at top
-        menuStyle.top = '0px';
+        menuDir = 'top';
+        sideMenuStyle.transform = 'translateX(50px)'
+        sideMenuBtnWrapperStyle.top = '0px';
         sideMenuBtnStyle.line1x1 = 50;
         sideMenuBtnStyle.line1y1 = 2;
         sideMenuBtnStyle.line1x2 = 75;
@@ -175,16 +196,17 @@ function FuncBlock(props: any) {
 
       }
     } else { // left or right
-      menuStyle.width = '10';
-      menuStyle.height = '100';
+      sideMenuBtnWrapperStyle.width = '10';
+      sideMenuBtnWrapperStyle.height = '100';
       sideMenuBtnStyle.svgW = '10';
       sideMenuBtnStyle.svgH = '100'; 
-      menuStyle.height = '100';
-      menuStyle.position = 'absolute';
-      menuStyle.top = '18%';
-      menuStyle.backgroundColor = '#fff';
+      sideMenuBtnWrapperStyle.height = '100';
+      sideMenuBtnWrapperStyle.position = 'absolute';
+      sideMenuBtnWrapperStyle.top = '18%';
+      sideMenuBtnWrapperStyle.backgroundColor = '#fff';
       if (dir === direction.left) {
-        menuStyle.left = '0px';
+        menuDir = 'left';
+        sideMenuBtnWrapperStyle.left = '0px';
         sideMenuBtnStyle.line1x1 = 8;
         sideMenuBtnStyle.line1y1 = 25;
         sideMenuBtnStyle.line1x2 = 2;
@@ -194,7 +216,8 @@ function FuncBlock(props: any) {
         sideMenuBtnStyle.line2x2 = 2;
         sideMenuBtnStyle.line2y2 = 50;
       } else { // right
-        menuStyle.right = '10px';
+        menuDir = 'right';
+        sideMenuBtnWrapperStyle.right = '10px';
         sideMenuBtnStyle.line1x1 = 2;
         sideMenuBtnStyle.line1y1 = 25;
         sideMenuBtnStyle.line1x2 = 8;
@@ -210,10 +233,24 @@ function FuncBlock(props: any) {
     const sideMenu = (
       <>
         <Group justify="center" className='node-menu'>
-          <HoverCard width={100} shadow="md" position='top' closeDelay={100}>
-            <HoverCard.Target>
-              <div className='node-menu-btn' style={menuStyle}>
-                <svg width={sideMenuBtnStyle.svgW} height={sideMenuBtnStyle.svgH}>
+          <HoverCard width={100} shadow="md" position={menuDir} closeDelay={100} disabled={showSideMenu[dir] ? false : true}>
+            <HoverCard.Target >
+              <div className='node-menu-btn' style={sideMenuBtnWrapperStyle}>
+                <svg 
+                  width={sideMenuBtnStyle.svgW} 
+                  height={sideMenuBtnStyle.svgH} 
+                  onMouseEnter={() => {
+
+                    //let tmp = showSideMenu.map(e => true);
+                    //setShowSideMenu(tmp);
+                    
+                    showSideMenu[dir] = true;
+                    setShowSideMenu([...showSideMenu]);
+                    
+                    //showSideMenu[dir] = true;
+                    //setShowSideMenu(showSideMenu);
+                  }}
+                >
                   <line 
                     x1={sideMenuBtnStyle.line1x1} 
                     y1={sideMenuBtnStyle.line1y1} 
@@ -231,9 +268,7 @@ function FuncBlock(props: any) {
                 </svg>
               </div>
             </HoverCard.Target>
-            <HoverCard.Dropdown style={{
-              padding: '5px',
-            }}>
+            <HoverCard.Dropdown style={sideMenuStyle} className='side-menu-dropdown'>
               {sideMenuSelections}
             </HoverCard.Dropdown>
           </HoverCard>
