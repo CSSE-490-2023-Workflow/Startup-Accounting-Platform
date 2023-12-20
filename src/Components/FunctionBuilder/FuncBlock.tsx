@@ -213,7 +213,7 @@ function FuncBlock(props: any) {
           <HoverCard width={100} shadow="md" position='top' closeDelay={100}>
             <HoverCard.Target>
               <div className='node-menu-btn' style={menuStyle}>
-                <svg width={sideMenuBtnStyle.svgW} height={sideMenuBtnStyle.svgH}>
+                <svg width={sideMenuBtnStyle.svgW} height={sideMenuBtnStyle.svgH} className='func-svg'>
                   <line 
                     x1={sideMenuBtnStyle.line1x1} 
                     y1={sideMenuBtnStyle.line1y1} 
