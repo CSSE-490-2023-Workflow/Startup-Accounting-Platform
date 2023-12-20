@@ -115,6 +115,16 @@ var id_to_builtin_func = {
             }
             return [ser];
         }
+    },
+
+    7: {
+        param_count: 1,
+        func_name: 'test_func',
+        param_types: [datatype_def_1.data_types.dt_number],
+        output_types: [datatype_def_1.data_types.dt_number, datatype_def_1.data_types.dt_number, datatype_def_1.data_types.dt_number],
+        func: function() {
+            return null;
+        }
     }
 };
 exports.id_to_builtin_func = id_to_builtin_func;
