@@ -141,7 +141,7 @@ function FuncBlock(props: any) {
               className='node-menu-item'
               onClick={() => {
                 
-                changeParamNodeDir(dir);
+                changeOutputNodeDir(dir);
                 let tmp = showSideMenu.map(e => false);
                 setShowSideMenu(tmp);
                 
@@ -171,7 +171,7 @@ function FuncBlock(props: any) {
       sideMenuBtnWrapperStyle.backgroundColor = '#fff';
       if (dir === direction.bot) {
         menuDir = 'bottom';
-        sideMenuStyle.transform = 'translateX(50px)'
+        sideMenuStyle.transform = 'translate(50px, 15px)'
         sideMenuBtnWrapperStyle.bottom = '10px';
         sideMenuBtnStyle.line1x1 = 75;
         sideMenuBtnStyle.line1y1 = 2;
@@ -206,6 +206,7 @@ function FuncBlock(props: any) {
       sideMenuBtnWrapperStyle.backgroundColor = '#fff';
       if (dir === direction.left) {
         menuDir = 'left';
+        sideMenuStyle.transform = 'translateY(50px)'
         sideMenuBtnWrapperStyle.left = '0px';
         sideMenuBtnStyle.line1x1 = 8;
         sideMenuBtnStyle.line1y1 = 25;
@@ -217,6 +218,7 @@ function FuncBlock(props: any) {
         sideMenuBtnStyle.line2y2 = 50;
       } else { // right
         menuDir = 'right';
+        sideMenuStyle.transform = 'translateY(50px)'
         sideMenuBtnWrapperStyle.right = '10px';
         sideMenuBtnStyle.line1x1 = 2;
         sideMenuBtnStyle.line1y1 = 25;
