@@ -10,7 +10,9 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_addition',
         param_types : [data_types.dt_number, data_types.dt_number],
+        param_names : ['addend_1', 'addend_2'],
         output_types : [data_types.dt_number],
+        output_names : ['sum'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 0: scalar_addition receives two scalars as parameters')
@@ -23,7 +25,9 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_subtraction',
         param_types : [data_types.dt_number, data_types.dt_number],
+        param_names : ['minuend', 'subtrahend'],
         output_types : [data_types.dt_number],
+        output_names : ['difference'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 1: scalar_substrating receives two scalars as parameters')
@@ -36,7 +40,9 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_multiplication',
         param_types : [data_types.dt_number, data_types.dt_number],
+        param_names : ['multiplicand', 'multiplier'],
         output_types : [data_types.dt_number],
+        output_names : ['product'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 2: scalar_multiplication receives two scalars as parameters')
@@ -49,7 +55,9 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_division',
         param_types : [data_types.dt_number, data_types.dt_number],
+        param_names : ['dividend', 'divisor'],
         output_types : [data_types.dt_number],
+        output_names : ['quotient'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 3: scalar_division receives two scalars as parameters')
@@ -62,7 +70,9 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
         param_count: 2, 
         func_name : 'number_to_function_points',
         param_types : [data_types.dt_number, data_types.dt_number],
+        param_names : ['value', 'length'],
         output_types : [data_types.dt_func_pt_series],
+        output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_integer(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 5: number_to_function_points receives one scalar and one integer as parameters')
@@ -86,7 +96,9 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
         param_count : 2,
         func_name : 'apply_interest_rate',
         param_types : [data_types.dt_number, data_types.dt_func_pt_series],
+        param_names : ['interest rate', 'func pts'],
         output_types : [data_types.dt_func_pt_series],
+        output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
             if (!declared_type_verifier[0](args[0]) || !declared_type_verifier[1](args[1]))
                 throw new FuncArgError('Built in function 6: apply_interest_rate receives one scalar and one function points series as parameters');
@@ -96,6 +108,18 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
                 ser[i][1] = (1 + rate) * ser[i - 1][1];
             }
             return [ser];
+        }
+    },
+
+    7: {
+        param_count: 1,
+        func_name: 'test_func',
+        param_types : [data_types.dt_number],
+        param_names : ['param 1'],
+        output_types: [data_types.dt_number, data_types.dt_number, data_types.dt_number],
+        output_names : ['output 1', 'output 2', 'output 3'],
+        func: (...args : allowed_stack_components[]) => {
+            return [1];
         }
     }
 
@@ -107,7 +131,9 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_addition',
         param_types : [data_types.dt_number, data_types.dt_number],
+        param_names : ['addend_1', 'addend_2'],
         output_types : [data_types.dt_number],
+        output_names : ['sum'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 0: scalar_addition receives two scalars as parameters')
@@ -120,7 +146,9 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_subtraction',
         param_types : [data_types.dt_number, data_types.dt_number],
+        param_names : ['minuend', 'subtrahend'],
         output_types : [data_types.dt_number],
+        output_names : ['difference'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 1: scalar_substrating receives two scalars as parameters')
@@ -133,7 +161,9 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_multiplication',
         param_types : [data_types.dt_number, data_types.dt_number],
+        param_names : ['multiplicand', 'multiplier'],
         output_types : [data_types.dt_number],
+        output_names : ['product'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 2: scalar_multiplication receives two scalars as parameters')
@@ -146,7 +176,9 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
         param_count: 2, 
         func_name : 'scalar_division',
         param_types : [data_types.dt_number, data_types.dt_number],
+        param_names : ['dividend', 'divisor'],
         output_types : [data_types.dt_number],
+        output_names : ['quotient'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 3: scalar_division receives two scalars as parameters')
@@ -154,19 +186,13 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
         }
     },
 
-    /**
-     * Creates an array of function points. X coordinates will be in range(0, param1). Y coordinates will be param0. 
-     * Param 0 : the value to repeat
-     * Param 1 : how many points to generate
-     * Example:
-     *  calling number_to_function_points(9.9, 3)
-     *  returns [(0, 9.9), (1, 9.9), (2, 9.9)]
-     */
     'scalar_to_function_points' : {
         param_count: 2, 
-        func_name : 'scalar_to_function_points',
+        func_name : 'number_to_function_points',
         param_types : [data_types.dt_number, data_types.dt_number],
+        param_names : ['value', 'length'],
         output_types : [data_types.dt_func_pt_series],
+        output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_integer(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 5: number_to_function_points receives one scalar and one integer as parameters')
@@ -185,16 +211,13 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
         }
     },
 
-    /**
-     * Given an array of function points, set y coordinate of each point to (1 + param0) * (y coordinate of the previous point)
-     * Param 0 : interest rate
-     * Param 2 : an array of function points
-     */
     'apply_interest_rate' : {
         param_count : 2,
         func_name : 'apply_interest_rate',
         param_types : [data_types.dt_number, data_types.dt_func_pt_series],
+        param_names : ['interest rate', 'func pts'],
         output_types : [data_types.dt_func_pt_series],
+        output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
             if (!declared_type_verifier[0](args[0]) || !declared_type_verifier[1](args[1]))
                 throw new FuncArgError('Built in function 6: apply_interest_rate receives one scalar and one function points series as parameters');
@@ -205,6 +228,6 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
             }
             return [ser];
         }
-    }
+    },
 
 }
