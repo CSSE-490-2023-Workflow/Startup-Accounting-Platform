@@ -3,6 +3,7 @@ import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, NavLink, Divider} from '@mantine/core';
 import { IconBoxMargin } from '@tabler/icons-react';
 import Draggable from 'react-draggable';
+import { data_types } from '../../engine/datatype_def';
 
 enum direction {
   'top'= 0,
@@ -10,10 +11,25 @@ enum direction {
   'left',
   'right'
 }
+interface funcInfo {
+  id: number;
+  name: string;
+}
+
+interface FuncProps {
+  blockId: number;
+  funcId: number;
+  funcName: string;
+  funcOptions: funcInfo[];
+  paramTypes: data_types[];
+  outputTypes: data_types[];
+  updateBlkCB: (funcBlockId: number, funcId: number) => void;
+  removeBlkCB:  (id: number) => void;
+}
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
-function FuncBlock(props: any) {
+function FuncBlock(props: FuncProps) {
   const [ blkId, funcId, funcName, funcOptions, paramTypes, outputTypes, editCB, removeCB ] = [props.blockId, props.funcId, props.funcName, props.funcOptions, props.paramTypes, props.outputTypes, props.updateBlkCB, props.removeBlkCB]
 
   const paramCount: number = paramTypes.length;
@@ -57,8 +73,8 @@ function FuncBlock(props: any) {
     editCB(blkId, e.target.value);
   }
 
-  const func_options = funcOptions.map(([id, func_name] : [number, string]) => (
-    <option value={id}>{func_name}</option>
+  const func_options = funcOptions.map(({id, name} : funcInfo) => (
+    <option value={id}>{name}</option>
   ))
 
   function handleRemoveBlock(e: any) {
@@ -250,37 +266,38 @@ const dragRef = useRef<Draggable>(null);
 const boxRef = useRef<HTMLDivElement>(null);
   return (
     <>
-      {/* <Draggable
-        ref={dragRef}
-        onDrag={e => {
-          // console.log(e);
-          props.setArrows((arrows) => [...arrows]);
-        }}
-        >
-        <div
-          id={props.boxId}
-          ref={boxRef}
-          style={{
-              border: "1px solid black",
-              position: "relative",
-              padding: "20px 10px"
-            }}
-          onDragOver={e => e.preventDefault()}
-          onDrop={e => {
-            if (e.dataTransfer.getData("arrow") === props.boxId) {
-              console.log(e.dataTransfer.getData("arrow"), props.boxId);
-            } else {
-              const refs = { start: e.dataTransfer.getData("arrow"), end: props.boxId };
-              props.addArrow(refs);
-              console.log("droped!", refs);
-            }
-          }}
-        >
-          {props.text}
-          <ConnectPointsWrapper boxId={props.boxId} handler={props.handler} dragRef={dragRef} boxRef={boxRef} />
-        </div>
-      </Draggable>
-    ); */}
+   {//   <Draggable
+    //     ref={dragRef}
+    //     onDrag={e => {
+    //       // console.log(e);
+    //       props.setArrows((arrows) => [...arrows]);
+    //     }}
+    //     >
+    //     <div
+    //       id={props.boxId}
+    //       ref={boxRef}
+    //       style={{
+    //           border: "1px solid black",
+    //           position: "relative",
+    //           padding: "20px 10px"
+    //         }}
+    //       onDragOver={e => e.preventDefault()}
+    //       onDrop={e => {
+    //         if (e.dataTransfer.getData("arrow") === props.boxId) {
+    //           console.log(e.dataTransfer.getData("arrow"), props.boxId);
+    //         } else {
+    //           const refs = { start: e.dataTransfer.getData("arrow"), end: props.boxId };
+    //           props.addArrow(refs);
+    //           console.log("droped!", refs);
+    //         }
+    //       }}
+    //     >
+    //       {props.text}
+    //       <ConnectPointsWrapper boxId={props.boxId} handler={props.handler} dragRef={dragRef} boxRef={boxRef} />
+    //     </div>
+    //   </Draggable>
+    // );
+   }
       <div className='block-container'>
       <Card className="func-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder>
         <Card.Section className='block-header'>

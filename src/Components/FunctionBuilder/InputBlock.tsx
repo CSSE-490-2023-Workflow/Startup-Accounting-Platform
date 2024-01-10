@@ -2,8 +2,16 @@ import React, { useCallback, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
 import { Card, Input, CloseButton, CardSection } from '@mantine/core';
 
+interface InputProps {
+  blockId: number;
+  inputName: string;
+  inputType: data_types;
+  inputTypeOptions: [data_types, string][];
+  updateBlkCB: (funcBlockId: number, inputName: string, inputType: data_types) => void;
+  removeBlkCB:  (id: number) => void;
+}
 
-function InputBlock(props: any) {
+function InputBlock(props: InputProps) {
   const [ id, name, type, typeOptions, editCB, removeCB ] = [props.blockId, props.inputName, props.inputType, props.inputTypeOptions, props.updateBlkCB, props.removeBlkCB]
   const [inputName, setName] = useState(name)
   const [inputType, setType] = useState(type)

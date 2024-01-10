@@ -1,6 +1,14 @@
 import React, { useCallback, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
 
+interface OutProps {
+  blockId: number;
+  outputName: string;
+  outputType: data_types;
+  updateBlkCB: (blkId: number, outputName: string, outputType: data_types) => void;
+  removeBlkCB: (blkId: number) => void;
+}
+
 function OutputBlock(props: any) {
   const [ id, name, editCB, removeCB ] = [props.blockId, props.outputName, props.updateBlkCB, props.removeBlkCB]
   const [ outputName, setName] = useState(name)
