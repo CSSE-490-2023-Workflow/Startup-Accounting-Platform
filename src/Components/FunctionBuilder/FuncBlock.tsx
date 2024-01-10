@@ -1,10 +1,12 @@
 import React, { ChangeEvent, useCallback, useRef, useState} from 'react';
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
-import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, NavLink, Divider} from '@mantine/core';
+import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, NavLink, Divider, Popover} from '@mantine/core';
 import { IconBoxMargin } from '@tabler/icons-react';
 import Draggable from 'react-draggable';
 import { data_types } from '../../engine/datatype_def';
 import ConnectPointsWrapper from '../ConnectPointsWrapper';
+
+const NODE_NAME_POPOVER_WIDTH : any = '40px';
 
 enum direction {
   'top'= 0,
@@ -55,6 +57,11 @@ function FuncBlock(props: FuncProps) {
   // the side output nodes are on
   const [ outputNodeDir, setOutputNodeDir ] = useState(direction.right)
 
+  const [ showParamNodeName, setShowParamNodeName ] = useState(false);
+
+  const [ showOutputNodeName, setShowOutputNodeName ] = useState(false);
+
+
   const changeParamNodeDir : any = useCallback((newDir: direction) => {
     setParamNodeDir(newDir);
   }, [setParamNodeDir])
@@ -68,11 +75,11 @@ function FuncBlock(props: FuncProps) {
   
 
   for (let i = 1; i <= paramCount; i++) {
-    paramNodePos.push(String(paramNodeInc * i) + '%')
+    paramNodePos.push(String(paramNodeInc * i - 4) + '%')
   }
 
   for (let i = 1; i <= outputCount; i++) {
-    outputNodePos.push(String(outputNodeInc * i) + '%')
+    outputNodePos.push(String(outputNodeInc * i - 4) + '%')
   }
 
   const [func, setFunc] = useState(funcId);
@@ -90,50 +97,141 @@ function FuncBlock(props: FuncProps) {
     removeCB(blkId);
   }
 
-  const paramNodes = paramNodePos.map((offset: string) => {
+  const paramNodes = paramNodePos.map((offset: string, index: number) => {
     let node : any = null;
     const nodeStyle : any = {};
+    let faIcon : any = '';
+    let faIconStyle : any = {};
+    let nodeNamePos : any = '';
+    let nodeNameWidth : any = '100px';
+    let nodeNameStyle : any = {};
+    nodeNameStyle.padding = '1px';
+    nodeNameStyle.fontSize = '12px';
+    nodeNameStyle.wordWrap = 'break-word';
     if (paramNodeDir === direction.left) {
       nodeStyle.top = offset;
       nodeStyle.left = '0';
+      nodeStyle.width = '10px';
+      nodeStyle.height = '15px';
+      nodeNamePos = 'left';
+      nodeNameStyle.textAlign = 'right';
+      faIconStyle.transform = 'translate(0px, -5px)'
+      faIcon = <><i className="fa-solid fa-chevron-right fa-xs connection-handle-icon" style={faIconStyle}></i></>
     } else if (paramNodeDir === direction.right) {
       nodeStyle.top = offset;
       nodeStyle.right = '0';
+      nodeStyle.width = '10px';
+      nodeStyle.height = '15px';
+      nodeNamePos = 'right';
+      nodeNameStyle.textAlign = 'left';
+      faIconStyle.transform = 'translate(0px, -5px)'
+      faIcon = <><i className="fa-solid fa-chevron-left fa-xs connection-handle-icon" style={faIconStyle}></i></>
     } else if (paramNodeDir === direction.bot) {
       nodeStyle.left = offset;
       nodeStyle.bottom = '0';
+      nodeStyle.width = '15px';
+      nodeStyle.height = '10px';
+      nodeNamePos = 'bottom';
+      nodeNameWidth = NODE_NAME_POPOVER_WIDTH;
+      faIconStyle.transform = 'translate(0px, -7px)'
+      faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
     } else {
       nodeStyle.left = offset;
       nodeStyle.top = '0';
+      nodeStyle.width = '15px';
+      nodeStyle.height = '10px';
+      nodeNamePos = 'top';
+      nodeNameWidth = NODE_NAME_POPOVER_WIDTH;
+      faIconStyle.transform = 'translate(0px, -7px)'
+      faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
     return (
       <>
-        <div className='connection-handle' style={nodeStyle}>
-        </div>
+        <Popover opened={showParamNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
+          dropdown: nodeNameStyle
+        }}> 
+          <Popover.Target>
+            <div className='connection-handle connection-handle-in' 
+              style={nodeStyle} 
+              onMouseEnter={() => {setShowParamNodeName(true)}}
+              onMouseLeave={() => {setShowParamNodeName(false)}}
+            >
+              {faIcon}
+            </div>
+          </Popover.Target>
+          <Popover.Dropdown>
+            {paramNames[index]}
+          </Popover.Dropdown>
+        </Popover>
       </>
     )
   })
 
-  const outputNodes = outputNodePos.map((offset: string) => {
+  const outputNodes = outputNodePos.map((offset: string, index: number) => {
     let node : any = null;
     const nodeStyle : any = {};
+    let faIcon : any = '';
+    let faIconStyle : any = {};
+    let nodeNamePos : any = '';
+    let nodeNameWidth : any = '100px';
+    let nodeNameStyle : any = {};
+    nodeNameStyle.padding = '0';
+    nodeNameStyle.fontSize = '12px';
     if (outputNodeDir === direction.left) {
       nodeStyle.top = offset;
       nodeStyle.left = '0';
+      nodeStyle.width = '10px';
+      nodeStyle.height = '15px';
+      nodeNamePos = 'left';
+      nodeNameStyle.textAlign = 'right';
+      faIconStyle.transform = 'translate(0px, -5px)'
+      faIcon = <><i className="fa-solid fa-chevron-left fa-xs connection-handle-icon" style={faIconStyle}></i></>
     } else if (outputNodeDir === direction.right) {
       nodeStyle.top = offset;
       nodeStyle.right = '0';
+      nodeStyle.width = '10px';
+      nodeStyle.height = '15px';
+      nodeNamePos = 'right';
+      nodeNameStyle.textAlign = 'left';
+      faIconStyle.transform = 'translate(0px, -5px)'
+      faIcon = <><i className="fa-solid fa-chevron-right fa-xs connection-handle-icon" style={faIconStyle}></i></>
     } else if (outputNodeDir === direction.bot) {
       nodeStyle.left = offset;
       nodeStyle.bottom = '0';
+      nodeStyle.width = '15px';
+      nodeStyle.height = '10px';
+      nodeNamePos = 'bottom';
+      nodeNameWidth = NODE_NAME_POPOVER_WIDTH;
+      faIconStyle.transform = 'translate(0px, -7px)'
+      faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
     } else {
       nodeStyle.left = offset;
       nodeStyle.top = '0';
+      nodeStyle.width = '15px';
+      nodeStyle.height = '10px';
+      nodeNamePos = 'top';
+      nodeNameWidth = NODE_NAME_POPOVER_WIDTH;
+      faIconStyle.transform = 'translate(0px, -7px)'
+      faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
     return (
       <>
-        <div className='connection-handle' style={nodeStyle}>
-        </div>
+        <Popover opened={showOutputNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
+          dropdown: nodeNameStyle
+        }}> 
+          <Popover.Target>
+            <div className='connection-handle connection-handle-out' 
+              style={nodeStyle} 
+              onMouseEnter={() => {setShowOutputNodeName(true)}}
+              onMouseLeave={() => {setShowOutputNodeName(false)}}
+            >
+              {faIcon}
+            </div>
+          </Popover.Target>
+          <Popover.Dropdown>
+            {outputNames[index]}
+          </Popover.Dropdown>
+        </Popover>
       </>
     )
   })
@@ -321,7 +419,7 @@ const boxRef = useRef<HTMLDivElement>(null);
       {outputNodes}
       {sideMenus}
       
-      <ConnectPointsWrapper boxId={blkId+""} handler={outputNodeDir} dragRef={dragRef} boxRef={boxRef} />
+      {/* <ConnectPointsWrapper boxId={blkId+""} handler={outputNodeDir} dragRef={dragRef} boxRef={boxRef} /> */}
       <ConnectPointsWrapper boxId={blkId+""} handler={paramNodeDir} dragRef={dragRef} boxRef={boxRef} />
       </div>
       </Draggable>
