@@ -1,6 +1,6 @@
 import React, { useCallback, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
-import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard} from '@mantine/core';
+import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover} from '@mantine/core';
 
 enum direction {
   'top'= 0,
@@ -21,9 +21,12 @@ function OutputBlock(props: any) {
 
   // the side output nodes are on
   const [ paramNodeDir, setParamNodeDir ] = useState(direction.left)
-
+  
+  // whether to show side menus 
   const [ showSideMenu, setShowSideMenu ] = useState([true, true, true, true]);
-  //const [ showSideMenu, setShowSideMenu ] = useState(false);
+
+  // controlls node name popover state
+  const [ showNodeName, setShowNodeName ] = useState(false);
 
   // Is this even necessary?
   const changeParamNodeDir : any = useCallback((newDir: direction) => {
@@ -34,29 +37,75 @@ function OutputBlock(props: any) {
   const nodeMenuDir = allDirs.filter((dir) => dir !== paramNodeDir);
 
   for (let i = 1; i <= paramCount; i++) {
-    paramNodePos.push(String(paramNodeInc * i) + '%')
+    paramNodePos.push(String(paramNodeInc * i - 4) + '%')
   }
 
-  const paramNodes = paramNodePos.map((offset: string) => {
+  const paramNodes = paramNodePos.map((offset: string, index: number) => {
     let node : any = null;
     const nodeStyle : any = {};
+    let faIcon : any = '';
+    let faIconStyle : any = {};
+    let nodeNamePos : any = '';
+    let nodeNameWidth : any = '100px';
+    let nodeNameStyle : any = {};
+    nodeNameStyle.padding = '1px';
+    nodeNameStyle.fontSize = '12px';
+    nodeNameStyle.wordWrap = 'break-word';
     if (paramNodeDir === direction.left) {
       nodeStyle.top = offset;
       nodeStyle.left = '0';
+      nodeStyle.width = '10px';
+      nodeStyle.height = '15px';
+      nodeNamePos = 'left';
+      nodeNameStyle.textAlign = 'right';
+      faIconStyle.transform = 'translate(0px, -5px)'
+      faIcon = <><i className="fa-solid fa-chevron-right fa-xs connection-handle-icon" style={faIconStyle}></i></>
     } else if (paramNodeDir === direction.right) {
       nodeStyle.top = offset;
       nodeStyle.right = '0';
+      nodeStyle.width = '10px';
+      nodeStyle.height = '15px';
+      nodeNamePos = 'right';
+      nodeNameStyle.textAlign = 'left';
+      faIconStyle.transform = 'translate(0px, -5px)'
+      faIcon = <><i className="fa-solid fa-chevron-left fa-xs connection-handle-icon" style={faIconStyle}></i></>
     } else if (paramNodeDir === direction.bot) {
       nodeStyle.left = offset;
       nodeStyle.bottom = '0';
+      nodeStyle.width = '15px';
+      nodeStyle.height = '10px';
+      nodeNamePos = 'bottom';
+      nodeNameWidth = '50px';
+      faIconStyle.transform = 'translate(0px, -7px)'
+      faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
     } else {
       nodeStyle.left = offset;
       nodeStyle.top = '0';
+      nodeStyle.width = '15px';
+      nodeStyle.height = '10px';
+      nodeNamePos = 'top';
+      nodeNameWidth = '50px';
+      faIconStyle.transform = 'translate(0px, -7px)'
+      faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
     return (
       <>
-        <div className='connection-handle' style={nodeStyle}>
-        </div>
+        <Popover opened={showNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
+          dropdown: nodeNameStyle
+        }}> 
+          <Popover.Target>
+            <div className='connection-handle connection-handle-in' 
+              style={nodeStyle} 
+              onMouseEnter={() => {setShowNodeName(true)}}
+              onMouseLeave={() => {setShowNodeName(false)}}
+            >
+              {faIcon}
+            </div>
+          </Popover.Target>
+          <Popover.Dropdown>
+            {outputName}
+          </Popover.Dropdown>
+        </Popover>
       </>
     )
   })
@@ -65,7 +114,6 @@ function OutputBlock(props: any) {
     setName(e.target.value);
     editCB(id, e.target.value);
   }
-
 
   function handleRemoveBlock(e: any) {
     removeCB(id);
