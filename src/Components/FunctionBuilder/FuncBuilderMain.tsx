@@ -21,7 +21,9 @@ interface FuncBlockDS {
   funcName: string
   funcId: number
   paramTypes: data_types[]
+  paramNames: string[]
   outputTypes: data_types[]
+  outputNames: string[]
 }
 
 interface OutputBlockDS {
@@ -65,10 +67,9 @@ function FuncBuilderMain() {
   }, [currBlockId, inputBlocks, setCurrBlockId, setInputBlocks])
 
   const removeInputBlock = useCallback((inputId: number) => {
-    const localInputBlocks = inputBlocks.filter((blk) => {
+    setInputBlocks(inputBlocks.filter((blk) => {
       return blk.blockId != inputId
-    })
-    setInputBlocks(localInputBlocks) 
+    })) 
   }, [inputBlocks, setInputBlocks])
 
   const editInputBlock = useCallback((blkId: number, inputName: string, inputType: data_types) => {
@@ -101,10 +102,9 @@ function FuncBuilderMain() {
   }, [currBlockId, outputBlocks, setCurrBlockId, setOutputBlocks])
 
   const removeOutputBlock = useCallback((blkId: number) => {
-    const localOutputBlocks = outputBlocks.filter((blk) => {
+    setOutputBlocks(outputBlocks.filter((blk) => {
       return blk.blockId != blkId
-    })
-    setOutputBlocks(localOutputBlocks) 
+    })) 
   }, [outputBlocks, setOutputBlocks])
 
   const editOutputBlock = useCallback((blkId: number, outputName: string, outputType: data_types) => {
@@ -136,17 +136,18 @@ function FuncBuilderMain() {
       funcId: funcId,
       funcName: f.func_name,
       paramTypes: f.param_types,
+      paramNames: f.param_names,
       outputTypes: f.output_types,
+      outputNames: f.output_names
     }
     setFuncBlocks([...funcBlocks, newFuncBlock]) 
   }, [currBlockId, funcBlocks, setCurrBlockId, setFuncBlocks])
 
   const removeFuncBlock = useCallback((id: number) => {
-    const localFuncBlocks = funcBlocks.filter((blk: FuncBlockDS) => {
+    setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
       return blk.blockId != id;
-    })
-    setFuncBlocks(localFuncBlocks);
-  }, [inputBlocks, setInputBlocks])
+    }));
+  }, [funcBlocks, setFuncBlocks])
 
   const editFuncBlock = useCallback((funcBlockId: number, funcId: number) => {
     if (config.debug_mode_FuncBuilder == 1) {
@@ -159,7 +160,9 @@ function FuncBuilderMain() {
         const f: builtin_function = id_to_builtin_func[funcId];
         blk.funcName = f.func_name;
         blk.paramTypes = f.param_types;
+        blk.paramNames = f.param_names;
         blk.outputTypes = f.output_types;
+        blk.outputNames = f.output_names;
         console.log(blk);
       }
       return blk;
@@ -193,7 +196,9 @@ function FuncBuilderMain() {
         funcName={blk.funcName}
         funcOptions={func_options}
         paramTypes={blk.paramTypes}
+        paramNames={blk.paramNames}
         outputTypes={blk.outputTypes}
+        outputNames={blk.outputNames}
         updateBlkCB={editFuncBlock}
         removeBlkCB={removeFuncBlock}
       />
