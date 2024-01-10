@@ -2,11 +2,18 @@ import React, { MutableRefObject, useRef, useState } from "react";
 import Xarrow from "react-xarrows";
 import Draggable from "react-draggable";
 
+enum direction {
+  'top'= 0,
+  'bot',
+  'left',
+  'right'
+}
+
 const connectPointOffset = {
-    left: { left: 0, top: "50%", transform: "translate(-50%, -50%)" },
-    right: { left: "100%", top: "50%", transform: "translate(-50%, -50%)" },
-    top: { left: "50%", top: 0, transform: "translate(-50%, -50%)" },
-    bottom: { left: "50%", top: "100%", transform: "translate(-50%, -50%)" }
+    2: { left: 0, top: "50%", transform: "translate(-50%, -50%)" },
+    3: { left: "100%", top: "50%", transform: "translate(-50%, -50%)" },
+    0: { left: "50%", top: 0, transform: "translate(-50%, -50%)" },
+    1: { left: "50%", top: "100%", transform: "translate(-50%, -50%)" }
   };
   
   
@@ -18,7 +25,7 @@ const connectPointOffset = {
 
 interface ConnectPointsProps {
     boxId: string;
-    handler: "top" | "bottom" | "left" | "right";
+    handler: direction;
     dragRef: MutableRefObject<Draggable | null>;
     boxRef: MutableRefObject<HTMLElement| null>;
   }

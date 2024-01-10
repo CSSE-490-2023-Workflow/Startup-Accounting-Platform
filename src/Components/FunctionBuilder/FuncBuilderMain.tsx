@@ -206,6 +206,8 @@ function FuncBuilderMain() {
         outputTypes={blk.outputTypes}
         updateBlkCB={editFuncBlock}
         removeBlkCB={removeFuncBlock}
+        addArrow={addArrow}
+        setArrows={setArrows}
       />
     );
     

@@ -7,9 +7,16 @@ interface StartAndEnd {
     end: string;
   }
 
+  enum direction {
+    'top'= 0,
+    'bot',
+    'left',
+    'right'
+  }
+
 interface BoxProps {
     text: string;
-    handler: "top" | "bottom" | "left" | "right";
+    handler: direction;
     addArrow: (value: StartAndEnd) => void;
     setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
     boxId: string;

@@ -8,6 +8,13 @@ interface StartAndEnd {
   end: string;
 }
 
+enum direction {
+  'top'= 0,
+  'bot',
+  'left',
+  'right'
+}
+
 function ArrowExample() {
   const [arrows, setArrows] = useState<StartAndEnd[]>([]);
   const addArrow = (value: StartAndEnd) => {
@@ -18,12 +25,12 @@ function ArrowExample() {
       {/* two boxes */}
       <DraggableBox
         text="drag my handler to second element"
-        {...{ addArrow, setArrows, handler: "right", boxId: "box2_1" }}
+        {...{ addArrow, setArrows, handler: direction.right, boxId: "box2_1" }}
       />
       <div></div>
       <DraggableBox
         text="second element"
-        {...{ addArrow, setArrows, handler: "left", boxId: "box2_2" }}
+        {...{ addArrow, setArrows, handler: direction.left, boxId: "box2_2" }}
       />
       {arrows.map(ar => (
         <Xarrow

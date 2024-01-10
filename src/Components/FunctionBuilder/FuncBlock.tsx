@@ -4,6 +4,7 @@ import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, 
 import { IconBoxMargin } from '@tabler/icons-react';
 import Draggable from 'react-draggable';
 import { data_types } from '../../engine/datatype_def';
+import ConnectPointsWrapper from '../ConnectPointsWrapper';
 
 enum direction {
   'top'= 0,
@@ -11,9 +12,15 @@ enum direction {
   'left',
   'right'
 }
+
 interface funcInfo {
   id: number;
   name: string;
+}
+
+interface StartAndEnd {
+  start: string;
+  end: string;
 }
 
 interface FuncProps {
@@ -25,12 +32,14 @@ interface FuncProps {
   outputTypes: data_types[];
   updateBlkCB: (funcBlockId: number, funcId: number) => void;
   removeBlkCB:  (id: number) => void;
+  setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
+  addArrow: (value: StartAndEnd) => void;
 }
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
 function FuncBlock(props: FuncProps) {
-  const [ blkId, funcId, funcName, funcOptions, paramTypes, outputTypes, editCB, removeCB ] = [props.blockId, props.funcId, props.funcName, props.funcOptions, props.paramTypes, props.outputTypes, props.updateBlkCB, props.removeBlkCB]
+  const [ blkId, funcId, funcName, funcOptions, paramTypes, outputTypes, editCB, removeCB, setArrows, addArrow ] = [props.blockId, props.funcId, props.funcName, props.funcOptions, props.paramTypes, props.outputTypes, props.updateBlkCB, props.removeBlkCB, props.setArrows, props.addArrow]
 
   const paramCount: number = paramTypes.length;
   const paramNodeInc: number = 100 / (paramCount + 1);
@@ -266,40 +275,32 @@ const dragRef = useRef<Draggable>(null);
 const boxRef = useRef<HTMLDivElement>(null);
   return (
     <>
-   {//   <Draggable
-    //     ref={dragRef}
-    //     onDrag={e => {
-    //       // console.log(e);
-    //       props.setArrows((arrows) => [...arrows]);
-    //     }}
-    //     >
-    //     <div
-    //       id={props.boxId}
-    //       ref={boxRef}
-    //       style={{
-    //           border: "1px solid black",
-    //           position: "relative",
-    //           padding: "20px 10px"
-    //         }}
-    //       onDragOver={e => e.preventDefault()}
-    //       onDrop={e => {
-    //         if (e.dataTransfer.getData("arrow") === props.boxId) {
-    //           console.log(e.dataTransfer.getData("arrow"), props.boxId);
-    //         } else {
-    //           const refs = { start: e.dataTransfer.getData("arrow"), end: props.boxId };
-    //           props.addArrow(refs);
-    //           console.log("droped!", refs);
-    //         }
-    //       }}
-    //     >
-    //       {props.text}
-    //       <ConnectPointsWrapper boxId={props.boxId} handler={props.handler} dragRef={dragRef} boxRef={boxRef} />
-    //     </div>
-    //   </Draggable>
-    // );
-   }
+     <Draggable
+        ref={dragRef}
+        onDrag={e => {
+          // console.log(e);
+          setArrows((arrows) => [...arrows]);
+        }}
+      > 
       <div className='block-container'>
-      <Card className="func-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder>
+      <Card 
+      id={blkId + ""}
+      ref={boxRef}
+      className="func-block func-builder-block" 
+      shadow='sm' 
+      padding='lg' 
+      radius='md' 
+      withBorder
+      onDragOver={e => e.preventDefault()}
+      onDrop={e => {
+        if (e.dataTransfer.getData("arrow") === blkId + "") {
+          console.log(e.dataTransfer.getData("arrow"), blkId + "");
+        } else {
+          const refs = { start: e.dataTransfer.getData("arrow"), end: blkId + "" };
+          addArrow(refs);
+          console.log("droped!", refs);
+        }
+      }}>
         <Card.Section className='block-header'>
           <div className="block-type-desc">Function Block</div>
           <CloseButton className='block-remove' onClick={handleRemoveBlock} />
@@ -319,7 +320,11 @@ const boxRef = useRef<HTMLDivElement>(null);
       {paramNodes}
       {outputNodes}
       {sideMenus}
+      
+      <ConnectPointsWrapper boxId={blkId+""} handler={outputNodeDir} dragRef={dragRef} boxRef={boxRef} />
+      <ConnectPointsWrapper boxId={blkId+""} handler={paramNodeDir} dragRef={dragRef} boxRef={boxRef} />
       </div>
+      </Draggable>
     </>
   );
 }
