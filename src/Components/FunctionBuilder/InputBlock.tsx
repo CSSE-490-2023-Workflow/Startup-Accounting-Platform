@@ -2,7 +2,6 @@ import React, { useCallback, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, FloatingPosition, Container} from '@mantine/core';
 import '../../assets/font-awesome/css/all.css'
-import { nodeName } from 'jquery';
 
 enum direction {
   'top'= 0,
@@ -12,7 +11,6 @@ enum direction {
 }
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
-import { Card, Input, CloseButton, CardSection } from '@mantine/core';
 
 interface InputProps {
   blockId: number;
