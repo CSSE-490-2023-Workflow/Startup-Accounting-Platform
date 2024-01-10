@@ -8,6 +8,7 @@ import '../../Styles/FuncBuilderBlk.css'
 //import '../../lib/font-awesome-4.7.0/css/font-awesome.min.css'
 import * as utils from './utils.json'
 import OutputBlock from './OutputBlock';
+import Xarrow from 'react-xarrows';
 
 interface InputBlockDS {
   blockId: number
@@ -29,6 +30,11 @@ interface OutputBlockDS {
   outputType: data_types
 }
 
+interface StartAndEnd {
+  start: string;
+  end: string;
+}
+
 const config = utils;
 
 function FuncBuilderMain() {
@@ -38,6 +44,11 @@ function FuncBuilderMain() {
   const [funcBlocks, setFuncBlocks] = useState<FuncBlockDS[]>([])
   const [outputBlocks, setOutputBlocks] = useState<OutputBlockDS[]>([])
   const [currBlockId, setCurrBlockId] = useState(0)
+
+  const [arrows, setArrows] = useState<StartAndEnd[]>([]);
+  const addArrow = (value: StartAndEnd) => {
+    setArrows([...arrows, value]);
+  };
 
   /**
    * Input block Logics
@@ -212,6 +223,13 @@ function FuncBuilderMain() {
         {inputBlocksList}
         {funcBlocksList}
         {outputBlocksList}
+        {arrows.map(ar => (
+        <Xarrow
+          start={ar.start}
+          end={ar.end}
+          key={ar.start + "-." + ar.start}
+        />
+      ))}
     </>
   );
 }

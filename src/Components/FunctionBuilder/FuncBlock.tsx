@@ -1,7 +1,8 @@
-import React, { ChangeEvent, useCallback, useState} from 'react';
+import React, { ChangeEvent, useCallback, useRef, useState} from 'react';
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, NavLink, Divider} from '@mantine/core';
 import { IconBoxMargin } from '@tabler/icons-react';
+import Draggable from 'react-draggable';
 
 enum direction {
   'top'= 0,
@@ -245,9 +246,41 @@ function FuncBlock(props: any) {
   })
   
 
-
+const dragRef = useRef<Draggable>(null);
+const boxRef = useRef<HTMLDivElement>(null);
   return (
     <>
+      {/* <Draggable
+        ref={dragRef}
+        onDrag={e => {
+          // console.log(e);
+          props.setArrows((arrows) => [...arrows]);
+        }}
+        >
+        <div
+          id={props.boxId}
+          ref={boxRef}
+          style={{
+              border: "1px solid black",
+              position: "relative",
+              padding: "20px 10px"
+            }}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => {
+            if (e.dataTransfer.getData("arrow") === props.boxId) {
+              console.log(e.dataTransfer.getData("arrow"), props.boxId);
+            } else {
+              const refs = { start: e.dataTransfer.getData("arrow"), end: props.boxId };
+              props.addArrow(refs);
+              console.log("droped!", refs);
+            }
+          }}
+        >
+          {props.text}
+          <ConnectPointsWrapper boxId={props.boxId} handler={props.handler} dragRef={dragRef} boxRef={boxRef} />
+        </div>
+      </Draggable>
+    ); */}
       <div className='block-container'>
       <Card className="func-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder>
         <Card.Section className='block-header'>
