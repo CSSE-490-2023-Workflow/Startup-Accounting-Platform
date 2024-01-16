@@ -159,6 +159,16 @@ function FuncBlock(props: FuncProps) {
               className='connection-handle-wrapper'
               onMouseEnter={() => {setShowParamNodeName(true)}}
               onMouseLeave={() => {setShowParamNodeName(false)}}
+              onDragOver={e => e.preventDefault()} 
+              onDrop={e => {
+                if (e.dataTransfer.getData("arrow") === handleId + "") {
+                  console.log(e.dataTransfer.getData("arrow"), handleId + "");
+                } else {
+                  const refs = { start: e.dataTransfer.getData("arrow"), end: handleId + "" };
+                  addArrow(refs);
+                  console.log("droped!", refs);
+                }
+              }}
             > 
               <div className='connection-handle connection-handle-out' id={handleId}>
                 {faIcon}
@@ -232,6 +242,16 @@ function FuncBlock(props: FuncProps) {
               className='connection-handle-wrapper'
               onMouseEnter={() => {setShowOutputNodeName(true)}}
               onMouseLeave={() => {setShowOutputNodeName(false)}}
+              onDragOver={e => e.preventDefault()} 
+              onDrop={e => {
+                if (e.dataTransfer.getData("arrow") === handleId + "") {
+                  console.log(e.dataTransfer.getData("arrow"), handleId + "");
+                } else {
+                  const refs = { start: e.dataTransfer.getData("arrow"), end: handleId + "" };
+                  addArrow(refs);
+                  console.log("droped!", refs);
+                }
+              }}
             >
               <div className='connection-handle connection-handle-out' id={handleId}>
                 {faIcon}
@@ -398,17 +418,7 @@ const boxRef = useRef<HTMLDivElement>(null);
       shadow='sm' 
       padding='lg' 
       radius='md' 
-      withBorder
-      onDragOver={e => e.preventDefault()}
-      onDrop={e => {
-        if (e.dataTransfer.getData("arrow") === blkId + "") {
-          console.log(e.dataTransfer.getData("arrow"), blkId + "");
-        } else {
-          const refs = { start: e.dataTransfer.getData("arrow"), end: blkId + "" };
-          addArrow(refs);
-          console.log("droped!", refs);
-        }
-      }}>
+      withBorder >
         <Card.Section className='block-header'>
           <div className="block-type-desc">Function Block</div>
           <CloseButton className='block-remove' onClick={handleRemoveBlock} />
