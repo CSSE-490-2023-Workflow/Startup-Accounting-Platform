@@ -98,18 +98,23 @@ function InputBlock(props: InputProps) {
       nodeNameWidth = '50px'
       faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
+
+    const handleId : string = id.toString() + 'o1';
     return (
       <>
         <Popover opened={showNodeName} arrowSize={3} position={nodeNamePos} width={nodeNameWidth} styles={{
           dropdown: nodeNameStyle
         }}> 
           <Popover.Target>
-            <div className='connection-handle connection-handle-out' 
+            <div 
               style={nodeStyle} 
+              className='connection-handle-wrapper'
               onMouseEnter={() => {setShowNodeName(true)}}
               onMouseLeave={() => {setShowNodeName(false)}}
             >
-              {faIcon}
+              <div className='connection-handle connection-handle-out' id={handleId}>
+                {faIcon}
+              </div>
             </div>
           </Popover.Target>
           <Popover.Dropdown>

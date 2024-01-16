@@ -147,18 +147,22 @@ function FuncBlock(props: FuncProps) {
       faIconStyle.transform = 'translate(0px, -7px)'
       faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
+    const handleId : string = blkId.toString() + 'i' + index;
     return (
       <>
         <Popover opened={showParamNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
           dropdown: nodeNameStyle
         }}> 
           <Popover.Target>
-            <div className='connection-handle connection-handle-in' 
+            <div 
               style={nodeStyle} 
+              className='connection-handle-wrapper'
               onMouseEnter={() => {setShowParamNodeName(true)}}
               onMouseLeave={() => {setShowParamNodeName(false)}}
-            >
-              {faIcon}
+            > 
+              <div className='connection-handle connection-handle-out' id={handleId}>
+                {faIcon}
+              </div>
             </div>
           </Popover.Target>
           <Popover.Dropdown>
@@ -216,19 +220,23 @@ function FuncBlock(props: FuncProps) {
       faIconStyle.transform = 'translate(0px, -7px)'
       faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
+    const handleId : string = blkId.toString() + 'o' + index;
     return (
       <>
         <Popover opened={showOutputNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
           dropdown: nodeNameStyle
         }}> 
           <Popover.Target>
-            <div className='connection-handle connection-handle-out' 
+            <div 
               style={nodeStyle} 
+              className='connection-handle-wrapper'
               onMouseEnter={() => {setShowOutputNodeName(true)}}
               onMouseLeave={() => {setShowOutputNodeName(false)}}
             >
-              {faIcon}
-            </div>
+              <div className='connection-handle connection-handle-out' id={handleId}>
+                {faIcon}
+              </div>
+            </div>            
           </Popover.Target>
           <Popover.Dropdown>
             {outputNames[index]}

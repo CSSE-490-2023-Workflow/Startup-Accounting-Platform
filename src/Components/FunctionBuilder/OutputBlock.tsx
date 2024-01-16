@@ -96,18 +96,21 @@ function OutputBlock(props: any) {
       faIconStyle.transform = 'translate(0px, -7px)'
       faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
+    const handleId : string = id.toString() + 'i1'
     return (
       <>
         <Popover opened={showNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
           dropdown: nodeNameStyle
         }}> 
           <Popover.Target>
-            <div className='connection-handle connection-handle-in' 
+            <div 
               style={nodeStyle} 
+              className='connection-handle-wrapper'
               onMouseEnter={() => {setShowNodeName(true)}}
-              onMouseLeave={() => {setShowNodeName(false)}}
-            >
-              {faIcon}
+              onMouseLeave={() => {setShowNodeName(false)}}>
+              <div className='connection-handle connection-handle-out' id={handleId}>
+                {faIcon}
+              </div>
             </div>
           </Popover.Target>
           <Popover.Dropdown>
