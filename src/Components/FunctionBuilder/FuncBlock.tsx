@@ -5,6 +5,7 @@ import { IconBoxMargin } from '@tabler/icons-react';
 import Draggable from 'react-draggable';
 import { data_types } from '../../engine/datatype_def';
 import ConnectPointsWrapper from '../ConnectPointsWrapper';
+import OutputDiv from './OutputDiv';
 
 const NODE_NAME_POPOVER_WIDTH : any = '40px';
 
@@ -45,6 +46,8 @@ const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 function FuncBlock(props: FuncProps) {
   const [ blkId, funcId, funcName, funcOptions, paramTypes, paramNames, outputTypes, outputNames, editCB, removeCB, setArrows, addArrow, ] = [props.blockId, props.funcId, props.funcName, props.funcOptions, props.paramTypes, props.paramNames, props.outputTypes, props.outputNames, props.updateBlkCB, props.removeBlkCB, props.setArrows, props.addArrow]
 
+  const dragRef = useRef<Draggable>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const paramCount: number = paramTypes.length;
   const paramNodeInc: number = 100 / (paramCount + 1);
   const paramNodePos: string[] = [];
@@ -237,26 +240,14 @@ function FuncBlock(props: FuncProps) {
           dropdown: nodeNameStyle
         }}> 
           <Popover.Target>
-            <div 
+            <OutputDiv
               style={nodeStyle} 
-              className='connection-handle-wrapper'
               onMouseEnter={() => {setShowOutputNodeName(true)}}
               onMouseLeave={() => {setShowOutputNodeName(false)}}
-              onDragOver={e => e.preventDefault()} 
-              onDrop={e => {
-                if (e.dataTransfer.getData("arrow") === handleId + "") {
-                  console.log(e.dataTransfer.getData("arrow"), handleId + "");
-                } else {
-                  const refs = { start: e.dataTransfer.getData("arrow"), end: handleId + "" };
-                  addArrow(refs);
-                  console.log("droped!", refs);
-                }
-              }}
-            >
-              <div className='connection-handle connection-handle-out' id={handleId}>
-                {faIcon}
-              </div>
-            </div>            
+              id={handleId}
+              faIcon={faIcon}
+              dragRef={dragRef}
+             />      
           </Popover.Target>
           <Popover.Dropdown>
             {outputNames[index]}
@@ -398,9 +389,6 @@ function FuncBlock(props: FuncProps) {
     return sideMenu;
   })
   
-
-const dragRef = useRef<Draggable>(null);
-const boxRef = useRef<HTMLDivElement>(null);
   return (
     <>
      <Draggable
@@ -440,7 +428,6 @@ const boxRef = useRef<HTMLDivElement>(null);
       {sideMenus}
       
       {/* <ConnectPointsWrapper boxId={blkId+""} handler={outputNodeDir} dragRef={dragRef} boxRef={boxRef} /> */}
-      <ConnectPointsWrapper boxId={blkId+""} handler={paramNodeDir} dragRef={dragRef} boxRef={boxRef} />
       </div>
       </Draggable>
     </>
