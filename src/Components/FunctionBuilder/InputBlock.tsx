@@ -1,13 +1,20 @@
-import React, { useCallback, useState} from 'react';
+import React, { useCallback, useRef, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, FloatingPosition, Container} from '@mantine/core';
 import '../../assets/font-awesome/css/all.css'
+import Draggable from 'react-draggable';
+import OutputDiv from './OutputDiv';
 
 enum direction {
   'top'= 0,
   'bot',
   'left',
   'right'
+}
+
+interface StartAndEnd {
+  start: string;
+  end: string;
 }
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
@@ -19,10 +26,14 @@ interface InputProps {
   inputTypeOptions: [data_types, string][];
   updateBlkCB: (funcBlockId: number, inputName: string, inputType: data_types) => void;
   removeBlkCB:  (id: number) => void;
+  setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
 }
 
 function InputBlock(props: InputProps) {
-  const [ id, name, type, typeOptions, editCB, removeCB ] = [props.blockId, props.inputName, props.inputType, props.inputTypeOptions, props.updateBlkCB, props.removeBlkCB]
+  const [ id, name, type, typeOptions, editCB, removeCB , setArrows] = [props.blockId, props.inputName, props.inputType, props.inputTypeOptions, props.updateBlkCB, props.removeBlkCB, props.setArrows]
+  
+  const dragRef = useRef<Draggable>(null);
+  
   const [inputName, setName] = useState(name)
   const [inputType, setType] = useState(type)
 
@@ -106,16 +117,14 @@ function InputBlock(props: InputProps) {
           dropdown: nodeNameStyle
         }}> 
           <Popover.Target>
-            <div 
+          <OutputDiv
               style={nodeStyle} 
-              className='connection-handle-wrapper'
               onMouseEnter={() => {setShowNodeName(true)}}
               onMouseLeave={() => {setShowNodeName(false)}}
-            >
-              <div className='connection-handle connection-handle-out' id={handleId}>
-                {faIcon}
-              </div>
-            </div>
+              id={handleId}
+              faIcon={faIcon}
+              dragRef={dragRef}
+             />    
           </Popover.Target>
           <Popover.Dropdown>
             {name}
@@ -298,6 +307,14 @@ function InputBlock(props: InputProps) {
    * <div className="input-block-id">{id}</div>
    */
   return (
+    <>
+    <Draggable
+        ref={dragRef}
+        onDrag={e => {
+          // console.log(e);
+          setArrows((arrows) => [...arrows]);
+        }}
+      > 
     <div className='block-container'>
     <Card className="input-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder>
       <Card.Section className='block-header'>
@@ -319,6 +336,9 @@ function InputBlock(props: InputProps) {
     {outputNodes}
     {sideMenus}
     </div>
+    </Draggable>
+    </>
+    
   );
 }
 

@@ -193,6 +193,7 @@ function FuncBuilderMain() {
         inputTypeOptions={data_type_enum_name_pairs}
         updateBlkCB={editInputBlock} 
         removeBlkCB={removeInputBlock}
+        setArrows={setArrows}
       />
     );
   })
@@ -226,6 +227,8 @@ function FuncBuilderMain() {
         outputType={blk.outputType}
         updateBlkCB={editOutputBlock} 
         removeBlkCB={removeOutputBlock}
+        addArrow={addArrow}
+        setArrows={setArrows}
       />
     )
   })
