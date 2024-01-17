@@ -33,7 +33,7 @@ export function Home() {
     }, []);
 
     const items = tabs.map((tab) => (
-        <Tabs.Tab value={tab}>
+        <Tabs.Tab value={tab} key={tab}>
             {tab}
         </Tabs.Tab>
     ));

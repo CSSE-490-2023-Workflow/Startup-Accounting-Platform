@@ -1,17 +1,16 @@
-import React, {useState, useEffect, useCallback, createContext, useContext} from 'react';
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
-import {Button, ButtonProps} from "@mantine/core";
-import {Avatar, Group, Menu, rem, Text, UnstyledButton} from "@mantine/core";
+import React, {useCallback, useContext, useEffect, useState} from 'react';
+import {initializeApp} from "firebase/app";
+import {getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup} from "firebase/auth";
+import {Avatar, Button, ButtonProps, Group, Menu, rem, Text, UnstyledButton} from "@mantine/core";
 import cx from "clsx";
 import classes from "../HeaderTabs.module.css";
-import {
-    IconChevronDown,
-    IconLogout,
-    IconSettings,
-} from "@tabler/icons-react";
+import {IconChevronDown, IconLogout, IconSettings,} from "@tabler/icons-react";
 import {useNavigate} from "react-router-dom";
 import {GoogleIcon} from "./GoogleIcon";
+import {getFirestore} from 'firebase/firestore';
+import firebase from "firebase/compat/app";
+import "firebase/compat/firestore";
+import {FirestoreRepository} from "./FirebaseRepository";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAZ24dgD9s7XyQa0jPFHYvkxJKksiruOOs",
@@ -26,6 +25,10 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+const db = getFirestore();
+
+// @ts-ignore
+export const database = new FirestoreRepository(db);
 
 export const LoginButton = (props: ButtonProps & React.ComponentPropsWithoutRef<'button'>) => {
     const { currentUser, setCurrentUser } = useContext(AuthContext);
@@ -112,6 +115,9 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const auth = getAuth();
         const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if(user?.uid) {
+                database.createUserIfNotExists(user.uid, user?.email, user?.photoURL);
+            }
             setCurrentUser(user);
             setLoading(false);
         });
