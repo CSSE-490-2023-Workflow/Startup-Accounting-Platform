@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover} from '@mantine/core';
 import Draggable from 'react-draggable';
+import DotlessConnectPointsWrapper from "../DotlessConnectPointsWrapper";
 
 enum direction {
   'top'= 0,
