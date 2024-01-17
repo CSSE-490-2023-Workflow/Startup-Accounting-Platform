@@ -4,6 +4,7 @@ import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popov
 import '../../assets/font-awesome/css/all.css'
 import Draggable from 'react-draggable';
 import OutputDiv from './OutputDiv';
+import DotlessConnectPointsWrapper from "../DotlessConnectPointsWrapper";
 
 enum direction {
   'top'= 0,
@@ -33,6 +34,7 @@ function InputBlock(props: InputProps) {
   const [ id, name, type, typeOptions, editCB, removeCB , setArrows] = [props.blockId, props.inputName, props.inputType, props.inputTypeOptions, props.updateBlkCB, props.removeBlkCB, props.setArrows]
   
   const dragRef = useRef<Draggable>(null);
+  const boxRef =  useRef<HTMLDivElement>(null);
   
   const [inputName, setName] = useState(name)
   const [inputType, setType] = useState(type)
@@ -117,14 +119,20 @@ function InputBlock(props: InputProps) {
           dropdown: nodeNameStyle
         }}> 
           <Popover.Target>
-          <OutputDiv
+
+            <div
               style={nodeStyle} 
+              className='connection-handle-wrapper'
               onMouseEnter={() => {setShowNodeName(true)}}
               onMouseLeave={() => {setShowNodeName(false)}}
-              id={handleId}
-              faIcon={faIcon}
-              dragRef={dragRef}
-             />    
+            >
+              <div className='connection-handle connection-handle-out' id={handleId}>
+              {faIcon}
+              </div>
+              {/* <ConnectPointsWrapper boxId={id} handler={1} dragRef={dragRef} boxRef={boxRef} /> */}
+              <DotlessConnectPointsWrapper boxId={handleId} dragRef={dragRef} boxRef={boxRef} />
+            </div>
+    
           </Popover.Target>
           <Popover.Dropdown>
             {name}
@@ -308,7 +316,7 @@ function InputBlock(props: InputProps) {
    */
   return (
     <>
-    <Draggable
+    <Draggable cancel='.connection-handle-icon'
         ref={dragRef}
         onDrag={e => {
           // console.log(e);

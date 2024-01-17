@@ -6,6 +6,7 @@ import Draggable from 'react-draggable';
 import { data_types } from '../../engine/datatype_def';
 import ConnectPointsWrapper from '../ConnectPointsWrapper';
 import OutputDiv from './OutputDiv';
+import DotlessConnectPointsWrapper from '../DotlessConnectPointsWrapper';
 
 const NODE_NAME_POPOVER_WIDTH : any = '40px';
 
@@ -241,14 +242,18 @@ function FuncBlock(props: FuncProps) {
           dropdown: nodeNameStyle
         }}> 
           <Popover.Target>
-            <OutputDiv
-              style={nodeStyle} 
-              onMouseEnter={() => {setShowOutputNodeName(true)}}
-              onMouseLeave={() => {setShowOutputNodeName(false)}}
-              id={handleId}
-              faIcon={faIcon}
-              dragRef={dragRef}
-             />      
+            <div
+              style={nodeStyle}
+              className='connection-handle-wrapper'
+              onMouseEnter={() => setShowOutputNodeName(true)}
+              onMouseLeave={() => setShowOutputNodeName(false)}
+            >
+              <div className='connection-handle connection-handle-out' id={handleId}>
+                {faIcon}
+              </div>
+              <DotlessConnectPointsWrapper boxId={handleId} dragRef={dragRef} boxRef={boxRef} />
+
+            </div>   
           </Popover.Target>
           <Popover.Dropdown>
             {outputNames[index]}

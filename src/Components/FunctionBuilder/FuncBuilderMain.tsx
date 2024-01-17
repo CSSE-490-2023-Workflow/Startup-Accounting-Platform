@@ -63,6 +63,7 @@ function FuncBuilderMain() {
    */
   const addInputBlock = useCallback((inputName: string, inputType: data_types) => {
     const newId = currBlockId + 1;
+    console.log(arrows);
     setCurrBlockId(newId);
     const newInputBlock : InputBlockDS = {
       blockId: newId,
