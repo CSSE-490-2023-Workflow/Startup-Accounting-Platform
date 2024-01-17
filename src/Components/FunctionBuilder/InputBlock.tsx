@@ -308,7 +308,7 @@ function InputBlock(props: InputProps) {
    */
   return (
     <>
-    <Draggable
+    <Draggable cancel='.connection-handle-icon'
         ref={dragRef}
         onDrag={e => {
           // console.log(e);
