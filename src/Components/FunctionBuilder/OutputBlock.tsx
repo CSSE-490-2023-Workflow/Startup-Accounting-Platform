@@ -1,6 +1,7 @@
-import React, { useCallback, useState} from 'react';
+import React, { useCallback, useRef, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover} from '@mantine/core';
+import Draggable from 'react-draggable';
 
 enum direction {
   'top'= 0,
@@ -9,11 +10,29 @@ enum direction {
   'right'
 }
 
+interface StartAndEnd {
+  start: string;
+  end: string;
+}
+
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
-function OutputBlock(props: any) {
-  const [ id, name, editCB, removeCB ] = [props.blockId, props.outputName, props.updateBlkCB, props.removeBlkCB]
+interface OutProps {
+  blockId: number;
+  outputName: string;
+  outputType: data_types;
+  updateBlkCB: (blkId: number, outputName: string, outputType: data_types) => void;
+  removeBlkCB: (blkId: number) => void;
+  addArrow: (value: StartAndEnd) => void;
+  setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
+}
+
+function OutputBlock(props: OutProps) {
+  const [ id, name, editCB, removeCB, addArrow, setArrows] = [props.blockId, props.outputName, props.updateBlkCB, props.removeBlkCB, props.addArrow, props.setArrows]
   const [ outputName, setName] = useState(name)
+
+  const dragRef = useRef<Draggable>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
 
   const paramCount: number = 1;
   const paramNodeInc: number = 100 / (paramCount + 1);
@@ -88,18 +107,31 @@ function OutputBlock(props: any) {
       faIconStyle.transform = 'translate(0px, -7px)'
       faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
+    const handleId : string = id.toString() + 'i1'
     return (
       <>
         <Popover opened={showNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
           dropdown: nodeNameStyle
         }}> 
           <Popover.Target>
-            <div className='connection-handle connection-handle-in' 
+            <div 
               style={nodeStyle} 
+              className='connection-handle-wrapper'
               onMouseEnter={() => {setShowNodeName(true)}}
               onMouseLeave={() => {setShowNodeName(false)}}
-            >
-              {faIcon}
+              onDragOver={e => e.preventDefault()} 
+              onDrop={e => {
+                if (e.dataTransfer.getData("arrow") === handleId + "") {
+                  console.log(e.dataTransfer.getData("arrow"), handleId + "");
+                } else {
+                  const refs = { start: e.dataTransfer.getData("arrow"), end: handleId + "" };
+                  addArrow(refs);
+                  console.log("droped!", refs);
+                }
+              }}>
+              <div className='connection-handle connection-handle-out' id={handleId}>
+                {faIcon}
+              </div>
             </div>
           </Popover.Target>
           <Popover.Dropdown>
@@ -112,7 +144,7 @@ function OutputBlock(props: any) {
 
   function handleNameChange(e: any) {
     setName(e.target.value);
-    editCB(id, e.target.value);
+    editCB(id, e.target.value, data_types.dt_number); //TODO: Fix what datatype it chooses
   }
 
   function handleRemoveBlock(e: any) {
@@ -270,6 +302,14 @@ function OutputBlock(props: any) {
   })
 
   return (
+    <>
+     <Draggable
+        ref={dragRef}
+        onDrag={e => {
+          // console.log(e);
+          setArrows((arrows) => [...arrows]);
+        }}
+      > 
     <div className='block-container'>
     <Card className="input-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder>
       <Card.Section className='block-header'>
@@ -286,6 +326,8 @@ function OutputBlock(props: any) {
     {paramNodes}
     {sideMenus}
     </div>
+    </Draggable>
+    </>
   );
 }
 

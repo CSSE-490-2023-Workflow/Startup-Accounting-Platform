@@ -39,18 +39,24 @@ interface StartAndEnd {
 
 const config = utils;
 
+interface StartAndEnd {
+  start: string;
+  end: string;
+}
+
 function FuncBuilderMain() {
+
+  const [arrows, setArrows] = useState<StartAndEnd[]>([]);
+  const addArrow = (value: StartAndEnd) => {
+    setArrows([...arrows, value]);
+  };
+
   //const [inputs, setInputs] = useState([0,0])
   //const [result, setResult] = useState(0)
   const [inputBlocks, setInputBlocks] = useState<InputBlockDS[]>([])
   const [funcBlocks, setFuncBlocks] = useState<FuncBlockDS[]>([])
   const [outputBlocks, setOutputBlocks] = useState<OutputBlockDS[]>([])
   const [currBlockId, setCurrBlockId] = useState(0)
-
-  const [arrows, setArrows] = useState<StartAndEnd[]>([]);
-  const addArrow = (value: StartAndEnd) => {
-    setArrows([...arrows, value]);
-  };
 
   /**
    * Input block Logics
@@ -169,9 +175,13 @@ function FuncBuilderMain() {
     })
     setFuncBlocks(tmp) 
   }, [funcBlocks, setFuncBlocks])
-
-  const func_options = Object.entries(id_to_builtin_func).map(([funcId, funcBody]) => {
-    return [funcId, funcBody.func_name]
+  
+  interface funcInfo {
+    id: number;
+    name: string;
+  }
+  const func_options: funcInfo[] = Object.entries(id_to_builtin_func).map(([funcId, funcBody]) => {
+    return {id: Number(funcId), name: funcBody.func_name};
   })
 
   const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
@@ -183,6 +193,7 @@ function FuncBuilderMain() {
         inputTypeOptions={data_type_enum_name_pairs}
         updateBlkCB={editInputBlock} 
         removeBlkCB={removeInputBlock}
+        setArrows={setArrows}
       />
     );
   })
@@ -201,6 +212,8 @@ function FuncBuilderMain() {
         outputNames={blk.outputNames}
         updateBlkCB={editFuncBlock}
         removeBlkCB={removeFuncBlock}
+        addArrow={addArrow}
+        setArrows={setArrows}
       />
     );
     
@@ -211,9 +224,11 @@ function FuncBuilderMain() {
       <OutputBlock
         blockId={blk.blockId}
         outputName={blk.outputName}
-        outputTYpe={blk.outputType}
+        outputType={blk.outputType}
         updateBlkCB={editOutputBlock} 
         removeBlkCB={removeOutputBlock}
+        addArrow={addArrow}
+        setArrows={setArrows}
       />
     )
   })

@@ -2,19 +2,6 @@ import React, { MutableRefObject, useRef, useState } from "react";
 import Xarrow from "react-xarrows";
 import Draggable from "react-draggable";
 
-enum direction {
-  'top'= 0,
-  'bot',
-  'left',
-  'right'
-}
-
-const connectPointOffset = {
-    2: { left: 0, top: "50%", transform: "translate(-50%, -50%)" },
-    3: { left: "100%", top: "50%", transform: "translate(-50%, -50%)" },
-    0: { left: "50%", top: 0, transform: "translate(-50%, -50%)" },
-    1: { left: "50%", top: "100%", transform: "translate(-50%, -50%)" }
-  };
   
   
   interface Positioning {
@@ -23,14 +10,13 @@ const connectPointOffset = {
     }
 
 
-interface ConnectPointsProps {
+interface IProps {
     boxId: string;
-    handler: direction;
     dragRef: MutableRefObject<Draggable | null>;
     boxRef: MutableRefObject<HTMLElement| null>;
   }
 
-function ConnectPointsWrapper(props: ConnectPointsProps) {
+function DotlessConnectPointsWrapper(props: IProps) {
     const ref1 = useRef<HTMLDivElement>(null);
   
     const [position, setPosition] = useState({});
@@ -41,19 +27,11 @@ function ConnectPointsWrapper(props: ConnectPointsProps) {
           className="connectPoint"
           // style={connectPointStyle}
           style={{
-              // position: "absolute",
-              // width: 15,
-              // height: 15,
-              // borderRadius: "50%",
-              // background: "black"
-            ...{
               position: "absolute",
               width: 15,
               height: 15,
-              borderRadius: "50%",
-              background: "black"
-            },
-            ...connectPointOffset[props.handler],
+              // borderRadius: "50%",
+              // background: "black"
             ...position
           }}
           draggable
@@ -84,4 +62,4 @@ function ConnectPointsWrapper(props: ConnectPointsProps) {
     );
   };
 
-  export default ConnectPointsWrapper;
+  export default DotlessConnectPointsWrapper;
