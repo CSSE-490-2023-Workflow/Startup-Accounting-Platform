@@ -13,13 +13,15 @@ import Demo from "./pages/Demo/Demo";
 import {WEBSITE_NAME_ABBREV} from "./constants/constants";
 import Models from "./pages/Models/Models";
 import Functions from "./pages/Functions/Functions";
+import ArrowExample from './Components/ArrowExample';
 
 
 const tabs = [
     'Demo',
     'Models',
     'Functions',
-    'Workflows'
+    'Workflows',
+    'Arrows',
 ];
 
 export function Home() {
@@ -71,6 +73,7 @@ export function Home() {
                 {activeTab === 'Demo' && <Demo/>}
                 {activeTab === 'Models' && <Models/>}
                 {activeTab === 'Functions' && <Functions/>}
+                {activeTab === 'Arrows' && <ArrowExample/>}
             </div>
         </div>
 )
