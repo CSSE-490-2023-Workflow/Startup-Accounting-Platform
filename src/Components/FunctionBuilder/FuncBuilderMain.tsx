@@ -19,7 +19,7 @@ interface InputBlockDS {
   blockId: number
   inputName: string
   inputType: data_types
-  val: allowed_stack_components
+  val: any
 }
 
 interface FuncBlockDS {
@@ -36,7 +36,7 @@ interface OutputBlockDS {
   blockId: number
   outputName: string
   outputType: data_types
-  val: allowed_stack_components
+  val: any
 }
 
 interface StartAndEnd {
@@ -320,13 +320,13 @@ function FuncBuilderMain() {
 
   const changeInput = useCallback((inputId: number, newValue: allowed_stack_components) => {
     console.log('in changeInput, blks are ', inputBlocks);
-    // const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS) => {
-    //   console.log('in changeInput', blk);
-    //   if (blk.blockId == inputId) {
-    //     blk.val = newValue;
-    //   }
-    //   return blk;
-    // })
+    const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS, index: number) => {
+      console.log('in changeInput',index, blk);
+      if (blk.blockId == inputId) {
+        blk.val = newValue;
+      }
+      return blk;
+    })
     setInputBlocks([...inputBlocks]);
     console.log('tmp', inputBlocks);
   }, [inputBlocks, setInputBlocks])
