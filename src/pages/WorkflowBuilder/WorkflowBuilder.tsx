@@ -1,14 +1,23 @@
 import { useParams } from 'react-router-dom';
-import {Button, Group, LoadingOverlay} from "@mantine/core";
-import {IconChevronLeft} from "@tabler/icons-react";
-import Toolbar from "./Toolbar";
-import classes from "./WorkflowBuilder.module.css"
-import {useEffect, useState} from "react";
+import {ActionIcon, Button, Group, LoadingOverlay, TextInput, Tooltip} from "@mantine/core";
+import {IconChartBar, IconChevronLeft, IconLayoutGridAdd} from "@tabler/icons-react";
+import Toolbar from "../../Components/Toolbar/Toolbar";
+import React, {useEffect, useState} from "react";
 import {database} from "../../auth/firebase";
+import {useFocusWithin} from "@mantine/hooks";
+import Workspace from "../../Components/Workspace/Workspace";
 
 function WorkflowBuilder() {
     const { id } = useParams();
     const [workflowData, setWorkflowData] = useState<object | null>(null)
+    const { ref: workflowNameRef, focused: workflowNameFocused } = useFocusWithin();
+    const [textboxText, setTextboxText] = useState<string | null>(null);
+
+    useEffect(() => {
+        if(!workflowNameFocused && textboxText) {
+            setWorkflowName(textboxText);
+        }
+    }, [workflowNameFocused]);
 
     useEffect(() => {
         console.log(workflowData);
@@ -35,13 +44,28 @@ function WorkflowBuilder() {
 
     return (
         <>
-            <header> { // @ts-ignore
-            } <Toolbar workflowName={workflowData.name} setWorkflowName={setWorkflowName}/>
+            <header>
+                <Toolbar>
+                    <Button leftSection={<IconChevronLeft/>}>Save & Exit</Button>
+                    { /* @ts-ignore */ }
+                    <TextInput ref={workflowNameRef} defaultValue={workflowData.name}
+                        onChange={(event) => setTextboxText(event.currentTarget.value)}/>
+                    <Tooltip label="Add function">
+                        <ActionIcon size={'lg'} variant={'default'}>
+                            <IconLayoutGridAdd />
+                        </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Add model">
+                        <ActionIcon size={'lg'} variant={'default'}>
+                            <IconChartBar />
+                        </ActionIcon>
+                    </Tooltip>
+                </Toolbar>
             </header>
-            <body className={classes.gridBackground}>
+            <Workspace>
                 Workflow {id // @ts-ignore
                 } <br/> Name: {workflowData.name}
-            </body>
+            </Workspace>
         </>
     );
 }
