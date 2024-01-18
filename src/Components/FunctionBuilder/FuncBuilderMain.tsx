@@ -19,6 +19,7 @@ interface InputBlockDS {
   blockId: number
   inputName: string
   inputType: data_types
+  val: allowed_stack_components
 }
 
 interface FuncBlockDS {
@@ -35,6 +36,7 @@ interface OutputBlockDS {
   blockId: number
   outputName: string
   outputType: data_types
+  val: allowed_stack_components
 }
 
 interface StartAndEnd {
@@ -68,16 +70,20 @@ function FuncBuilderMain() {
   const [ currOutputBlockId, setCurrOutputBlockId ] = useState(2000)
   const [ savedFunction, setSavedFunction ] = useState({});
   const [ quickOutputs, setQuickOutputs ] = useState([]);
+  const [ outputMap, setOutputMap] = useState(new Map<string, allowed_stack_components>());
 
   const [ blkMap, setBlkMap ] = useState(new Map<number, blk>());
 
   const evaluateFunction = useCallback(() => {
     const paramMap : Map<string, allowed_stack_components> = new Map<string, allowed_stack_components>();
-    paramMap.set('param1', 3);
-    paramMap.set('param2', 5);
+    for (let inputBlk of inputBlocks) {
+      paramMap.set(inputBlk.inputName, inputBlk.val);
+    }
+    
     const res: Map<string, allowed_stack_components> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
-    console.log(res);
-  }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction])
+    setOutputMap(res);
+    console.log('complete. Outputs of the custom function are: ', res);
+  }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction]);
 
   const saveFunction = useCallback(() => {
     console.log('saving')
@@ -163,12 +169,13 @@ function FuncBuilderMain() {
     const newBlock : InputBlockDS = {
       blockId: newId,
       inputName: inputName,
-      inputType: inputType
+      inputType: inputType,
+      val: 0
     }
     setInputBlocks([...inputBlocks, newBlock]) 
     blkMap.set(newId, newBlock);
     setBlkMap(new Map(blkMap));
-    console.log(blkMap);
+    console.log('blk map updated in input', inputBlocks);
   }, [currInputBlockId, inputBlocks, setCurrInputBlockId, setInputBlocks, blkMap])
 
   const removeInputBlock = useCallback((blkId: number) => {
@@ -203,7 +210,8 @@ function FuncBuilderMain() {
     const newBlock : OutputBlockDS = {
       blockId: newId,
       outputName: outputName,
-      outputType: outputType
+      outputType: outputType,
+      val: 0
     }
     setOutputBlocks([...outputBlocks, newBlock]) 
     blkMap.set(newId, newBlock);
@@ -310,9 +318,18 @@ function FuncBuilderMain() {
     );
   })
 
-  const changeInput = useCallback((ind: number, value: number) => {
-    //Qingyuan handles the internal representation so this will effect that
-  }, [])
+  const changeInput = useCallback((inputId: number, newValue: allowed_stack_components) => {
+    console.log('in changeInput, blks are ', inputBlocks);
+    // const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS) => {
+    //   console.log('in changeInput', blk);
+    //   if (blk.blockId == inputId) {
+    //     blk.val = newValue;
+    //   }
+    //   return blk;
+    // })
+    setInputBlocks([...inputBlocks]);
+    console.log('tmp', inputBlocks);
+  }, [inputBlocks, setInputBlocks])
 
   const inputStore: number[] = []
   let inputListCount: number = 0;
@@ -322,7 +339,7 @@ function FuncBuilderMain() {
     return (
       <>
         <h3>{blk.inputName}</h3>
-        <NumberInput handleStateChange={changeInput} ind={inputListCount - 1} inValue={0}/>
+        <NumberInput handleStateChange={changeInput} ind={inputListCount - 1} inValue={0} inputId={blk.blockId}/>
       </>
     );
   })
