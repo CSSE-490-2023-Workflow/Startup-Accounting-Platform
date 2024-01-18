@@ -9,6 +9,7 @@ import '../../Styles/FuncBuilderBlk.css'
 import * as utils from './utils.json'
 import OutputBlock from './OutputBlock';
 import Xarrow from 'react-xarrows';
+import { param } from 'jquery';
 
 interface InputBlockDS {
   blockId: number
@@ -44,6 +45,8 @@ interface StartAndEnd {
   end: string;
 }
 
+type blk = FuncBlockDS | OutputBlockDS | InputBlockDS;
+
 function FuncBuilderMain() {
 
   const [arrows, setArrows] = useState<StartAndEnd[]>([]);
@@ -57,6 +60,23 @@ function FuncBuilderMain() {
   const [funcBlocks, setFuncBlocks] = useState<FuncBlockDS[]>([])
   const [outputBlocks, setOutputBlocks] = useState<OutputBlockDS[]>([])
   const [currBlockId, setCurrBlockId] = useState(0)
+  const [savedFunction, setSavedFunction] = useState({});
+
+  const [ blkMap, setBlkMap ] = useState(new Map());
+
+  const saveFunction = useCallback(() => {
+    console.log('saving')
+    for (const outputBlk  of outputBlocks) {
+      let path : any = {
+        type : 'output',
+        param : []
+      };
+    }
+  }, [inputBlocks, outputBlocks, funcBlocks])
+
+  const tracePath = function (blkId: number) {
+
+  }
 
   /**
    * Input block Logics
@@ -65,18 +85,22 @@ function FuncBuilderMain() {
     const newId = currBlockId + 1;
     console.log(arrows);
     setCurrBlockId(newId);
-    const newInputBlock : InputBlockDS = {
+    const newBlock : InputBlockDS = {
       blockId: newId,
       inputName: inputName,
       inputType: inputType
     }
-    setInputBlocks([...inputBlocks, newInputBlock]) 
+    setInputBlocks([...inputBlocks, newBlock]) 
+    blkMap.set(newId, newBlock);
+    setBlkMap(new Map(blkMap));
   }, [currBlockId, inputBlocks, setCurrBlockId, setInputBlocks])
 
-  const removeInputBlock = useCallback((inputId: number) => {
+  const removeInputBlock = useCallback((blkId: number) => {
     setInputBlocks(inputBlocks.filter((blk) => {
-      return blk.blockId != inputId
-    })) 
+      return blk.blockId != blkId
+    }));
+    blkMap.delete(blkId);
+    setBlkMap(new Map<number, blk>(blkMap));
   }, [inputBlocks, setInputBlocks])
 
   const editInputBlock = useCallback((blkId: number, inputName: string, inputType: data_types) => {
@@ -106,12 +130,17 @@ function FuncBuilderMain() {
       outputType: outputType
     }
     setOutputBlocks([...outputBlocks, newBlock]) 
+    blkMap.set(newId, newBlock);
+    setBlkMap(new Map(blkMap));
   }, [currBlockId, outputBlocks, setCurrBlockId, setOutputBlocks])
 
   const removeOutputBlock = useCallback((blkId: number) => {
     setOutputBlocks(outputBlocks.filter((blk) => {
       return blk.blockId != blkId
-    })) 
+    })) ;
+    blkMap.delete(blkId);
+    setBlkMap(new Map<number, blk>(blkMap));
+    console.log(blkMap);
   }, [outputBlocks, setOutputBlocks])
 
   const editOutputBlock = useCallback((blkId: number, outputName: string, outputType: data_types) => {
@@ -138,7 +167,7 @@ function FuncBuilderMain() {
     const newId = currBlockId + 1;
     setCurrBlockId(newId);
     const f: builtin_function = id_to_builtin_func[funcId];
-    const newFuncBlock : FuncBlockDS = {
+    const newBlock : FuncBlockDS = {
       blockId: newId,
       funcId: funcId,
       funcName: f.func_name,
@@ -147,13 +176,17 @@ function FuncBuilderMain() {
       outputTypes: f.output_types,
       outputNames: f.output_names
     }
-    setFuncBlocks([...funcBlocks, newFuncBlock]) 
+    setFuncBlocks([...funcBlocks, newBlock]) 
+    blkMap.set(newId, newBlock);
+    setBlkMap(new Map(blkMap));
   }, [currBlockId, funcBlocks, setCurrBlockId, setFuncBlocks])
 
-  const removeFuncBlock = useCallback((id: number) => {
+  const removeFuncBlock = useCallback((blkId: number) => {
     setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
-      return blk.blockId != id;
+      return blk.blockId != blkId;
     }));
+    blkMap.delete(blkId);
+    setBlkMap(new Map<number, blk>(blkMap));
   }, [funcBlocks, setFuncBlocks])
 
   const editFuncBlock = useCallback((funcBlockId: number, funcId: number) => {
@@ -240,6 +273,7 @@ function FuncBuilderMain() {
         <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block" defaultAttr={["new input", data_types.dt_number]}/>
         <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={[1]}/>
         <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", data_types.dt_number]}/>
+        <button id='save-custom-function' onClick={() => {saveFunction()}}>Save</button>
         <h3>Function Builder</h3>
         {inputBlocksList}
         {funcBlocksList}
