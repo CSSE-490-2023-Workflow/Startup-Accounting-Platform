@@ -332,7 +332,7 @@ function FuncBuilderMain() {
     let i = 0;
     inputStore.forEach((element: number) => {
       i += 1;
-      paramMap.set('addend_' + i, element);
+      paramMap.set(inputBlocks[i-1].inputName, element);
     })
     console.log(paramMap);
     const res: Map<string, allowed_stack_components> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
