@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
 import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components} from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
@@ -71,13 +71,6 @@ function FuncBuilderMain() {
 
   const [ blkMap, setBlkMap ] = useState(new Map<number, blk>());
 
-  const evaluateFunction = useCallback(() => {
-    const paramMap : Map<string, allowed_stack_components> = new Map<string, allowed_stack_components>();
-    paramMap.set('param1', 3);
-    paramMap.set('param2', 5);
-    const res: Map<string, allowed_stack_components> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
-    console.log(res);
-  }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction])
 
   const saveFunction = useCallback(() => {
     console.log('saving')
@@ -310,15 +303,20 @@ function FuncBuilderMain() {
     );
   })
 
+  const [inputStore, setInputStore] = useState<number[]>([]);
+
   const changeInput = useCallback((ind: number, value: number) => {
-    //Qingyuan handles the internal representation so this will effect that
+    inputStore[ind] = value;
+    console.log(inputStore[ind]);
   }, [])
 
-  const inputStore: number[] = []
+  
   let inputListCount: number = 0;
   const inputList = inputBlocks.map((blk: InputBlockDS) => {
     inputListCount += 1
-    inputStore.push(0)
+    if(inputStore.length < inputListCount) {
+      inputStore.push(0)
+    }
     return (
       <>
         <h3>{blk.inputName}</h3>
@@ -326,6 +324,22 @@ function FuncBuilderMain() {
       </>
     );
   })
+
+  let outputListVals: allowed_stack_components;
+
+  const evaluateFunction = useCallback(() => {
+    const paramMap : Map<string, allowed_stack_components> = new Map<string, allowed_stack_components>();
+    let i = 0;
+    inputStore.forEach((element: number) => {
+      i += 1;
+      paramMap.set('addend_' + i, element);
+    })
+    console.log(paramMap);
+    const res: Map<string, allowed_stack_components> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
+    console.log(res);
+  }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction])
+
+  
   let outputListCount: number = 0;
   const outputList = outputBlocks.map((blk: OutputBlockDS) => {
     outputListCount += 1
