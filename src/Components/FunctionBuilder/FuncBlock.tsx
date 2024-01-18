@@ -68,6 +68,8 @@ function FuncBlock(props: FuncProps) {
 
   const [ showOutputNodeName, setShowOutputNodeName ] = useState(false);
 
+  const [ showSideMenu, setShowSideMenu ] = useState([true, true, true, true]);
+
 
   const changeParamNodeDir : any = useCallback((newDir: direction) => {
     setParamNodeDir(newDir);
@@ -152,7 +154,7 @@ function FuncBlock(props: FuncProps) {
       faIconStyle.transform = 'translate(0px, -7px)'
       faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
-    const handleId : string = blkId.toString() + 'i' + index;
+    const handleId : string = blkId.toString() + 'i' + (index+1).toString();
     return (
       <>
         <Popover opened={showParamNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
@@ -235,7 +237,7 @@ function FuncBlock(props: FuncProps) {
       faIconStyle.transform = 'translate(0px, -7px)'
       faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
-    const handleId : string = blkId.toString() + 'o' + index;
+    const handleId : string = blkId.toString() + 'o' + (index+1).toString();
     return (
       <>
         <Popover opened={showOutputNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
@@ -274,7 +276,11 @@ function FuncBlock(props: FuncProps) {
               label="Inputs"
               variant="subtle"
               className='node-menu-item'
-              onClick={() => {console.log('dir changed', dir); changeParamNodeDir(dir)}}
+              onClick={() => {
+                changeParamNodeDir(dir)
+                let tmp = showSideMenu.map(e => false);
+                setShowSideMenu(tmp);
+              }}
               active
             />  
             <hr className='solid-divider' />
@@ -283,7 +289,11 @@ function FuncBlock(props: FuncProps) {
               label="Outputs"
               variant="subtle"
               className='node-menu-item'
-              onClick={() => changeOutputNodeDir(dir)}
+              onClick={() => {
+                changeParamNodeDir(dir)
+                let tmp = showSideMenu.map(e => false);
+                setShowSideMenu(tmp);
+              }}
               active
             />
           </div>  
@@ -291,10 +301,13 @@ function FuncBlock(props: FuncProps) {
     )
 
     const menuStyle: any = {};
+    let menuDir: any = '';
     const sideMenuBtnStyle : any = {};
     sideMenuBtnStyle.svgW = 100;
     sideMenuBtnStyle.svgH = 10;
-
+    const sideMenuStyle : any = {
+      padding: '5px'
+    };
     if (dir === direction.bot || dir === direction.top) {
       menuStyle.width = '100';
       menuStyle.height = '10';
@@ -304,7 +317,9 @@ function FuncBlock(props: FuncProps) {
       menuStyle.left = '26%';
       menuStyle.backgroundColor = '#fff';
       if (dir === direction.bot) {
+        menuDir = 'bottom';
         menuStyle.bottom = '10px';
+        sideMenuStyle.transform = 'translate(50px, 15px)'
         sideMenuBtnStyle.line1x1 = 75;
         sideMenuBtnStyle.line1y1 = 2;
         sideMenuBtnStyle.line1x2 = 50;
@@ -314,7 +329,9 @@ function FuncBlock(props: FuncProps) {
         sideMenuBtnStyle.line2x2 = 50;
         sideMenuBtnStyle.line2y2 = 8;
       } else { // at top
+        menuDir = 'top';
         menuStyle.top = '0px';
+        sideMenuStyle.transform = 'translateX(50px)'
         sideMenuBtnStyle.line1x1 = 50;
         sideMenuBtnStyle.line1y1 = 2;
         sideMenuBtnStyle.line1x2 = 75;
@@ -335,7 +352,9 @@ function FuncBlock(props: FuncProps) {
       menuStyle.top = '18%';
       menuStyle.backgroundColor = '#fff';
       if (dir === direction.left) {
+        menuDir = 'left';
         menuStyle.left = '0px';
+        sideMenuStyle.transform = 'translateY(50px)'
         sideMenuBtnStyle.line1x1 = 8;
         sideMenuBtnStyle.line1y1 = 25;
         sideMenuBtnStyle.line1x2 = 2;
@@ -345,7 +364,9 @@ function FuncBlock(props: FuncProps) {
         sideMenuBtnStyle.line2x2 = 2;
         sideMenuBtnStyle.line2y2 = 50;
       } else { // right
+        menuDir = 'right';
         menuStyle.right = '10px';
+        sideMenuStyle.transform = 'translateY(50px)'
         sideMenuBtnStyle.line1x1 = 2;
         sideMenuBtnStyle.line1y1 = 25;
         sideMenuBtnStyle.line1x2 = 8;
@@ -361,10 +382,13 @@ function FuncBlock(props: FuncProps) {
     const sideMenu = (
       <>
         <Group justify="center" className='node-menu'>
-          <HoverCard width={100} shadow="md" position='top' closeDelay={100}>
+          <HoverCard width={100} shadow="md" position={menuDir} closeDelay={30} disabled={showSideMenu[dir] ? false : true}>
             <HoverCard.Target>
               <div className='node-menu-btn' style={menuStyle}>
-                <svg width={sideMenuBtnStyle.svgW} height={sideMenuBtnStyle.svgH}>
+                <svg width={sideMenuBtnStyle.svgW} height={sideMenuBtnStyle.svgH} onMouseEnter={() => {
+                  showSideMenu[dir] = true;
+                  setShowSideMenu([...showSideMenu]);
+                }}>
                   <line 
                     x1={sideMenuBtnStyle.line1x1} 
                     y1={sideMenuBtnStyle.line1y1} 
@@ -382,9 +406,7 @@ function FuncBlock(props: FuncProps) {
                 </svg>
               </div>
             </HoverCard.Target>
-            <HoverCard.Dropdown style={{
-              padding: '5px',
-            }}>
+            <HoverCard.Dropdown style={sideMenuStyle}>
               {sideMenuSelections}
             </HoverCard.Dropdown>
           </HoverCard>
