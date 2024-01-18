@@ -274,7 +274,7 @@ function FuncBlock(props: FuncProps) {
               label="Inputs"
               variant="subtle"
               className='node-menu-item'
-              onClick={() => {console.log('dir changed', dir); changeParamNodeDir(dir)}}
+              onClick={() => {changeParamNodeDir(dir)}}
               active
             />  
             <hr className='solid-divider' />
@@ -361,7 +361,7 @@ function FuncBlock(props: FuncProps) {
     const sideMenu = (
       <>
         <Group justify="center" className='node-menu'>
-          <HoverCard width={100} shadow="md" position='top' closeDelay={100}>
+          <HoverCard width={100} shadow="md" position='top' closeDelay={30}>
             <HoverCard.Target>
               <div className='node-menu-btn' style={menuStyle}>
                 <svg width={sideMenuBtnStyle.svgW} height={sideMenuBtnStyle.svgH}>
