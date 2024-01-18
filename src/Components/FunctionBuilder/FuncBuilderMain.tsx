@@ -10,7 +10,7 @@ import * as utils from './utils.json'
 import OutputBlock from './OutputBlock';
 import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
-
+import { database } from "../../auth/firebase";
 
 interface InputBlockDS {
   blockId: number
@@ -84,6 +84,8 @@ function FuncBuilderMain() {
     }
     var blob = new Blob([JSON.stringify(res)], {type: "application/json; charset=utf-8"});
     saveAs(blob, "hello world.json");
+
+    database.updateFunction(JSON.stringify(res));
   }, [inputBlocks, outputBlocks, funcBlocks, arrows])
 
   /**
