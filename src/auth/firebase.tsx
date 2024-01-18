@@ -1,7 +1,7 @@
 import React, {useCallback, useContext, useEffect, useState} from 'react';
 import {initializeApp} from "firebase/app";
 import {getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup} from "firebase/auth";
-import {Avatar, Button, ButtonProps, Group, Menu, rem, Text, UnstyledButton} from "@mantine/core";
+import {Avatar, Box, Button, ButtonProps, Group, LoadingOverlay, Menu, rem, Text, UnstyledButton} from "@mantine/core";
 import cx from "clsx";
 import classes from "../HeaderTabs.module.css";
 import {IconChevronDown, IconLogout, IconSettings,} from "@tabler/icons-react";
@@ -127,7 +127,11 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     if (loading) {
-        return <div>Loading...</div>; // Or some loading spinner
+        return (
+            <Box>
+                <LoadingOverlay visible={true} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
+            </Box>
+        );
     }
 
     return (

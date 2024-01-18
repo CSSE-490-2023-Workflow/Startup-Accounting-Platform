@@ -5,6 +5,7 @@ import PrivateRoute from "./PrivateRoute";
 import {
     Route, Routes, BrowserRouter
 } from 'react-router-dom'
+import WorkflowBuilder from "./pages/WorkflowBuilder/WorkflowBuilder";
 
 function App() {
     return (
@@ -12,6 +13,7 @@ function App() {
             <Routes>
                 <Route path='/' element={<PrivateRoute/>}>
                     <Route path='/' element={<Home/>}/>
+                    <Route path='workflow/:id' element={<WorkflowBuilder/>}/>
                 </Route>
                 <Route path="/login" element={<LoginPage/>}/>
             </Routes>
