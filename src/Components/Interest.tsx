@@ -2,36 +2,45 @@ import React, { useCallback, useState } from 'react';
 import NumberInput from './NumberInput';
 import { func_2, func_interpreter_new_caller } from '../engine/engine'
 import { XYPlot, XAxis, YAxis, HorizontalGridLines, LineSeries, HorizontalBarSeries, VerticalBarSeries } from 'react-vis';
+import { allowed_stack_components } from '../engine/datatype_def';
 
 
 function Interest() {
   const [inputs, setInputs] = useState([0, 0, 0])
   const [result, setResult] = useState<string>()
-  const [op, setOp] = useState<number[][][]>([])
+  const [op, setOp] = useState<number[][]>()
   const handleInterest = useCallback(() => {
     const json = {
-      "type": "builtin_function",
-      "name": "return",
-      "param": [
+      "type": "custom_function",
+      'useOutput': 0,
+      "outputs": [
         {
-          "type": "builtin_function",
-          "name": "apply_interest_rate",
-          "param": [
-            {
-              "type": "argument",
-              "index": 0
-            },
+          'type' : 'output',
+          'outputName': 'functionOutput',
+          'params' : [
             {
               "type": "builtin_function",
-              "name": "scalar_to_function_points",
-              "param": [
+              "functionName": "apply_interest_rate",
+              'useOutput': 0,
+              "params": [
                 {
-                  "type": "argument",
-                  "index": 1
+                  "type": "input",
+                  'inputName': 'interest rate',
                 },
                 {
-                  "type": "argument",
-                  "index": 2
+                  "type": "builtin_function",
+                  "functionName": "scalar_to_function_points",
+                  'useOutput': 0,
+                  "params": [
+                    {
+                      "type": "input",
+                      'inputName' : 'initial deposit'
+                    },
+                    {
+                      "type": "input",
+                      "inputName": 'time'
+                    }
+                  ]
                 }
               ]
             }
@@ -39,10 +48,15 @@ function Interest() {
         }
       ]
     }
-    console.log('what have we here', func_interpreter_new_caller(JSON.stringify(json), inputs[1], inputs[0], inputs[2]));
-    setOp(func_interpreter_new_caller(JSON.stringify(json), inputs[1], inputs[0], inputs[2]) as number[][][])
+    const inputMap : Map<string, allowed_stack_components> = new Map<string, allowed_stack_components>();
+    console.log('input map', inputMap);
+    inputMap.set('interest rate', inputs[1]);
+    inputMap.set('initial deposit', inputs[0]);
+    inputMap.set('time', inputs[2]);
+    console.log('what have we here', func_interpreter_new_caller(JSON.stringify(json), inputMap).get('functionOutput'));
+    setOp(func_interpreter_new_caller(JSON.stringify(json), inputMap).get('functionOutput') as number[][])
     setResult(JSON.stringify(op));
-    // setResult(func_interpreter_new_caller(JSON.stringify(json), inputs[1], inputs[0], inputs[2]) as number[])
+    //setResult(func_interpreter_new_caller(JSON.stringify(json), inputs[1], inputs[0], inputs[2]) as number[])
   }, [])
   const handleChange = useCallback((ind: number, value: number) => {
     inputs[ind] = value
@@ -78,7 +92,7 @@ function Interest() {
               </tr>
             </thead>
             <tbody>
-              {op[0].map(([index, value], k) => (
+              {op.map(([index, value], k) => (
                 <tr key={k}>
                   <td>{index}</td>
                   <td>{value.toFixed(2)}</td>
@@ -94,7 +108,7 @@ function Interest() {
             yDomain={[0,150]}>
             <HorizontalGridLines />
             <VerticalBarSeries
-              data={op[0].map(([index, value], k) => (
+              data={op.map(([index, value], k) => (
                 {x: index, y: value}
               ))} barWidth={0.2} />
             <XAxis />
@@ -109,7 +123,10 @@ function Interest() {
 
 
     </>
+    
   );
 }
+
+
 
 export default Interest;

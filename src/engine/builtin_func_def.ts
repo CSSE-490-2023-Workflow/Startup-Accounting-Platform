@@ -68,7 +68,7 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
     //number to function points
     5 : {
         param_count: 2, 
-        func_name : 'number_to_function_points',
+        func_name : 'scalar_to_function_points',
         param_types : [data_types.dt_number, data_types.dt_number],
         param_names : ['value', 'length'],
         output_types : [data_types.dt_func_pt_series],
@@ -194,6 +194,7 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
         output_types : [data_types.dt_func_pt_series],
         output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
+            console.log('in def, params', args);
             if (!is_number(args[0]) || !is_integer(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 5: number_to_function_points receives one scalar and one integer as parameters')
             const val : number = Number(args[0]);
@@ -203,11 +204,14 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
              * outputs: [[0, val], [1, val], [2, val], ... , [length-1, val]]
              */
             // check if length is integer
-            let series_out : func_pt_series = [];
-            for (let i : number = 0; i < length; i++) {
-                series_out[i] = [i, val];
+            let series_out : any = [];
+            
+            for (let i : number = 1; i <= length; i++) {
+                //const tmp : any = [i, val]
+                series_out.push([i, val]);
             }
             return [series_out];
+            //return [[[1, 2], [2, 4], [3, 8]]]
         }
     },
 
@@ -222,10 +226,12 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
             if (!declared_type_verifier[0](args[0]) || !declared_type_verifier[1](args[1]))
                 throw new FuncArgError('Built in function 6: apply_interest_rate receives one scalar and one function points series as parameters');
             const rate : any = args[0];
-            const ser  : any = args[1];
+            // create a copy of it to keep the array passed in unchanged
+            const ser : any = structuredClone(args[1]);
             for (let i = 1; i < ser.length; i++) {
                 ser[i][1] = (1 + rate) * ser[i - 1][1];
             }
+            console.log('ser', ser);
             return [ser];
         }
     },
