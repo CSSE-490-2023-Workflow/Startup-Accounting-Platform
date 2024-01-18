@@ -3,7 +3,6 @@ import { data_types } from "../../engine/datatype_def"
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, FloatingPosition, Container} from '@mantine/core';
 import '../../assets/font-awesome/css/all.css'
 import Draggable from 'react-draggable';
-import OutputDiv from './OutputDiv';
 import DotlessConnectPointsWrapper from "../DotlessConnectPointsWrapper";
 
 enum direction {

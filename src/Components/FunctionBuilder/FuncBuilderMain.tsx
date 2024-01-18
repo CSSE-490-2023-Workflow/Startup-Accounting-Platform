@@ -10,6 +10,8 @@ import * as utils from './utils.json'
 import OutputBlock from './OutputBlock';
 import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
+import NumberInput from '../NumberInput';
+import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 
 
 interface InputBlockDS {
@@ -61,7 +63,6 @@ function FuncBuilderMain() {
   const [funcBlocks, setFuncBlocks] = useState<FuncBlockDS[]>([])
   const [outputBlocks, setOutputBlocks] = useState<OutputBlockDS[]>([])
   const [currBlockId, setCurrBlockId] = useState(0)
-  const [savedFunction, setSavedFunction] = useState({});
 
   const [ blkMap, setBlkMap ] = useState(new Map<number, blk>());
 
@@ -280,6 +281,50 @@ function FuncBuilderMain() {
     );
   })
 
+  const changeInput = useCallback((ind: number, value: number) => {
+    //Qingyuan handles the internal representation so this will effect that
+  }, [])
+
+  const inputStore: number[] = []
+  let inputListCount: number = 0;
+  const inputList = inputBlocks.map((blk: InputBlockDS) => {
+    inputListCount += 1
+    inputStore.push(0)
+    return (
+      <>
+        <h3>{blk.inputName}</h3>
+        <NumberInput handleStateChange={changeInput} ind={inputListCount - 1} inValue={0}/>
+      </>
+    );
+  })
+  let outputListCount: number = 0;
+  const outputList = outputBlocks.map((blk: OutputBlockDS) => {
+    outputListCount += 1
+    return (
+      <>
+        <h3>{blk.outputName}</h3>
+        <XYPlot
+            width={200}
+            height={200}
+            xDomain={[0,5.5]}
+            yDomain={[0,150]}>
+            <HorizontalGridLines />
+            <VerticalBarSeries data={[]} barWidth={0}/>
+            {/*Qingyuan needs to generate the data and place it in here as the comment has it
+              // data={op[0].map(([index, value], k) => (
+              //   {x: index, y: value}
+    // ))} barWidth={0.2} />*/}
+            <XAxis />
+            <YAxis />
+          </XYPlot>
+      </>
+    );
+  })
+
+
+
+  
+
   const funcBlocksList = funcBlocks.map((blk: FuncBlockDS) => {
 
     return (
@@ -323,6 +368,9 @@ function FuncBuilderMain() {
         <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", data_types.dt_number]}/>
         <button id='save-custom-function' onClick={() => {saveFunction()}}>Save</button>
         <h3>Function Builder</h3>
+        <div style={{display: "flex"}}>
+          {inputList}
+        </div>
         {inputBlocksList}
         {funcBlocksList}
         {outputBlocksList}
@@ -333,6 +381,7 @@ function FuncBuilderMain() {
           key={ar.start + "-." + ar.start}
         />
       ))}
+        {outputList}
     </>
   );
 }

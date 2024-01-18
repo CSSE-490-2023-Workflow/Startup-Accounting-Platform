@@ -18,7 +18,7 @@ interface IProps {
 
 function DotlessConnectPointsWrapper(props: IProps) {
     const ref1 = useRef<HTMLDivElement>(null);
-  
+    const [originalPosition, setOriginalPosition] = useState<Positioning>({x: 0, y: 0});
     const [position, setPosition] = useState({});
     const [beingDragged, setBeingDragged] = useState(false);
     return (
@@ -40,14 +40,15 @@ function DotlessConnectPointsWrapper(props: IProps) {
           onDragStart={e => {
             setBeingDragged(true);
             e.dataTransfer.setData("arrow", props.boxId);
+            setOriginalPosition({x: e.clientX, y: e.clientY})
           }}
           onDrag={e => {
             const { offsetTop, offsetLeft } = (props.boxRef.current ? props.boxRef.current : {offsetTop: 0, offsetLeft: 0});
             const { x, y }= props.dragRef.current?.state as Positioning;
             setPosition({
-              position: "fixed",
-              left: e.clientX - x - offsetLeft,
-              top: e.clientY - y - offsetTop,
+              position: "relative",
+              left: e.clientX - x - offsetLeft - originalPosition.x,
+              top: e.clientY - y - offsetTop - originalPosition.y,
               transform: "none",
               opacity: 0
             });
