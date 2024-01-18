@@ -269,7 +269,8 @@ function InputBlock(props: InputProps) {
               <div className='node-menu-btn' style={sideMenuBtnWrapperStyle}>
                 <svg 
                   width={sideMenuBtnStyle.svgW} 
-                  height={sideMenuBtnStyle.svgH} 
+                  height={sideMenuBtnStyle.svgH}
+                  className='func-svg'
                   onMouseEnter={() => {
 
                     //let tmp = showSideMenu.map(e => true);
