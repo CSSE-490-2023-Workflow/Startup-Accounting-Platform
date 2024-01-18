@@ -30,9 +30,7 @@ export class FirestoreRepository {
 
     constructor(db: Firestore) {
         this.db = db;
-        // @ts-ignore
         this.modelsRef = collection(db, "Models").withConverter(modelConverter);
-        // @ts-ignore
         this.usersRef = collection(db, "Users");
         this.functionsRef = collection(db, "Functions");
     }
@@ -69,5 +67,13 @@ export class FirestoreRepository {
     async getFunctions() {
         const querySnapshot = await getDocs(this.functionsRef);
         return querySnapshot.docs.map(doc => doc.data())
+    }
+
+    async getWorkflow(workflowId: string) {
+        return new Promise<object>((resolve) => {
+            setTimeout(() => {
+                resolve({name: "Workflow Name for ID " + workflowId})
+            }, 1000);
+        })
     }
 }
