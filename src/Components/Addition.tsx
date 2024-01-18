@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import NumberInput from './NumberInput';
 import { func_interpreter_new_caller} from '../engine/engine'
 
+/*
 function Addition() {
   const [inputs, setInputs] = useState([0,0])
   const [result, setResult] = useState(0)
@@ -47,6 +48,11 @@ function Addition() {
         <p>Sum: {result}</p>
     </>
   );
+}
+*/
+
+function Addition() {
+  return <h1>This functionality is temporarily disabled.</h1>
 }
 
 export default Addition;

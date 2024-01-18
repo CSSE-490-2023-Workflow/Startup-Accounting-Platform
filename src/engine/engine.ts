@@ -119,49 +119,56 @@ export function func_interpreter(func : custom_function, ...args: allowed_stack_
 */
 
 
-export function func_interpreter_new_caller(func_str : string, ...args: any[]) {
-    let ret : allowed_stack_components[] = [];
-    func_interpreter_new(func_str, ret, ...args);
+export function func_interpreter_new_caller(func_str : string, args: Map<string, allowed_stack_components>) {
+    let ret : Map<string, allowed_stack_components> = new Map<string, allowed_stack_components>();
+    func_interpreter_new(func_str, ret, args);
     return ret;
 }
 
-export function func_interpreter_new(func_str : string, ret: allowed_stack_components[], ...args: any[]) {
+const func_interpreter_new : any = function(func_str: string, ret: Map<string, allowed_stack_components>, args: Map<string, allowed_stack_components>) {
     const func_content = JSON.parse(func_str);
-    console.log(func_content);
-    if (func_content['type'] == 'builtin_function' && func_content['name'] == 'return') {
-        console.log("in function, return");
-        console.log(func_content['param'][0]);
+    console.log('func content', func_content);
+    if (func_content['type'] == 'custom_function') {
+        //console.log("in function, return");
+        //console.log(func_content['param'][0]);
         const ret_arr : allowed_stack_components[] = [];
-        for (const func_param of func_content['param']) {
-            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), ret, ...args);
+        for (const func_param of func_content['outputs']) {
+            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), ret, args);
             console.log('pushed', eval_res);
-            ret.push(eval_res);
         }
         return ret;
+    } else if (func_content['type'] == 'output') {
+        const outputEvalRes : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), ret, args);
+        ret.set(func_content['outputName'], outputEvalRes);
+        return null;
     } else if (func_content['type'] == 'builtin_function') {
         console.log("in function, not return");
         let param_arr : allowed_stack_components[] = [];
-        for (const func_param of func_content['param']) {
+        for (const func_param of func_content['params']) {
             console.log('func_param', func_param);
-            const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), ret, ...args);
+            const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), ret, args);
             console.log('func_param_eval_res', func_param_eval_res);
             param_arr.push(func_param_eval_res);
         }
-        const func_eval_res : allowed_stack_components[] = name_to_builtin_func[func_content['name']].func(...param_arr);
+        console.log('evaluating', func_content['functionName'])
+        const func_eval_res : allowed_stack_components[] = name_to_builtin_func[func_content['functionName']].func(...param_arr);
 
         console.log(func_eval_res);
+        //return func_eval_res;
         return func_eval_res.length == 1 ? func_eval_res[0] : func_eval_res;
     } else if (func_content['type'] == 'constant') {
         console.log('in constant');
         return func_content['value'];
-    } else if (func_content['type'] == 'argument') {
+    } else if (func_content['type'] == 'input') {
         console.log("in argument");
-        return args[func_content['index']];
+        return args.get(func_content['inputName']);
     } else {
         throw new FuncArgError(`Unrecognized function component type : ${func_content}`);
     }
 
 }
+
+export {func_interpreter_new}
 
 
 
