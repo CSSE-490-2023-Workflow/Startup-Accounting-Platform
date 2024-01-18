@@ -256,7 +256,7 @@ function OutputBlock(props: OutProps) {
     const sideMenu = (
       <>
         <Group justify="center" className='node-menu'>
-          <HoverCard width={100} shadow="md" position={menuDir} closeDelay={100} disabled={showSideMenu[dir] ? false : true}>
+          <HoverCard width={100} shadow="md" position={menuDir} closeDelay={30} disabled={showSideMenu[dir] ? false : true}>
             <HoverCard.Target >
               <div className='node-menu-btn' style={sideMenuBtnWrapperStyle}>
                 <svg 
