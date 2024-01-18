@@ -61,7 +61,9 @@ function FuncBuilderMain() {
   const [ inputBlocks, setInputBlocks ] = useState<InputBlockDS[]>([])
   const [ funcBlocks, setFuncBlocks ] = useState<FuncBlockDS[]>([])
   const [ outputBlocks, setOutputBlocks ] = useState<OutputBlockDS[]>([])
-  const [ currBlockId, setCurrBlockId ] = useState(0)
+  const [ currInputBlockId, setCurrInputBlockId ] = useState(1000)
+  const [ currFunctionBlockId, setCurrFunctionBlockId ] = useState(3000)
+  const [ currOutputBlockId, setCurrOutputBlockId ] = useState(2000)
   const [ savedFunction, setSavedFunction ] = useState({});
   const [ quickOutputs, setQuickOutputs ] = useState([]);
 
@@ -112,8 +114,16 @@ function FuncBuilderMain() {
     })[0]
     const tailBlkId : number = Number(arrow.start.split('o')[0]);
     const tailBlk : blk | undefined = blkMap.get(tailBlkId);
+    console.log('blkMap', blkMap);
+
+    /**
+     * tail block  ------>   head block
+     */
+    // which output of the tail block to use
+    const tailBlkOutputIdx : number | undefined = Number(arrow.start.split('o')[1]) - 1;
+
     if (tailBlk == undefined) {
-      throw new Error(`Arrow tail does not exist: ${arrow}`);
+      throw new Error(`Arrow tail does not exist: ${arrow.start} to ${arrow.end}`);
     }
     if ('inputName' in tailBlk) { // input block
       return {
@@ -129,6 +139,7 @@ function FuncBuilderMain() {
       //console.log('params', params);
       return {
         'type' : 'builtin_function',
+        'useOutput' : tailBlkOutputIdx,
         'functionName' : tailBlk.funcName,
         'paramNames' : tailBlk.paramNames,
         'paramTypes' : tailBlk.paramTypes,
@@ -145,9 +156,8 @@ function FuncBuilderMain() {
    * Input block Logics
    */
   const addInputBlock = useCallback((inputName: string, inputType: data_types) => {
-    const newId = currBlockId + 1;
-    console.log(arrows);
-    setCurrBlockId(newId);
+    const newId = currInputBlockId + 1;
+    setCurrInputBlockId(newId);
     const newBlock : InputBlockDS = {
       blockId: newId,
       inputName: inputName,
@@ -156,7 +166,8 @@ function FuncBuilderMain() {
     setInputBlocks([...inputBlocks, newBlock]) 
     blkMap.set(newId, newBlock);
     setBlkMap(new Map(blkMap));
-  }, [currBlockId, inputBlocks, setCurrBlockId, setInputBlocks])
+    console.log(blkMap);
+  }, [currInputBlockId, inputBlocks, setCurrInputBlockId, setInputBlocks, blkMap])
 
   const removeInputBlock = useCallback((blkId: number) => {
     setInputBlocks(inputBlocks.filter((blk) => {
@@ -185,8 +196,8 @@ function FuncBuilderMain() {
    * Output block logics
    */
   const addOutputBlock = useCallback((outputName: string, outputType: data_types) => {
-    const newId = currBlockId + 1;
-    setCurrBlockId(newId);
+    const newId = currOutputBlockId + 1;
+    setCurrOutputBlockId(newId);
     const newBlock : OutputBlockDS = {
       blockId: newId,
       outputName: outputName,
@@ -195,7 +206,8 @@ function FuncBuilderMain() {
     setOutputBlocks([...outputBlocks, newBlock]) 
     blkMap.set(newId, newBlock);
     setBlkMap(new Map(blkMap));
-  }, [currBlockId, outputBlocks, setCurrBlockId, setOutputBlocks])
+    console.log(blkMap);
+  }, [currOutputBlockId, outputBlocks, setCurrOutputBlockId, setOutputBlocks, blkMap])
 
   const removeOutputBlock = useCallback((blkId: number) => {
     setOutputBlocks(outputBlocks.filter((blk) => {
@@ -227,8 +239,8 @@ function FuncBuilderMain() {
    */
   //right now this is hard-coded for built-in functions only
   const addFuncBlock = useCallback((funcId: number) => {
-    const newId = currBlockId + 1;
-    setCurrBlockId(newId);
+    const newId = currFunctionBlockId + 1;
+    setCurrFunctionBlockId(newId);
     const f: builtin_function = id_to_builtin_func[funcId];
     const newBlock : FuncBlockDS = {
       blockId: newId,
@@ -242,7 +254,8 @@ function FuncBuilderMain() {
     setFuncBlocks([...funcBlocks, newBlock]) 
     blkMap.set(newId, newBlock);
     setBlkMap(new Map(blkMap));
-  }, [currBlockId, funcBlocks, setCurrBlockId, setFuncBlocks])
+    console.log(blkMap);
+  }, [currFunctionBlockId, funcBlocks, setCurrFunctionBlockId, setFuncBlocks, blkMap])
 
   const removeFuncBlock = useCallback((blkId: number) => {
     setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
