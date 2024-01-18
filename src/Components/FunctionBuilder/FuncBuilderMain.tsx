@@ -8,8 +8,9 @@ import '../../Styles/FuncBuilderBlk.css'
 //import '../../lib/font-awesome-4.7.0/css/font-awesome.min.css'
 import * as utils from './utils.json'
 import OutputBlock from './OutputBlock';
+import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
-import { param } from 'jquery';
+
 
 interface InputBlockDS {
   blockId: number
@@ -62,20 +63,67 @@ function FuncBuilderMain() {
   const [currBlockId, setCurrBlockId] = useState(0)
   const [savedFunction, setSavedFunction] = useState({});
 
-  const [ blkMap, setBlkMap ] = useState(new Map());
+  const [ blkMap, setBlkMap ] = useState(new Map<number, blk>());
 
   const saveFunction = useCallback(() => {
     console.log('saving')
+    const tmp : any[] = [];
     for (const outputBlk  of outputBlocks) {
       let path : any = {
         type : 'output',
-        param : []
+        param : [
+          tracePath(outputBlk.blockId.toString() + 'i1')
+        ]
       };
+      //console.log('trace res', path);
+      tmp.push(path);
     }
-  }, [inputBlocks, outputBlocks, funcBlocks])
+    const res : any = {
+      'functionName': 'MyCustomFunction',
+      'outputs': tmp
+    }
+    var blob = new Blob([JSON.stringify(res)], {type: "application/json; charset=utf-8"});
+    saveAs(blob, "hello world.json");
+  }, [inputBlocks, outputBlocks, funcBlocks, arrows])
 
-  const tracePath = function (blkId: number) {
-
+  /**
+   * Given the node id the head of an arrow is connected to, backtrace the path and return it
+   * @param arrowHead 
+   */
+  const tracePath = function (arrowHead: string) {
+    console.log('arrow head', arrowHead);
+    //console.log(arrows);
+    let arrow : StartAndEnd = arrows.filter((sae: StartAndEnd) => {
+      return sae.end == arrowHead
+    })[0]
+    const tailBlkId : number = Number(arrow.start.split('o')[0]);
+    const tailBlk : blk | undefined = blkMap.get(tailBlkId);
+    if (tailBlk == undefined) {
+      throw new Error(`Arrow tail does not exist: ${arrow}`);
+    }
+    if ('inputName' in tailBlk) { // input block
+      return {
+        'type' : 'input',
+        'inputName' : tailBlk.inputName,
+        'inputType' : tailBlk.inputType
+      }
+    } if ('funcName' in tailBlk) { //func block
+      const params : any[] = [];
+      for (const i of [...Array(tailBlk.paramNames.length).keys()].map(e => e+1)) { //for i in [1, 2, ..., # of params]
+        params.push(tracePath(tailBlk.blockId.toString() + 'i' + i.toString()))
+      }
+      //console.log('params', params);
+      return {
+        'type' : 'function',
+        'paramNames' : tailBlk.paramNames,
+        'paramTypes' : tailBlk.paramTypes,
+        'outputNames' : tailBlk.outputNames,
+        'outputTypes' : tailBlk.outputTypes,
+        'params' : params
+      }
+    } else {
+      throw new Error(`Arrow tail is a block of an illegal type: ${arrow}`);
+    }
   }
 
   /**

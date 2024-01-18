@@ -152,7 +152,7 @@ function FuncBlock(props: FuncProps) {
       faIconStyle.transform = 'translate(0px, -7px)'
       faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
-    const handleId : string = blkId.toString() + 'i' + index;
+    const handleId : string = blkId.toString() + 'i' + (index+1).toString();
     return (
       <>
         <Popover opened={showParamNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
@@ -235,7 +235,7 @@ function FuncBlock(props: FuncProps) {
       faIconStyle.transform = 'translate(0px, -7px)'
       faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
-    const handleId : string = blkId.toString() + 'o' + index;
+    const handleId : string = blkId.toString() + 'o' + (index+1).toString();
     return (
       <>
         <Popover opened={showOutputNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{

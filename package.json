@@ -19,8 +19,10 @@
     "@types/react": "^18.2.23",
     "@types/react-dom": "^18.2.8",
     "chart.js": "^4.4.0",
+    "file-saver": "^2.0.5",
     "firebase": "^10.7.1",
     "font-awesome": "^4.7.0",
+    "fs": "^0.0.1-security",
     "jQuery": "^1.7.4",
     "localforage": "^1.10.0",
     "match-sorter": "^6.3.1",
@@ -61,6 +63,7 @@
     ]
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.7",
     "@types/jquery": "^3.5.29",
     "@types/react-vis": "^1.11.14"
   }
