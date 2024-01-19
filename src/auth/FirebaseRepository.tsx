@@ -1,4 +1,4 @@
-import {collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc} from "firebase/firestore";
+import {collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, onSnapshot} from "firebase/firestore";
 import {getFirestore} from 'firebase/firestore';
 import firebase from "firebase/compat/app";
 import "firebase/compat/firestore";
@@ -80,5 +80,16 @@ export class FirestoreRepository {
     async createEmptyFunction() {
         const docRef = await addDoc(this.functionsRef, {});
         return docRef.id;
+    }
+
+    async getFunction(functionId: string) {
+        const func = await getDoc(doc(this.functionsRef, functionId));
+        return func.data() as object
+    }
+
+    subscribeToFunction(functionId: string, callback: (funcData: object) => void) {
+        return onSnapshot(doc(this.functionsRef, functionId), (doc) => {
+            callback(doc.data() as object);
+        })
     }
 }
