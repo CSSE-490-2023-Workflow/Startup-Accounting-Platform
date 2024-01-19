@@ -1,21 +1,37 @@
-import { useCallback, useState } from 'react';
+import {useCallback, useState} from 'react';
 import './Functions.css'
-import PageButton from '../../Components/PageButton';
 import FuncBuilderMain from '../../Components/FunctionBuilder/FuncBuilderMain';
+import {Box, Button, LoadingOverlay, Space} from "@mantine/core";
+import {database} from "../../auth/firebase";
 
 function Functions() {
-    const [page, setPage] = useState(0)
-    const handlePageChange = useCallback((val: number) => {
-      setPage(val)
-    }, [])
-    return (
-      <div className="Demo">
-        <header className="App-header">
-          <PageButton onClick={handlePageChange} value={1} name="Function Builder" />
-          {page == 1 && <FuncBuilderMain/>}
-        </header>
-      </div>
-    );
-  }
+    const [loading, setLoading] = useState(false);
 
-  export default Functions;
+
+    const createNewFunction = () => {
+        setLoading(true);
+
+        database.createEmptyFunction().then((functionId: string) => {
+            window.open(`/function/${functionId}`, '_blank');
+            setLoading(false);
+        });
+    }
+
+    return (
+        <div className="Demo">
+            <header className="App-header">
+                <Box pos='relative'>
+                    <LoadingOverlay visible={loading} loaderProps={{size: 28}} />
+                    <Button onClick={createNewFunction}>Create New Function</Button>
+                </Box>
+
+
+                <Space h={'150'} />
+                <h4>Func Builder for Testing</h4>
+                <FuncBuilderMain functionId={"test_function"}/>
+            </header>
+        </div>
+    );
+}
+
+export default Functions;

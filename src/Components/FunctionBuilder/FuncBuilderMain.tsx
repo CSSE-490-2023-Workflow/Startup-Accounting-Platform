@@ -11,6 +11,7 @@ import OutputBlock from './OutputBlock';
 import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
 import { database } from "../../auth/firebase";
+import {Button} from "@mantine/core";
 
 interface InputBlockDS {
   blockId: number
@@ -46,9 +47,13 @@ interface StartAndEnd {
   end: string;
 }
 
+interface FuncBuilderMainProps {
+  functionId: string;
+}
+
 type blk = FuncBlockDS | OutputBlockDS | InputBlockDS;
 
-function FuncBuilderMain() {
+function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const [arrows, setArrows] = useState<StartAndEnd[]>([]);
   const addArrow = (value: StartAndEnd) => {
@@ -85,8 +90,8 @@ function FuncBuilderMain() {
     var blob = new Blob([JSON.stringify(res)], {type: "application/json; charset=utf-8"});
     saveAs(blob, "hello world.json");
 
-    database.updateFunction(JSON.stringify(res));
-  }, [inputBlocks, outputBlocks, funcBlocks, arrows])
+    database.updateFunction(props.functionId, JSON.stringify(res));
+  }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId])
 
   /**
    * Given the node id the head of an arrow is connected to, backtrace the path and return it
@@ -323,7 +328,7 @@ function FuncBuilderMain() {
         <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block" defaultAttr={["new input", data_types.dt_number]}/>
         <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={[1]}/>
         <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", data_types.dt_number]}/>
-        <button id='save-custom-function' onClick={() => {saveFunction()}}>Save</button>
+        <Button id='save-custom-function' variant='default' onClick={() => {saveFunction()}}>Save</Button>
         <h3>Function Builder</h3>
         {inputBlocksList}
         {funcBlocksList}

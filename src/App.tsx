@@ -6,6 +6,7 @@ import {
     Route, Routes, BrowserRouter
 } from 'react-router-dom'
 import WorkflowBuilder from "./pages/WorkflowBuilder/WorkflowBuilder";
+import CustomFunctionBuilder from "./pages/CustomFunctionBuilder/CustomFunctionBuilder";
 
 function App() {
     return (
@@ -14,6 +15,7 @@ function App() {
                 <Route path='/' element={<PrivateRoute/>}>
                     <Route path='/' element={<Home/>}/>
                     <Route path='workflow/:id' element={<WorkflowBuilder/>}/>
+                    <Route path='function/:id' element={<CustomFunctionBuilder/>}/>
                 </Route>
                 <Route path="/login" element={<LoginPage/>}/>
             </Routes>

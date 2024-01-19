@@ -60,7 +60,8 @@
 .block-container {
   width: auto;
   height: auto;
-  position: relative;
+  position: absolute;
+  text-align: center;
 }
 
 .func-svg {

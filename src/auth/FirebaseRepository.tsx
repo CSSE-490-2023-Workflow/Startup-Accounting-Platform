@@ -1,4 +1,4 @@
-import {collection, doc, getDoc, getDocs, setDoc, deleteDoc} from "firebase/firestore";
+import {collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc} from "firebase/firestore";
 import {getFirestore} from 'firebase/firestore';
 import firebase from "firebase/compat/app";
 import "firebase/compat/firestore";
@@ -60,8 +60,8 @@ export class FirestoreRepository {
         return deleteDoc(doc(this.modelsRef, modelData.id));
     }
 
-    async updateFunction(rawJson: string) {
-        return setDoc(doc(this.functionsRef), {rawJson: rawJson});
+    async updateFunction(functionId: string, rawJson: string) {
+        return setDoc(doc(this.functionsRef, functionId), {rawJson: rawJson});
     }
 
     async getFunctions() {
@@ -75,5 +75,10 @@ export class FirestoreRepository {
                 resolve({name: "Workflow Name for ID " + workflowId})
             }, 1000);
         })
+    }
+
+    async createEmptyFunction() {
+        const docRef = await addDoc(this.functionsRef, {});
+        return docRef.id;
     }
 }
