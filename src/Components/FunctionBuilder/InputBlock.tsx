@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
+import { StartAndEnd, Arrow } from './FuncBuilderMain'
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, FloatingPosition, Container} from '@mantine/core';
 import '../../assets/font-awesome/css/all.css'
 import Draggable from 'react-draggable';
@@ -12,10 +13,11 @@ enum direction {
   'right'
 }
 
-interface StartAndEnd {
-  start: string;
-  end: string;
-}
+
+// interface StartAndEnd {
+//   start: string;
+//   end: string;
+// }
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
@@ -24,13 +26,22 @@ interface InputProps {
   inputName: string;
   inputType: data_types;
   inputTypeOptions: [data_types, string][];
-  updateBlkCB: (funcBlockId: number, inputName: string, inputType: data_types) => void;
+  updateBlkCB: (funcBlockId: number, inputName: string | null, inputType: data_types | null, idx: number | null) => void;
   removeBlkCB:  (id: number) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
+  //setArrows: React.Dispatch<React.SetStateAction<Arrow[]>>;
 }
 
 function InputBlock(props: InputProps) {
-  const [ id, name, type, typeOptions, editCB, removeCB , setArrows] = [props.blockId, props.inputName, props.inputType, props.inputTypeOptions, props.updateBlkCB, props.removeBlkCB, props.setArrows]
+  const [ id, name, type, typeOptions, editCB, removeCB , setArrows] = [
+    props.blockId, 
+    props.inputName, 
+    props.inputType, 
+    props.inputTypeOptions, 
+    props.updateBlkCB, 
+    props.removeBlkCB, 
+    props.setArrows
+  ]
   
   const dragRef = useRef<Draggable>(null);
   const boxRef =  useRef<HTMLDivElement>(null);
@@ -143,12 +154,12 @@ function InputBlock(props: InputProps) {
 
   function handleNameChange(e: any) {
     setName(e.target.value);
-    editCB(id, e.target.value, inputType);
+    editCB(id, e.target.value, null, null);
   }
 
   function handleTypeChange(e: any) {
     setType(e.target.value);
-    editCB(id, inputName, e.target.value);
+    editCB(id, null, e.target.value, null);
   }
 
   function handleRemoveBlock(e: any) {

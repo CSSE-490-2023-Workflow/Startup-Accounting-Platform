@@ -1,8 +1,9 @@
 import React, { useCallback, useRef, useState} from 'react';
-import { data_types } from "../../engine/datatype_def"
+import { data_types, data_type_enum_name_pairs} from "../../engine/datatype_def"
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover} from '@mantine/core';
 import Draggable from 'react-draggable';
 import DotlessConnectPointsWrapper from "../DotlessConnectPointsWrapper";
+import { Arrow } from './FuncBuilderMain';
 
 enum direction {
   'top'= 0,
@@ -21,16 +22,27 @@ const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 interface OutProps {
   blockId: number;
   outputName: string;
-  outputType: data_types;
-  updateBlkCB: (blkId: number, outputName: string, outputType: data_types) => void;
+  outputType: data_types | undefined; //undefined if not connected to another block
+  updateBlkCB: (blkId: number, outputName: string, outputType: data_types, idx: number) => void;
   removeBlkCB: (blkId: number) => void;
   addArrow: (value: StartAndEnd) => void;
+  //addArrow: (value: Arrow) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
+  //setArrows: React.Dispatch<React.SetStateAction<Arrow[]>>;
 }
 
 function OutputBlock(props: OutProps) {
-  const [ id, name, editCB, removeCB, addArrow, setArrows] = [props.blockId, props.outputName, props.updateBlkCB, props.removeBlkCB, props.addArrow, props.setArrows]
-  const [ outputName, setName] = useState(name)
+  const [ id, name, oType, editCB, removeCB, addArrow, setArrows] = [
+    props.blockId, 
+    props.outputName, 
+    props.outputType,
+    props.updateBlkCB, 
+    props.removeBlkCB, 
+    props.addArrow, 
+    props.setArrows
+  ];
+  const [ outputName, setName] = useState(name);
+  const [ outputType, setOutputType ] = useState(oType);
 
   const dragRef = useRef<Draggable>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -145,7 +157,7 @@ function OutputBlock(props: OutProps) {
 
   function handleNameChange(e: any) {
     setName(e.target.value);
-    editCB(id, e.target.value, data_types.dt_number); //TODO: Fix what datatype it chooses
+    editCB(id, e.target.value, data_types.dt_number, 0); //TODO: Fix what datatype it chooses
   }
 
   function handleRemoveBlock(e: any) {
@@ -322,6 +334,7 @@ function OutputBlock(props: OutProps) {
       </CardSection>
       <CardSection>
         <Input className="output-block-name" onChange={handleNameChange} value={outputName} variant="filled" placeholder="Output Name" />
+        <h4 className='output-block-type-display'>{oType == undefined ? 'undefined' : data_type_enum_name_pairs[oType][1]}</h4>
       </CardSection>
     </Card>
     {paramNodes}

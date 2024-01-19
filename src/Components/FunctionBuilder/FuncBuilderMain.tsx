@@ -19,6 +19,7 @@ interface InputBlockDS {
   blockId: number
   inputName: string
   inputType: data_types
+  inputIdx: number
   val: any
 }
 
@@ -35,44 +36,102 @@ interface FuncBlockDS {
 interface OutputBlockDS {
   blockId: number
   outputName: string
-  outputType: data_types
+  outputType: data_types | undefined
+  outputIdx: number
   val: any
 }
 
-interface StartAndEnd {
+export interface StartAndEnd {
   start: string;
   end: string;
 }
 
 const config = utils;
 
-interface StartAndEnd {
-  start: string;
-  end: string;
+
+export interface Arrow {
+  start: string,
+  end: string,
+  startId: number,
+  endId: number,
+  startType: blk,
+  endType: blk
 }
 
 type blk = FuncBlockDS | OutputBlockDS | InputBlockDS;
 
 function FuncBuilderMain() {
 
-  const [arrows, setArrows] = useState<StartAndEnd[]>([]);
-  const addArrow = (value: StartAndEnd) => {
-    setArrows([...arrows, value]);
-  };
-
   //const [inputs, setInputs] = useState([0,0])
   //const [result, setResult] = useState(0)
-  const [ inputBlocks, setInputBlocks ] = useState<InputBlockDS[]>([])
-  const [ funcBlocks, setFuncBlocks ] = useState<FuncBlockDS[]>([])
-  const [ outputBlocks, setOutputBlocks ] = useState<OutputBlockDS[]>([])
-  const [ currInputBlockId, setCurrInputBlockId ] = useState(1000)
-  const [ currFunctionBlockId, setCurrFunctionBlockId ] = useState(3000)
-  const [ currOutputBlockId, setCurrOutputBlockId ] = useState(2000)
+  const [ inputBlocks, setInputBlocks ] = useState<InputBlockDS[]>([]);
+  const [ funcBlocks, setFuncBlocks ] = useState<FuncBlockDS[]>([]);
+  const [ outputBlocks, setOutputBlocks ] = useState<OutputBlockDS[]>([]);
+
+  // stores the blk ids
+  const [ currInputBlockId, setCurrInputBlockId ] = useState(1000);
+  const [ currFunctionBlockId, setCurrFunctionBlockId ] = useState(3000);
+  const [ currOutputBlockId, setCurrOutputBlockId ] = useState(2000);
+
+  // a map from input idx to the block ds. The index starts at 1. 
+  const [ inputBlkIdxMap, setInputBlkIdxMap ] = useState<Map<number, InputBlockDS>>(new Map());
+  const [ outputBlkIdxMap, setOutputBlkIdxMap ] = useState<Map<number, OutputBlockDS>>(new Map());
+
   const [ savedFunction, setSavedFunction ] = useState({});
-  const [ quickOutputs, setQuickOutputs ] = useState([]);
-  const [ outputMap, setOutputMap] = useState(new Map<string, allowed_stack_components>());
 
   const [ blkMap, setBlkMap ] = useState(new Map<number, blk>());
+
+  const [arrows, setArrows] = useState<StartAndEnd[]>([]);
+  //const [ arrows, setArrows ] = useState<Arrow[]>([]);
+
+
+  const addArrow = useCallback((v: StartAndEnd) => {
+    setArrows([...arrows, v]);
+    /**
+     * tail(start) block  ------>   head(end) block
+     */
+
+    // If the arrow goes to an output block, we need to set to type of it
+    updateOutputBlkType(v);
+  }, [arrows, blkMap]);
+
+  function arrowStartBlk(arrow: StartAndEnd) {
+    return Number(arrow.start.split('o')[0]);
+  }
+
+  function arrowEndBlk(arrow: StartAndEnd) {
+    return Number(arrow.end.split('i')[0]);
+  }
+
+  function isInputBlock(blkId: number) {
+    return blkId > 1000 && blkId < 2000;
+  }
+
+  function isOutputBlock(blkId: number) {
+    return blkId > 2000 && blkId < 3000;
+  }
+
+  function isFuncBlock(blkId: number) {
+    return blkId > 3000 && blkId < 4000;
+  }
+
+  // Given an arrow leading to an output block
+  // Updates the output block's type if needed
+  function updateOutputBlkType(arrow: StartAndEnd) {
+    const endBlkId : number = Number(arrow.end.split('i')[0]);
+    if (isOutputBlock(endBlkId)) { //end block is an output block
+      const startBlkId : number = Number(arrow.start.split('o')[0]);
+      const startNodeIdx : number = Number(arrow.start.split('o')[1]);
+      if (isInputBlock(startBlkId)) { //start block is an input block
+        const startBlk : InputBlockDS = blkMap.get(startBlkId) as InputBlockDS;
+        editOutputBlock(endBlkId, null, startBlk.inputType, null);
+      } else if (isFuncBlock(startBlkId)) { //start block is a function block
+        const startBlk : FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
+        editOutputBlock(endBlkId, null, startBlk.outputTypes[startNodeIdx - 1], null); // change from 1-based to 0-based indexing
+      }
+    }
+
+  }
 
   const evaluateFunction = useCallback(() => {
     const paramMap : Map<string, allowed_stack_components> = new Map<string, allowed_stack_components>();
@@ -81,7 +140,7 @@ function FuncBuilderMain() {
     }
     
     const res: Map<string, allowed_stack_components> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
-    setOutputMap(res);
+    //setOutputMap(res);
     console.log('complete. Outputs of the custom function are: ', res);
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction]);
 
@@ -165,83 +224,202 @@ function FuncBuilderMain() {
    */
   const addInputBlock = useCallback((inputName: string, inputType: data_types) => {
     const newId = currInputBlockId + 1;
-    setCurrInputBlockId(newId);
+    const newIdx = inputBlkIdxMap.size + 1;
+    setCurrInputBlockId(id => id + 1);
+
     const newBlock : InputBlockDS = {
       blockId: newId,
       inputName: inputName,
       inputType: inputType,
+      inputIdx: newIdx,
       val: 0
     }
-    setInputBlocks([...inputBlocks, newBlock]) 
-    blkMap.set(newId, newBlock);
-    setBlkMap(new Map(blkMap));
-    console.log('blk map updated in input', inputBlocks);
-  }, [currInputBlockId, inputBlocks, setCurrInputBlockId, setInputBlocks, blkMap])
+    setInputBlocks(inputBlocks => [...inputBlocks, newBlock]) 
+
+    setBlkMap(blkMap => {blkMap.set(newId, newBlock); return new Map(blkMap)});
+
+    setInputBlkIdxMap(inputBlkIdxMap => {inputBlkIdxMap.set(newIdx, newBlock); return new Map(inputBlkIdxMap)});
+
+    if (config.debug_mode_FuncBuilder == 1) {
+      console.log('Add input block. Input blk idx map', inputBlkIdxMap);
+    }
+  }, [inputBlkIdxMap, currInputBlockId])
 
   const removeInputBlock = useCallback((blkId: number) => {
-    setInputBlocks(inputBlocks.filter((blk) => {
-      return blk.blockId != blkId
-    }));
-    blkMap.delete(blkId);
-    setBlkMap(new Map<number, blk>(blkMap));
-  }, [inputBlocks, setInputBlocks])
+    setInputBlocks(inputBlocks => {
+      return inputBlocks.filter((blk) => blk.blockId != blkId)
+    });
 
-  const editInputBlock = useCallback((blkId: number, inputName: string, inputType: data_types) => {
-    if (config.debug_mode_FuncBuilder == 1) {
-      console.log('edit callback', blkId, inputName, inputType);
-      console.log("current input blocks in parents", inputBlocks);
-    }
-    const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS) => {
-      if (blk.blockId == blkId) {
-        blk.inputName = inputName;
-        blk.inputType = inputType;
+    setBlkMap(blkMap => {blkMap.delete(blkId); return new Map(blkMap)});
+
+    console.log('blkmap after removal input block', blkMap);
+    
+    // Make all blks with larger indices than the removed blk index--
+    let flag : boolean = false;
+    for (const [blkIdx, blk] of inputBlkIdxMap) {
+      if (flag) {
+        console.log('setting', blkIdx - 1, blk);
+        inputBlkIdxMap.set(blkIdx - 1, blk);
       }
-      return blk;
-    })
-    setInputBlocks(tmp) 
-  }, [inputBlocks, setInputBlocks])
+      if (blk.blockId == blkId) {
+        flag = true;
+      } 
+    }
+    inputBlkIdxMap.delete(inputBlkIdxMap.size);
+    setInputBlkIdxMap(new Map(inputBlkIdxMap));
+
+    if (config.debug_mode_FuncBuilder == 1) {
+      console.log('remove intput block. Input blk idx map', inputBlkIdxMap);
+    }
+
+  }, [inputBlkIdxMap])
+
+  // Updates the information of the block with the given id
+  // params that are passed in null will NOT be updated
+  const editInputBlock = useCallback(
+    (
+      blkId: number, 
+      inputName: string | null,
+      inputType: data_types | null,
+      idx: number | null
+    ) => {
+      if (config.debug_mode_FuncBuilder == 1) {
+        console.log('edit callback', blkId, inputName, inputType);
+        console.log("current input blocks in parents", inputBlocks);
+      }
+      const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS) => {
+        if (blk.blockId == blkId) {
+          if (inputName != null)  {
+            blk.inputName = inputName;
+          }
+          if (inputType != null) {
+            blk.inputType = inputType;
+
+            // we need to update all outputs connected to the block 
+            for (const arrow of arrows) {
+              if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
+                updateOutputBlkType(arrow);
+              }
+            }
+          }
+          if (idx != null) {
+            const oldIdx : number = blk.inputIdx;
+            blk.inputIdx = idx
+            const blkToSwap : InputBlockDS | undefined = inputBlkIdxMap.get(idx);
+            if (blkToSwap != undefined) {
+              blkToSwap.inputIdx = oldIdx;
+              inputBlkIdxMap.set(oldIdx, blkToSwap);
+            } 
+            inputBlkIdxMap.set(idx, blk);
+          }
+        }
+        return blk;
+      })
+      setInputBlocks(tmp) 
+
+      setInputBlkIdxMap(new Map(inputBlkIdxMap));
+
+      if (config.debug_mode_FuncBuilder == 1) {
+        console.log('edit input block. Input blk idx map', inputBlkIdxMap);
+      }
+
+    }, [inputBlocks, inputBlkIdxMap, arrows, inputBlkIdxMap])
 
   /**
    * Output block logics
    */
   const addOutputBlock = useCallback((outputName: string, outputType: data_types) => {
     const newId = currOutputBlockId + 1;
+    const newIdx = outputBlkIdxMap.size + 1;
     setCurrOutputBlockId(newId);
     const newBlock : OutputBlockDS = {
       blockId: newId,
       outputName: outputName,
       outputType: outputType,
+      outputIdx: newIdx,
       val: 0
     }
     setOutputBlocks([...outputBlocks, newBlock]) 
+
     blkMap.set(newId, newBlock);
     setBlkMap(new Map(blkMap));
-    console.log(blkMap);
+
+    outputBlkIdxMap.set(newIdx, newBlock);
+    setOutputBlkIdxMap(new Map(outputBlkIdxMap));
+    
+    if (config.debug_mode_FuncBuilder == 1) {
+      console.log('Add output block. Output blk idx map', outputBlkIdxMap);
+    }
   }, [currOutputBlockId, outputBlocks, setCurrOutputBlockId, setOutputBlocks, blkMap])
 
   const removeOutputBlock = useCallback((blkId: number) => {
     setOutputBlocks(outputBlocks.filter((blk) => {
       return blk.blockId != blkId
     })) ;
+
     blkMap.delete(blkId);
     setBlkMap(new Map<number, blk>(blkMap));
-    console.log(blkMap);
+
+    // Make all blks with larger indices than the removed blk index--
+    let flag : boolean = false;
+    for (const [blkIdx, blk] of outputBlkIdxMap) {
+      if (flag) {
+        outputBlkIdxMap.set(blkIdx - 1, blk);
+      }
+      if (blk.blockId == blkId) {
+        flag = true;
+      } 
+    }
+    outputBlkIdxMap.delete(outputBlkIdxMap.size);
+
+    setOutputBlkIdxMap(new Map(outputBlkIdxMap));
+    if (config.debug_mode_FuncBuilder == 1) {
+      console.log('remove output block. Output blk idx map', outputBlkIdxMap);
+    }
+
   }, [outputBlocks, setOutputBlocks])
 
-  const editOutputBlock = useCallback((blkId: number, outputName: string, outputType: data_types) => {
-    if (config.debug_mode_FuncBuilder == 1) {
-      console.log('edit callback', blkId, outputName, outputType);
-      console.log("current output blocks in parents", outputBlocks);
-    }
-    const tmp: OutputBlockDS[] = outputBlocks.map((blk: OutputBlockDS) => {
-      if (blk.blockId == blkId) {
-        blk.outputName = outputName;
-        blk.outputType = outputType;
+  // Updates the information of the block with the given id
+  // params that are null will NOT be updated
+  const editOutputBlock = useCallback(
+    (
+      blkId: number, 
+      outputName: string | null, 
+      outputType: data_types | null,  
+      idx: number | null
+    ) => {
+      if (config.debug_mode_FuncBuilder == 1) {
+        console.log('edit callback', blkId, outputName, outputType);
+        console.log("current output blocks in parents", outputBlocks);
       }
-      return blk;
-    })
-    setOutputBlocks(tmp) 
-  }, [outputBlocks, setOutputBlocks])
+      const tmp: OutputBlockDS[] = outputBlocks.map((blk: OutputBlockDS) => {
+        if (blk.blockId == blkId) {
+          if (outputName != null) {
+            blk.outputName = outputName;
+          }
+          if (outputType != null) {
+            blk.outputType = outputType;
+          }
+          if (idx != null) {
+            const oldIdx : number = blk.outputIdx;
+            blk.outputIdx = idx;
+            const blkToSwap : OutputBlockDS | undefined = outputBlkIdxMap.get(idx);
+            if (blkToSwap != undefined) {
+              blkToSwap.outputIdx = oldIdx;
+              outputBlkIdxMap.set(oldIdx, blkToSwap);
+            } 
+            outputBlkIdxMap.set(idx, blk);
+          }
+        }
+        return blk;
+      })
+      setOutputBlocks(tmp) 
+
+      setOutputBlkIdxMap(new Map(outputBlkIdxMap));
+      if (config.debug_mode_FuncBuilder == 1) {
+        console.log('edit output block. Output blk idx map', inputBlkIdxMap);
+      }
+    }, [outputBlocks, setOutputBlocks])
 
 
   /**
@@ -275,13 +453,13 @@ function FuncBuilderMain() {
     setBlkMap(new Map<number, blk>(blkMap));
   }, [funcBlocks, setFuncBlocks])
 
-  const editFuncBlock = useCallback((funcBlockId: number, funcId: number) => {
+  const editFuncBlock = useCallback((blkId: number, funcId: number) => {
     if (config.debug_mode_FuncBuilder == 1) {
-      console.log('edit func block callback', funcBlockId, funcId);
+      console.log('edit func block callback', blkId, funcId);
       console.log("current function blocks in parents", funcBlocks);
     }
     const tmp: FuncBlockDS[] = funcBlocks.map((blk: FuncBlockDS) => {
-      if (blk.blockId == funcBlockId) {
+      if (blk.blockId == blkId) {
         blk.funcId = funcId;
         const f: builtin_function = id_to_builtin_func[funcId];
         blk.funcName = f.func_name;
@@ -289,6 +467,12 @@ function FuncBuilderMain() {
         blk.paramNames = f.param_names;
         blk.outputTypes = f.output_types;
         blk.outputNames = f.output_names;
+
+        for (const arrow of arrows) {
+          if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
+            updateOutputBlkType(arrow);
+          }
+        }
         console.log(blk);
       }
       return blk;
@@ -411,7 +595,7 @@ function FuncBuilderMain() {
     <>
         <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block" defaultAttr={["new input", data_types.dt_number]}/>
         <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={[1]}/>
-        <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", data_types.dt_number]}/>
+        <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined]}/>
         <button id='save-custom-function' onClick={() => {saveFunction()}}>Save</button>
         <button id='eval-custom-function' onClick={() => {evaluateFunction()}}>Evaluate</button>
         <h3>Function Builder</h3>
