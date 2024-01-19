@@ -1,15 +1,18 @@
 import React, { useCallback, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
-import { data_types, builtin_function, data_type_enum_name_pairs} from '../../engine/datatype_def'
+import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components} from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
 import '../../Styles/FuncBuilderBlk.css'
+import { func_interpreter_new, func_interpreter_new_caller } from '../../engine/engine'
 //import '../../lib/font-awesome-4.7.0/css/font-awesome.min.css'
 import * as utils from './utils.json'
 import OutputBlock from './OutputBlock';
 import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
+import NumberInput from '../NumberInput';
+import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 import { database } from "../../auth/firebase";
 import {Button} from "@mantine/core";
 
@@ -62,13 +65,24 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   //const [inputs, setInputs] = useState([0,0])
   //const [result, setResult] = useState(0)
-  const [inputBlocks, setInputBlocks] = useState<InputBlockDS[]>([])
-  const [funcBlocks, setFuncBlocks] = useState<FuncBlockDS[]>([])
-  const [outputBlocks, setOutputBlocks] = useState<OutputBlockDS[]>([])
-  const [currBlockId, setCurrBlockId] = useState(0)
-  const [savedFunction, setSavedFunction] = useState({});
+  const [ inputBlocks, setInputBlocks ] = useState<InputBlockDS[]>([])
+  const [ funcBlocks, setFuncBlocks ] = useState<FuncBlockDS[]>([])
+  const [ outputBlocks, setOutputBlocks ] = useState<OutputBlockDS[]>([])
+  const [ currInputBlockId, setCurrInputBlockId ] = useState(1000)
+  const [ currFunctionBlockId, setCurrFunctionBlockId ] = useState(3000)
+  const [ currOutputBlockId, setCurrOutputBlockId ] = useState(2000)
+  const [ savedFunction, setSavedFunction ] = useState({});
+  const [ quickOutputs, setQuickOutputs ] = useState([]);
 
   const [ blkMap, setBlkMap ] = useState(new Map<number, blk>());
+
+  const evaluateFunction = useCallback(() => {
+    const paramMap : Map<string, allowed_stack_components> = new Map<string, allowed_stack_components>();
+    paramMap.set('param1', 3);
+    paramMap.set('param2', 5);
+    const res: Map<string, allowed_stack_components> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
+    console.log(res);
+  }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction])
 
   const saveFunction = useCallback(() => {
     console.log('saving')
@@ -76,7 +90,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     for (const outputBlk  of outputBlocks) {
       let path : any = {
         type : 'output',
-        param : [
+        outputName : outputBlk.outputName,
+        params : [
           tracePath(outputBlk.blockId.toString() + 'i1')
         ]
       };
@@ -84,15 +99,17 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       tmp.push(path);
     }
     const res : any = {
+      'type': 'custom_function',
       'functionName': 'MyCustomFunction',
       'outputs': tmp
     }
     var blob = new Blob([JSON.stringify(res)], {type: "application/json; charset=utf-8"});
     saveAs(blob, "hello world.json");
+    setSavedFunction(res);
+    console.log('saved func', res);
 
     database.updateFunction(props.functionId, JSON.stringify(res));
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId])
-
   /**
    * Given the node id the head of an arrow is connected to, backtrace the path and return it
    * @param arrowHead 
@@ -105,8 +122,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     })[0]
     const tailBlkId : number = Number(arrow.start.split('o')[0]);
     const tailBlk : blk | undefined = blkMap.get(tailBlkId);
+    console.log('blkMap', blkMap);
+
+    /**
+     * tail block  ------>   head block
+     */
+    // which output of the tail block to use
+    const tailBlkOutputIdx : number | undefined = Number(arrow.start.split('o')[1]) - 1;
+
     if (tailBlk == undefined) {
-      throw new Error(`Arrow tail does not exist: ${arrow}`);
+      throw new Error(`Arrow tail does not exist: ${arrow.start} to ${arrow.end}`);
     }
     if ('inputName' in tailBlk) { // input block
       return {
@@ -121,7 +146,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       }
       //console.log('params', params);
       return {
-        'type' : 'function',
+        'type' : 'builtin_function',
+        'useOutput' : tailBlkOutputIdx,
+        'functionName' : tailBlk.funcName,
         'paramNames' : tailBlk.paramNames,
         'paramTypes' : tailBlk.paramTypes,
         'outputNames' : tailBlk.outputNames,
@@ -137,9 +164,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
    * Input block Logics
    */
   const addInputBlock = useCallback((inputName: string, inputType: data_types) => {
-    const newId = currBlockId + 1;
-    console.log(arrows);
-    setCurrBlockId(newId);
+    const newId = currInputBlockId + 1;
+    setCurrInputBlockId(newId);
     const newBlock : InputBlockDS = {
       blockId: newId,
       inputName: inputName,
@@ -148,7 +174,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setInputBlocks([...inputBlocks, newBlock]) 
     blkMap.set(newId, newBlock);
     setBlkMap(new Map(blkMap));
-  }, [currBlockId, inputBlocks, setCurrBlockId, setInputBlocks])
+    console.log(blkMap);
+  }, [currInputBlockId, inputBlocks, setCurrInputBlockId, setInputBlocks, blkMap])
 
   const removeInputBlock = useCallback((blkId: number) => {
     setInputBlocks(inputBlocks.filter((blk) => {
@@ -177,8 +204,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
    * Output block logics
    */
   const addOutputBlock = useCallback((outputName: string, outputType: data_types) => {
-    const newId = currBlockId + 1;
-    setCurrBlockId(newId);
+    const newId = currOutputBlockId + 1;
+    setCurrOutputBlockId(newId);
     const newBlock : OutputBlockDS = {
       blockId: newId,
       outputName: outputName,
@@ -187,7 +214,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setOutputBlocks([...outputBlocks, newBlock]) 
     blkMap.set(newId, newBlock);
     setBlkMap(new Map(blkMap));
-  }, [currBlockId, outputBlocks, setCurrBlockId, setOutputBlocks])
+    console.log(blkMap);
+  }, [currOutputBlockId, outputBlocks, setCurrOutputBlockId, setOutputBlocks, blkMap])
 
   const removeOutputBlock = useCallback((blkId: number) => {
     setOutputBlocks(outputBlocks.filter((blk) => {
@@ -219,8 +247,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
    */
   //right now this is hard-coded for built-in functions only
   const addFuncBlock = useCallback((funcId: number) => {
-    const newId = currBlockId + 1;
-    setCurrBlockId(newId);
+    const newId = currFunctionBlockId + 1;
+    setCurrFunctionBlockId(newId);
     const f: builtin_function = id_to_builtin_func[funcId];
     const newBlock : FuncBlockDS = {
       blockId: newId,
@@ -234,7 +262,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setFuncBlocks([...funcBlocks, newBlock]) 
     blkMap.set(newId, newBlock);
     setBlkMap(new Map(blkMap));
-  }, [currBlockId, funcBlocks, setCurrBlockId, setFuncBlocks])
+    console.log(blkMap);
+  }, [currFunctionBlockId, funcBlocks, setCurrFunctionBlockId, setFuncBlocks, blkMap])
 
   const removeFuncBlock = useCallback((blkId: number) => {
     setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
@@ -287,6 +316,50 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     );
   })
 
+  const changeInput = useCallback((ind: number, value: number) => {
+    //Qingyuan handles the internal representation so this will effect that
+  }, [])
+
+  const inputStore: number[] = []
+  let inputListCount: number = 0;
+  const inputList = inputBlocks.map((blk: InputBlockDS) => {
+    inputListCount += 1
+    inputStore.push(0)
+    return (
+      <>
+        <h3>{blk.inputName}</h3>
+        <NumberInput handleStateChange={changeInput} ind={inputListCount - 1} inValue={0}/>
+      </>
+    );
+  })
+  let outputListCount: number = 0;
+  const outputList = outputBlocks.map((blk: OutputBlockDS) => {
+    outputListCount += 1
+    return (
+      <>
+        <h3>{blk.outputName}</h3>
+        <XYPlot
+            width={200}
+            height={200}
+            xDomain={[0,5.5]}
+            yDomain={[0,150]}>
+            <HorizontalGridLines />
+            <VerticalBarSeries data={[]} barWidth={0}/>
+            {/*Qingyuan needs to generate the data and place it in here as the comment has it
+              // data={op[0].map(([index, value], k) => (
+              //   {x: index, y: value}
+    // ))} barWidth={0.2} />*/}
+            <XAxis />
+            <YAxis />
+          </XYPlot>
+      </>
+    );
+  })
+
+
+
+
+
   const funcBlocksList = funcBlocks.map((blk: FuncBlockDS) => {
 
     return (
@@ -329,7 +402,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={[1]}/>
         <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", data_types.dt_number]}/>
         <Button id='save-custom-function' variant='default' onClick={() => {saveFunction()}}>Save</Button>
+        <Button id='eval-custom-function' variant='default' onClick={() => {evaluateFunction()}}>Evaluate</Button>
         <h3>Function Builder</h3>
+        <div style={{display: "flex"}}>
+          {inputList}
+        </div>
         {inputBlocksList}
         {funcBlocksList}
         {outputBlocksList}
@@ -340,8 +417,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           key={ar.start + "-." + ar.start}
         />
       ))}
+        {outputList}
     </>
   );
 }
 
 export default FuncBuilderMain;
+

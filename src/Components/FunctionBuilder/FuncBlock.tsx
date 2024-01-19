@@ -1,11 +1,7 @@
 import React, { ChangeEvent, useCallback, useRef, useState} from 'react';
-import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, NavLink, Divider, Popover} from '@mantine/core';
-import { IconBoxMargin } from '@tabler/icons-react';
 import Draggable from 'react-draggable';
 import { data_types } from '../../engine/datatype_def';
-import ConnectPointsWrapper from '../ConnectPointsWrapper';
-import OutputDiv from './OutputDiv';
 import DotlessConnectPointsWrapper from '../DotlessConnectPointsWrapper';
 
 const NODE_NAME_POPOVER_WIDTH : any = '40px';
