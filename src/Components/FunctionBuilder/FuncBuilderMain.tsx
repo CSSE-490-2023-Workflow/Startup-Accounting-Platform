@@ -397,12 +397,18 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
 
   return (
-    <>
-        <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block" defaultAttr={["new input", data_types.dt_number]}/>
+      <>
+        <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
+                        defaultAttr={["new input", data_types.dt_number]}/>
         <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={[1]}/>
-        <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", data_types.dt_number]}/>
-        <Button id='save-custom-function' variant='default' onClick={() => {saveFunction()}}>Save</Button>
-        <Button id='eval-custom-function' variant='default' onClick={() => {evaluateFunction()}}>Evaluate</Button>
+        <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block"
+                        defaultAttr={["new output", data_types.dt_number]}/>
+        <Button id='save-custom-function' variant='default' onClick={() => {
+          saveFunction()
+        }}>Save</Button>
+        <Button id='eval-custom-function' variant='default' onClick={() => {
+          evaluateFunction()
+        }}>Evaluate</Button>
         <h3>Function Builder</h3>
         <div style={{display: "flex"}}>
           {inputList}
@@ -411,14 +417,14 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         {funcBlocksList}
         {outputBlocksList}
         {arrows.map(ar => (
-        <Xarrow
-          start={ar.start}
-          end={ar.end}
-          key={ar.start + "-." + ar.start}
-        />
-      ))}
+            <Xarrow
+                start={ar.start}
+                end={ar.end}
+                key={ar.start + "-." + ar.start}
+            />
+        ))}
         {outputList}
-    </>
+      </>
   );
 }
 
