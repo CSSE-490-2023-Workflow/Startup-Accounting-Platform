@@ -42,7 +42,20 @@ interface FuncProps {
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
 function FuncBlock(props: FuncProps) {
-  const [ blkId, funcId, funcName, funcOptions, paramTypes, paramNames, outputTypes, outputNames, editCB, removeCB, setArrows, addArrow, ] = [props.blockId, props.funcId, props.funcName, props.funcOptions, props.paramTypes, props.paramNames, props.outputTypes, props.outputNames, props.updateBlkCB, props.removeBlkCB, props.setArrows, props.addArrow]
+  const [ blkId, funcId, funcName, funcOptions, paramTypes, paramNames, outputTypes, outputNames, editCB, removeCB, setArrows, addArrow, ] = [
+    props.blockId, 
+    props.funcId, 
+    props.funcName, 
+    props.funcOptions, 
+    props.paramTypes, 
+    props.paramNames, 
+    props.outputTypes, 
+    props.outputNames, 
+    props.updateBlkCB, 
+    props.removeBlkCB, 
+    props.setArrows, 
+    props.addArrow
+  ]
 
   const dragRef = useRef<Draggable>(null);
   const boxRef = useRef<HTMLDivElement>(null);

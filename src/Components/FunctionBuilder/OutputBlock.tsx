@@ -1,9 +1,7 @@
 import React, { useCallback, useRef, useState} from 'react';
 import { data_types, data_type_enum_name_pairs} from "../../engine/datatype_def"
-import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover} from '@mantine/core';
+import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, useCombobox, Combobox, InputBase } from '@mantine/core';
 import Draggable from 'react-draggable';
-import DotlessConnectPointsWrapper from "../DotlessConnectPointsWrapper";
-import { Arrow } from './FuncBuilderMain';
 
 enum direction {
   'top'= 0,
@@ -23,7 +21,8 @@ interface OutProps {
   blockId: number;
   outputName: string;
   outputType: data_types | undefined; //undefined if not connected to another block
-  updateBlkCB: (blkId: number, outputName: string, outputType: data_types, idx: number) => void;
+  outputIdx: number[]; //the first element is the index of the block. The second element is the # of output blocks (i.e. maximum index)
+  updateBlkCB: (blkId: number, outputName: string | null, outputType: data_types | null, idx: number | null) => void;
   removeBlkCB: (blkId: number) => void;
   addArrow: (value: StartAndEnd) => void;
   //addArrow: (value: Arrow) => void;
@@ -32,17 +31,19 @@ interface OutProps {
 }
 
 function OutputBlock(props: OutProps) {
-  const [ id, name, oType, editCB, removeCB, addArrow, setArrows] = [
+  const [ outputId, outputName, oType, [outputIdx, maxIdx], editCB, removeCB, addArrow, setArrows] = [
     props.blockId, 
     props.outputName, 
     props.outputType,
+    props.outputIdx,
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.addArrow, 
     props.setArrows
   ];
-  const [ outputName, setName] = useState(name);
-  const [ outputType, setOutputType ] = useState(oType);
+  //const [ outputName, setName] = useState(name);
+  //const [ outputType, setOutputType ] = useState(oType);
+  //const [ outputIdx, setOutputIdx ] = useState(idx);
 
   const dragRef = useRef<Draggable>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -120,7 +121,7 @@ function OutputBlock(props: OutProps) {
       faIconStyle.transform = 'translate(0px, -7px)'
       faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
-    const handleId : string = id.toString() + 'i1'
+    const handleId : string = outputId.toString() + 'i1'
     return (
       <>
         <Popover opened={showNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
@@ -154,15 +155,6 @@ function OutputBlock(props: OutProps) {
       </>
     )
   })
-
-  function handleNameChange(e: any) {
-    setName(e.target.value);
-    editCB(id, e.target.value, data_types.dt_number, 0); //TODO: Fix what datatype it chooses
-  }
-
-  function handleRemoveBlock(e: any) {
-    removeCB(id);
-  }
 
   const sideMenus = nodeMenuDir.map((dir) => {
 
@@ -314,6 +306,36 @@ function OutputBlock(props: OutProps) {
     return sideMenu;
   })
 
+  function handleNameChange(e: any) {
+    //setName(e.target.value);
+    editCB(outputId, e.target.value, null, null);
+  }
+
+  function handleRemoveBlock(e: any) {
+    removeCB(outputId);
+  }
+
+  function handleIdxChange(i: number) {
+    //setOutputIdx(e.target.value);
+    editCB(outputId, null, null, i);
+  }
+
+  const typeCombobox = useCombobox({
+    //onDropdownClose: () => combobox.resetSelectedOption()
+  });
+
+  const idxCombobox = useCombobox({
+
+  })
+
+  const idxOptions = [...Array(maxIdx).keys()].map(idx => idx+1).map(i => (
+    <Combobox.Option value={i.toString()} key={i} active={i === outputIdx}>
+      <Group gap="xs">
+        <span>{i}</span>
+      </Group>
+    </Combobox.Option>
+  ))
+
   return (
     <>
      <Draggable
@@ -324,7 +346,15 @@ function OutputBlock(props: OutProps) {
         }}
       > 
     <div className='block-container'>
-    <Card className="input-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder>
+    <Card className="output-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder styles={{
+      root: {
+        height: '150px',
+        width: '200px'
+      },
+      section: {
+        padding: '0px 3px 0px 3px'
+      }
+    }}>
       <Card.Section className='block-header'>
         <div className="block-type-desc">Output Block</div>
         <CloseButton className='block-remove' onClick={handleRemoveBlock} />
@@ -332,10 +362,60 @@ function OutputBlock(props: OutProps) {
       <CardSection>
         <hr className='solid-divider' />
       </CardSection>
-      <CardSection>
+      <Card.Section>
         <Input className="output-block-name" onChange={handleNameChange} value={outputName} variant="filled" placeholder="Output Name" />
-        <h4 className='output-block-type-display'>{oType == undefined ? 'undefined' : data_type_enum_name_pairs[oType][1]}</h4>
+      </Card.Section>
+      <CardSection>
+        <hr className='solid-divider' />
       </CardSection>
+      <Card.Section style={{
+        display: 'flex',
+        flexDirection: 'row'
+      }}>
+        <Combobox
+          store={typeCombobox}
+        >
+          <Combobox.Target>
+            <InputBase
+              component="button"
+              type="button"
+              pointer
+              rightSection={<Combobox.Chevron />}
+              rightSectionWidth={20}
+              className='output-block-type-input'
+            >
+              {oType == undefined ? 'undefined' : data_type_enum_name_pairs[oType][1]}
+            </InputBase>
+          </Combobox.Target>
+          <Combobox.Dropdown>
+            {}
+          </Combobox.Dropdown>
+        </Combobox>
+        <Combobox
+          onOptionSubmit={(val) => {
+            handleIdxChange(Number(val));
+            idxCombobox.closeDropdown();
+          }
+          }
+          store={idxCombobox}
+          dropdownPadding={4}
+        >
+          <Combobox.Target>
+            <InputBase
+              component="button"
+              type="button"
+              pointer
+              onClick={() => {idxCombobox.toggleDropdown()}}
+              className='output-block-idx-input'
+            >
+              {outputIdx}
+            </InputBase>
+          </Combobox.Target>
+          <Combobox.Dropdown>
+            <Combobox.Options>{idxOptions}</Combobox.Options>
+          </Combobox.Dropdown>
+        </Combobox>
+      </Card.Section>
     </Card>
     {paramNodes}
     {sideMenus}

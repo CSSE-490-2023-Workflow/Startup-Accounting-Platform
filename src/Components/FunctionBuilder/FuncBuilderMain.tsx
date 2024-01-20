@@ -134,12 +134,16 @@ function FuncBuilderMain() {
   }
 
   const evaluateFunction = useCallback(() => {
-    const paramMap : Map<string, allowed_stack_components> = new Map<string, allowed_stack_components>();
+    interface ioObj {
+      name : string,
+      value : allowed_stack_components
+    }
+    const paramMap : Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
-      paramMap.set(inputBlk.inputName, inputBlk.val);
+      paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
     }
     
-    const res: Map<string, allowed_stack_components> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
+    const res: Map<number, ioObj> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
     //setOutputMap(res);
     console.log('complete. Outputs of the custom function are: ', res);
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction]);
@@ -147,10 +151,14 @@ function FuncBuilderMain() {
   const saveFunction = useCallback(() => {
     console.log('saving')
     const tmp : any[] = [];
+
+    //back trace each output block
     for (const outputBlk  of outputBlocks) {
       let path : any = {
         type : 'output',
         outputName : outputBlk.outputName,
+        outputType : outputBlk.outputType,
+        outputIdx : outputBlk.outputIdx,
         params : [
           tracePath(outputBlk.blockId.toString() + 'i1')
         ]
@@ -158,11 +166,28 @@ function FuncBuilderMain() {
       //console.log('trace res', path);
       tmp.push(path);
     }
+
+    //sort input / output blocks by indices
+
+    const inputBlksSorted : InputBlockDS[] = inputBlocks.sort((blk1, blk2) => 
+      blk1.inputIdx - blk2.inputIdx
+    )
+
+    const outputBlksSorted : OutputBlockDS[] = outputBlocks.sort((blk1, blk2) => 
+      blk1.outputIdx - blk2.outputIdx
+    )
+    
     const res : any = {
-      'type': 'custom_function',
-      'functionName': 'MyCustomFunction',
-      'outputs': tmp
+      type: 'custom_function',
+      functionName: 'MyCustomFunction',
+      paramNames: inputBlksSorted.map(iBlk => iBlk.inputName),
+      paramTypes: inputBlksSorted.map(iBlk => iBlk.inputType),
+      outputNames: outputBlksSorted.map(oBlk => oBlk.outputName),
+      outputTypes: outputBlksSorted.map(oBlk => oBlk.outputType),
+      outputs: tmp
     }
+
+
     var blob = new Blob([JSON.stringify(res)], {type: "application/json; charset=utf-8"});
     saveAs(blob, "hello world.json");
     setSavedFunction(res);
@@ -194,9 +219,10 @@ function FuncBuilderMain() {
     }
     if ('inputName' in tailBlk) { // input block
       return {
-        'type' : 'input',
-        'inputName' : tailBlk.inputName,
-        'inputType' : tailBlk.inputType
+        type : 'input',
+        inputName : tailBlk.inputName,
+        inputType : tailBlk.inputType,
+        inputIdx : tailBlk.inputIdx
       }
     } if ('funcName' in tailBlk) { //func block
       const params : any[] = [];
@@ -205,14 +231,14 @@ function FuncBuilderMain() {
       }
       //console.log('params', params);
       return {
-        'type' : 'builtin_function',
-        'useOutput' : tailBlkOutputIdx,
-        'functionName' : tailBlk.funcName,
-        'paramNames' : tailBlk.paramNames,
-        'paramTypes' : tailBlk.paramTypes,
-        'outputNames' : tailBlk.outputNames,
-        'outputTypes' : tailBlk.outputTypes,
-        'params' : params
+        type : 'builtin_function',
+        useOutput : tailBlkOutputIdx,
+        functionName : tailBlk.funcName,
+        paramNames : tailBlk.paramNames,
+        paramTypes : tailBlk.paramTypes,
+        outputNames : tailBlk.outputNames,
+        outputTypes : tailBlk.outputTypes,
+        params : params
       }
     } else {
       throw new Error(`Arrow tail is a block of an illegal type: ${arrow}`);
@@ -252,14 +278,15 @@ function FuncBuilderMain() {
 
     setBlkMap(blkMap => {blkMap.delete(blkId); return new Map(blkMap)});
 
-    console.log('blkmap after removal input block', blkMap);
-    
+    //console.log('blkmap after removal input block', blkMap);
+
     // Make all blks with larger indices than the removed blk index--
     let flag : boolean = false;
     for (const [blkIdx, blk] of inputBlkIdxMap) {
       if (flag) {
         console.log('setting', blkIdx - 1, blk);
         inputBlkIdxMap.set(blkIdx - 1, blk);
+        blk.inputIdx = blk.inputIdx - 1;
       }
       if (blk.blockId == blkId) {
         flag = true;
@@ -287,6 +314,7 @@ function FuncBuilderMain() {
         console.log('edit callback', blkId, inputName, inputType);
         console.log("current input blocks in parents", inputBlocks);
       }
+
       const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS) => {
         if (blk.blockId == blkId) {
           if (inputName != null)  {
@@ -304,7 +332,7 @@ function FuncBuilderMain() {
           }
           if (idx != null) {
             const oldIdx : number = blk.inputIdx;
-            blk.inputIdx = idx
+            blk.inputIdx = idx;
             const blkToSwap : InputBlockDS | undefined = inputBlkIdxMap.get(idx);
             if (blkToSwap != undefined) {
               blkToSwap.inputIdx = oldIdx;
@@ -323,7 +351,7 @@ function FuncBuilderMain() {
         console.log('edit input block. Input blk idx map', inputBlkIdxMap);
       }
 
-    }, [inputBlocks, inputBlkIdxMap, arrows, inputBlkIdxMap])
+    }, [inputBlocks, inputBlkIdxMap, arrows])
 
   /**
    * Output block logics
@@ -332,6 +360,7 @@ function FuncBuilderMain() {
     const newId = currOutputBlockId + 1;
     const newIdx = outputBlkIdxMap.size + 1;
     setCurrOutputBlockId(newId);
+
     const newBlock : OutputBlockDS = {
       blockId: newId,
       outputName: outputName,
@@ -339,32 +368,31 @@ function FuncBuilderMain() {
       outputIdx: newIdx,
       val: 0
     }
-    setOutputBlocks([...outputBlocks, newBlock]) 
 
-    blkMap.set(newId, newBlock);
-    setBlkMap(new Map(blkMap));
+    setOutputBlocks(outputBlks => [...outputBlks, newBlock]);
 
-    outputBlkIdxMap.set(newIdx, newBlock);
-    setOutputBlkIdxMap(new Map(outputBlkIdxMap));
+    setBlkMap(blkMap => {blkMap.set(newId, newBlock); return new Map(blkMap)});
+
+    setOutputBlkIdxMap(outputBlkIdxMap => {outputBlkIdxMap.set(newIdx, newBlock); return new Map(outputBlkIdxMap)});
     
     if (config.debug_mode_FuncBuilder == 1) {
       console.log('Add output block. Output blk idx map', outputBlkIdxMap);
     }
-  }, [currOutputBlockId, outputBlocks, setCurrOutputBlockId, setOutputBlocks, blkMap])
+  }, [currOutputBlockId, outputBlkIdxMap])
 
   const removeOutputBlock = useCallback((blkId: number) => {
-    setOutputBlocks(outputBlocks.filter((blk) => {
+    setOutputBlocks(outputBlks => outputBlks.filter((blk) => {
       return blk.blockId != blkId
     })) ;
 
-    blkMap.delete(blkId);
-    setBlkMap(new Map<number, blk>(blkMap));
+    setBlkMap(blkMap => {blkMap.delete(blkId); return new Map<number, blk>(blkMap)});
 
     // Make all blks with larger indices than the removed blk index--
     let flag : boolean = false;
     for (const [blkIdx, blk] of outputBlkIdxMap) {
       if (flag) {
         outputBlkIdxMap.set(blkIdx - 1, blk);
+        blk.outputIdx = blk.outputIdx - 1;
       }
       if (blk.blockId == blkId) {
         flag = true;
@@ -372,12 +400,13 @@ function FuncBuilderMain() {
     }
     outputBlkIdxMap.delete(outputBlkIdxMap.size);
 
-    setOutputBlkIdxMap(new Map(outputBlkIdxMap));
+    setOutputBlkIdxMap(outputBlkIdxMap => {outputBlkIdxMap.delete(outputBlkIdxMap.size); return new Map(outputBlkIdxMap)});
+
     if (config.debug_mode_FuncBuilder == 1) {
       console.log('remove output block. Output blk idx map', outputBlkIdxMap);
     }
 
-  }, [outputBlocks, setOutputBlocks])
+  }, [outputBlkIdxMap])
 
   // Updates the information of the block with the given id
   // params that are null will NOT be updated
@@ -413,13 +442,14 @@ function FuncBuilderMain() {
         }
         return blk;
       })
+
       setOutputBlocks(tmp) 
 
       setOutputBlkIdxMap(new Map(outputBlkIdxMap));
       if (config.debug_mode_FuncBuilder == 1) {
-        console.log('edit output block. Output blk idx map', inputBlkIdxMap);
+        console.log('edit output block. Output blk idx map', outputBlkIdxMap);
       }
-    }, [outputBlocks, setOutputBlocks])
+    }, [outputBlocks, outputBlkIdxMap])
 
 
   /**
@@ -429,6 +459,7 @@ function FuncBuilderMain() {
   const addFuncBlock = useCallback((funcId: number) => {
     const newId = currFunctionBlockId + 1;
     setCurrFunctionBlockId(newId);
+
     const f: builtin_function = id_to_builtin_func[funcId];
     const newBlock : FuncBlockDS = {
       blockId: newId,
@@ -439,11 +470,12 @@ function FuncBuilderMain() {
       outputTypes: f.output_types,
       outputNames: f.output_names
     }
-    setFuncBlocks([...funcBlocks, newBlock]) 
-    blkMap.set(newId, newBlock);
-    setBlkMap(new Map(blkMap));
-    console.log(blkMap);
-  }, [currFunctionBlockId, funcBlocks, setCurrFunctionBlockId, setFuncBlocks, blkMap])
+
+    setFuncBlocks(funcBlks => [...funcBlks, newBlock]) 
+    
+    setBlkMap(blkMap => {blkMap.set(newId, newBlock); return new Map(blkMap)});
+
+  }, [currFunctionBlockId])
 
   const removeFuncBlock = useCallback((blkId: number) => {
     setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
@@ -477,8 +509,10 @@ function FuncBuilderMain() {
       }
       return blk;
     })
-    setFuncBlocks(tmp) 
-  }, [funcBlocks, setFuncBlocks])
+
+    setFuncBlocks(tmp);
+
+  }, [funcBlocks, arrows])
   
   interface funcInfo {
     id: number;
@@ -495,6 +529,7 @@ function FuncBuilderMain() {
         inputName={blk.inputName} 
         inputType={blk.inputType} 
         inputTypeOptions={data_type_enum_name_pairs}
+        inputIdx={[blk.inputIdx, inputBlkIdxMap.size]}
         updateBlkCB={editInputBlock} 
         removeBlkCB={removeInputBlock}
         setArrows={setArrows}
@@ -551,10 +586,6 @@ function FuncBuilderMain() {
     );
   })
 
-
-
-  
-
   const funcBlocksList = funcBlocks.map((blk: FuncBlockDS) => {
 
     return (
@@ -582,6 +613,7 @@ function FuncBuilderMain() {
         blockId={blk.blockId}
         outputName={blk.outputName}
         outputType={blk.outputType}
+        outputIdx={[blk.outputIdx, outputBlkIdxMap.size]}
         updateBlkCB={editOutputBlock} 
         removeBlkCB={removeOutputBlock}
         addArrow={addArrow}
