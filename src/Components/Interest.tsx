@@ -17,6 +17,7 @@ function Interest() {
         {
           'type' : 'output',
           'outputName': 'functionOutput',
+          'outputIdx' : 1,
           'params' : [
             {
               "type": "builtin_function",
@@ -25,6 +26,7 @@ function Interest() {
               "params": [
                 {
                   "type": "input",
+                  'inputIdx' : 1,
                   'inputName': 'interest rate',
                 },
                 {
@@ -34,10 +36,12 @@ function Interest() {
                   "params": [
                     {
                       "type": "input",
+                      'inputIdx': 2,
                       'inputName' : 'initial deposit'
                     },
                     {
                       "type": "input",
+                      'inputIdx': 3,
                       "inputName": 'time'
                     }
                   ]
@@ -48,13 +52,21 @@ function Interest() {
         }
       ]
     }
-    const inputMap : Map<string, allowed_stack_components> = new Map<string, allowed_stack_components>();
-    console.log('input map', inputMap);
-    inputMap.set('interest rate', inputs[1]);
-    inputMap.set('initial deposit', inputs[0]);
-    inputMap.set('time', inputs[2]);
-    console.log('what have we here', func_interpreter_new_caller(JSON.stringify(json), inputMap).get('functionOutput'));
-    setOp(func_interpreter_new_caller(JSON.stringify(json), inputMap).get('functionOutput') as number[][])
+    interface ioObject {
+      name : string,
+      value : allowed_stack_components
+    }
+    const inputMap : Map<number, ioObject> = new Map<number, ioObject>();
+    inputMap.set(1, {name: 'interest rate', value: inputs[1]});
+    inputMap.set(2, {name: 'initial deposit', value: inputs[0]});
+    inputMap.set(3, {name: 'time', value: inputs[2]});
+    const out : ioObject | undefined = func_interpreter_new_caller(JSON.stringify(json), inputMap).get(1)
+//    console.log('what have we here', func_interpreter_new_caller(JSON.stringify(json), inputMap).get(1));
+    if (out == undefined) {
+      throw new Error('undefined output. Check function definition.')
+    } else {
+      setOp(out['value'] as number[][])
+    }
     setResult(JSON.stringify(op));
     //setResult(func_interpreter_new_caller(JSON.stringify(json), inputs[1], inputs[0], inputs[2]) as number[])
   }, [])
@@ -65,16 +77,16 @@ function Interest() {
   return (
     <>
       <label>
-        Initial Amount: <NumberInput handleStateChange={handleChange} ind={0} inValue={0} />
+        Initial Amount: <NumberInput handleStateChange={handleChange} ind={0} inValue={0} inputId={0}/>
       </label>
       <label>
-        Interest Rate: <NumberInput handleStateChange={handleChange} ind={1} inValue={0} />
+        Interest Rate: <NumberInput handleStateChange={handleChange} ind={1} inValue={0} inputId={1}/>
       </label>
       {/* <label>
           Start Time: <NumberInput handleStateChange={handleChange} ind={2} inValue={0}/>
         </label> */}
       <label>
-        End Time: <NumberInput handleStateChange={handleChange} ind={2} inValue={0} />
+        End Time: <NumberInput handleStateChange={handleChange} ind={2} inValue={0} inputId={2}/>
       </label>
       {/* <label>
           Interval: <NumberInput handleStateChange={handleChange} ind={4} inValue={0}/>

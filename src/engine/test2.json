@@ -1,5 +1,5 @@
 {
-    "type" : "builtin_function",
+    "type" : "custom_function",
     "name" : "return",
     "param" : [
         {
