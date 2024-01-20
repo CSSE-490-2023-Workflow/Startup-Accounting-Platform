@@ -13,7 +13,8 @@ import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
 import NumberInput from '../NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
-
+import { database } from "../../auth/firebase";
+import {Button} from "@mantine/core";
 
 interface InputBlockDS {
   blockId: number
@@ -58,9 +59,13 @@ export interface Arrow {
   endType: blk
 }
 
+interface FuncBuilderMainProps {
+  functionId: string;
+}
+
 type blk = FuncBlockDS | OutputBlockDS | InputBlockDS;
 
-function FuncBuilderMain() {
+function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   //const [inputs, setInputs] = useState([0,0])
   //const [result, setResult] = useState(0)
@@ -73,7 +78,7 @@ function FuncBuilderMain() {
   const [ currFunctionBlockId, setCurrFunctionBlockId ] = useState(3000);
   const [ currOutputBlockId, setCurrOutputBlockId ] = useState(2000);
 
-  // a map from input idx to the block ds. The index starts at 1. 
+  // a map from input idx to the block ds. The index starts at 1.
   const [ inputBlkIdxMap, setInputBlkIdxMap ] = useState<Map<number, InputBlockDS>>(new Map());
   const [ outputBlkIdxMap, setOutputBlkIdxMap ] = useState<Map<number, OutputBlockDS>>(new Map());
 
@@ -142,7 +147,7 @@ function FuncBuilderMain() {
     for (let inputBlk of inputBlocks) {
       paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
     }
-    
+
     const res: Map<number, ioObj> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
     //setOutputMap(res);
     console.log('complete. Outputs of the custom function are: ', res);
@@ -169,14 +174,14 @@ function FuncBuilderMain() {
 
     //sort input / output blocks by indices
 
-    const inputBlksSorted : InputBlockDS[] = inputBlocks.sort((blk1, blk2) => 
+    const inputBlksSorted : InputBlockDS[] = inputBlocks.sort((blk1, blk2) =>
       blk1.inputIdx - blk2.inputIdx
     )
 
-    const outputBlksSorted : OutputBlockDS[] = outputBlocks.sort((blk1, blk2) => 
+    const outputBlksSorted : OutputBlockDS[] = outputBlocks.sort((blk1, blk2) =>
       blk1.outputIdx - blk2.outputIdx
     )
-    
+
     const res : any = {
       type: 'custom_function',
       functionName: 'MyCustomFunction',
@@ -192,8 +197,9 @@ function FuncBuilderMain() {
     saveAs(blob, "hello world.json");
     setSavedFunction(res);
     console.log('saved func', res);
-  }, [inputBlocks, outputBlocks, funcBlocks, arrows])
 
+    database.updateFunction(props.functionId, { rawJson: JSON.stringify(res) });
+  }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId])
   /**
    * Given the node id the head of an arrow is connected to, backtrace the path and return it
    * @param arrowHead 
@@ -260,7 +266,7 @@ function FuncBuilderMain() {
       inputIdx: newIdx,
       val: 0
     }
-    setInputBlocks(inputBlocks => [...inputBlocks, newBlock]) 
+    setInputBlocks(inputBlocks => [...inputBlocks, newBlock])
 
     setBlkMap(blkMap => {blkMap.set(newId, newBlock); return new Map(blkMap)});
 
@@ -290,7 +296,7 @@ function FuncBuilderMain() {
       }
       if (blk.blockId == blkId) {
         flag = true;
-      } 
+      }
     }
     inputBlkIdxMap.delete(inputBlkIdxMap.size);
     setInputBlkIdxMap(new Map(inputBlkIdxMap));
@@ -305,7 +311,7 @@ function FuncBuilderMain() {
   // params that are passed in null will NOT be updated
   const editInputBlock = useCallback(
     (
-      blkId: number, 
+      blkId: number,
       inputName: string | null,
       inputType: data_types | null,
       idx: number | null
@@ -323,7 +329,7 @@ function FuncBuilderMain() {
           if (inputType != null) {
             blk.inputType = inputType;
 
-            // we need to update all outputs connected to the block 
+            // we need to update all outputs connected to the block
             for (const arrow of arrows) {
               if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
                 updateOutputBlkType(arrow);
@@ -337,13 +343,13 @@ function FuncBuilderMain() {
             if (blkToSwap != undefined) {
               blkToSwap.inputIdx = oldIdx;
               inputBlkIdxMap.set(oldIdx, blkToSwap);
-            } 
+            }
             inputBlkIdxMap.set(idx, blk);
           }
         }
         return blk;
       })
-      setInputBlocks(tmp) 
+      setInputBlocks(tmp)
 
       setInputBlkIdxMap(new Map(inputBlkIdxMap));
 
@@ -374,7 +380,7 @@ function FuncBuilderMain() {
     setBlkMap(blkMap => {blkMap.set(newId, newBlock); return new Map(blkMap)});
 
     setOutputBlkIdxMap(outputBlkIdxMap => {outputBlkIdxMap.set(newIdx, newBlock); return new Map(outputBlkIdxMap)});
-    
+
     if (config.debug_mode_FuncBuilder == 1) {
       console.log('Add output block. Output blk idx map', outputBlkIdxMap);
     }
@@ -396,7 +402,7 @@ function FuncBuilderMain() {
       }
       if (blk.blockId == blkId) {
         flag = true;
-      } 
+      }
     }
     outputBlkIdxMap.delete(outputBlkIdxMap.size);
 
@@ -412,9 +418,9 @@ function FuncBuilderMain() {
   // params that are null will NOT be updated
   const editOutputBlock = useCallback(
     (
-      blkId: number, 
-      outputName: string | null, 
-      outputType: data_types | null,  
+      blkId: number,
+      outputName: string | null,
+      outputType: data_types | null,
       idx: number | null
     ) => {
       if (config.debug_mode_FuncBuilder == 1) {
@@ -436,14 +442,14 @@ function FuncBuilderMain() {
             if (blkToSwap != undefined) {
               blkToSwap.outputIdx = oldIdx;
               outputBlkIdxMap.set(oldIdx, blkToSwap);
-            } 
+            }
             outputBlkIdxMap.set(idx, blk);
           }
         }
         return blk;
       })
 
-      setOutputBlocks(tmp) 
+      setOutputBlocks(tmp)
 
       setOutputBlkIdxMap(new Map(outputBlkIdxMap));
       if (config.debug_mode_FuncBuilder == 1) {
@@ -471,8 +477,8 @@ function FuncBuilderMain() {
       outputNames: f.output_names
     }
 
-    setFuncBlocks(funcBlks => [...funcBlks, newBlock]) 
-    
+    setFuncBlocks(funcBlks => [...funcBlks, newBlock])
+
     setBlkMap(blkMap => {blkMap.set(newId, newBlock); return new Map(blkMap)});
 
   }, [currFunctionBlockId])
@@ -530,7 +536,7 @@ function FuncBuilderMain() {
         inputType={blk.inputType} 
         inputTypeOptions={data_type_enum_name_pairs}
         inputIdx={[blk.inputIdx, inputBlkIdxMap.size]}
-        updateBlkCB={editInputBlock} 
+        updateBlkCB={editInputBlock}
         removeBlkCB={removeInputBlock}
         setArrows={setArrows}
       />
@@ -614,7 +620,7 @@ function FuncBuilderMain() {
         outputName={blk.outputName}
         outputType={blk.outputType}
         outputIdx={[blk.outputIdx, outputBlkIdxMap.size]}
-        updateBlkCB={editOutputBlock} 
+        updateBlkCB={editOutputBlock}
         removeBlkCB={removeOutputBlock}
         addArrow={addArrow}
         setArrows={setArrows}
@@ -624,12 +630,13 @@ function FuncBuilderMain() {
 
 
   return (
-    <>
-        <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block" defaultAttr={["new input", data_types.dt_number]}/>
+      <>
+        <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
+                        defaultAttr={["new input", data_types.dt_number]}/>
         <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={[1]}/>
         <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined]}/>
-        <button id='save-custom-function' onClick={() => {saveFunction()}}>Save</button>
-        <button id='eval-custom-function' onClick={() => {evaluateFunction()}}>Evaluate</button>
+        <Button id='save-custom-function' variant='default' onClick={() => {saveFunction()}}>Save</Button>
+        <Button id='eval-custom-function' variant='default' onClick={() => {evaluateFunction()}}>Evaluate</Button>
         <h3>Function Builder</h3>
         <div style={{display: "flex"}}>
           {inputList}
@@ -638,14 +645,14 @@ function FuncBuilderMain() {
         {funcBlocksList}
         {outputBlocksList}
         {arrows.map(ar => (
-        <Xarrow
-          start={ar.start}
-          end={ar.end}
-          key={ar.start + "-." + ar.start}
-        />
-      ))}
+            <Xarrow
+                start={ar.start}
+                end={ar.end}
+                key={ar.start + "-." + ar.start}
+            />
+        ))}
         {outputList}
-    </>
+      </>
   );
 }
 

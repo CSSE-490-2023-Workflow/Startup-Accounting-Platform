@@ -98,10 +98,11 @@
 .block-container {
   width: auto;
   height: auto;
-  position: relative;
+  position: absolute;
+  text-align: center;
 }
 
-svg {
+.func-svg {
   position: absolute;
   left: 0;
 }
