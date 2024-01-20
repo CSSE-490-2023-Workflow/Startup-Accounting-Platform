@@ -198,7 +198,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setSavedFunction(res);
     console.log('saved func', res);
 
-    database.updateFunction(props.functionId, JSON.stringify(res));
+    database.updateFunction(props.functionId, { rawJson: JSON.stringify(res) });
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId])
   /**
    * Given the node id the head of an arrow is connected to, backtrace the path and return it

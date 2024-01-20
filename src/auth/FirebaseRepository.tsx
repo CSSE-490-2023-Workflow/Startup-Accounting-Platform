@@ -1,9 +1,10 @@
-import {collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, onSnapshot} from "firebase/firestore";
+import {updateDoc, query, where, collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, onSnapshot} from "firebase/firestore";
 import {getFirestore} from 'firebase/firestore';
 import firebase from "firebase/compat/app";
 import "firebase/compat/firestore";
 import Firestore = firebase.firestore.Firestore;
 import { ModelData } from "../pages/Models/Models";
+import { FunctionData } from "../pages/Functions/Functions";
 import { FirestoreDataConverter, QueryDocumentSnapshot, SnapshotOptions, DocumentData } from "firebase/firestore";
 
 const modelConverter: FirestoreDataConverter<ModelData> = {
@@ -60,8 +61,8 @@ export class FirestoreRepository {
         return deleteDoc(doc(this.modelsRef, modelData.id));
     }
 
-    async updateFunction(functionId: string, rawJson: string) {
-        return setDoc(doc(this.functionsRef, functionId), {rawJson: rawJson});
+    async updateFunction(functionId: string, data: object) {
+        return updateDoc(doc(this.functionsRef, functionId), data);
     }
 
     async getFunctions() {
@@ -77,19 +78,38 @@ export class FirestoreRepository {
         })
     }
 
-    async createEmptyFunction() {
-        const docRef = await addDoc(this.functionsRef, {});
+    async createEmptyFunction(uid: string) {
+        const emptyFunctionData: FunctionData = {
+            rawJson: "{}",
+            id: "",
+            name: "New Function",
+            ownerUid: uid
+        }
+        const docRef = await addDoc(this.functionsRef, emptyFunctionData);
         return docRef.id;
     }
 
     async getFunction(functionId: string) {
         const func = await getDoc(doc(this.functionsRef, functionId));
-        return func.data() as object
+        return func.data() as FunctionData
     }
 
-    subscribeToFunction(functionId: string, callback: (funcData: object) => void) {
+    subscribeToFunction(functionId: string, callback: (funcData: FunctionData) => void) {
         return onSnapshot(doc(this.functionsRef, functionId), (doc) => {
-            callback(doc.data() as object);
-        })
+            callback({...doc.data(), id: doc.id} as FunctionData);
+        });
+    }
+
+    subscribeToFunctionsForUser(userId: string, callback: (functions: FunctionData[]) => void) {
+        const q = query(this.functionsRef, where('ownerUid', '==', userId));
+        return onSnapshot(q, (snapshot) => {
+            callback(snapshot.docs.map(doc => {
+                return {...doc.data(), id: doc.id} as FunctionData
+            }))
+        });
+    }
+
+    deleteFunction(id: string) {
+        return deleteDoc(doc(this.functionsRef, id));
     }
 }

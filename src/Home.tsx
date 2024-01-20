@@ -14,12 +14,14 @@ import {WEBSITE_NAME_ABBREV} from "./constants/constants";
 import Models from "./pages/Models/Models";
 import Functions from "./pages/Functions/Functions";
 import ArrowExample from './Components/ArrowExample';
+import {FunctionBuilderTesting} from "./pages/FunctionBuilderTesting/FunctionBuilderTesting";
 
 
 const tabs = [
     'Demo',
     'Models',
     'Functions',
+    'FunctionBuilderTesting',
     'Workflows',
     'Arrows',
 ];
@@ -73,6 +75,7 @@ export function Home() {
                 {activeTab === 'Demo' && <Demo/>}
                 {activeTab === 'Models' && <Models/>}
                 {activeTab === 'Functions' && <Functions/>}
+                {activeTab === 'FunctionBuilderTesting' && <FunctionBuilderTesting/>}
                 {activeTab === 'Arrows' && <ArrowExample/>}
             </div>
         </div>
