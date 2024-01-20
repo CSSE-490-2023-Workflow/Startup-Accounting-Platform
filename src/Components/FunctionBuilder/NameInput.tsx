@@ -3,7 +3,7 @@ import React, { ChangeEvent, useCallback, useState} from 'react';
 interface IProps {
     handleStateChange: (ind: number, value: number) => void
     ind: number
-    inValue: number | string
+    inValue: number | string,
 }
 
 function NameInput(props: IProps) {
