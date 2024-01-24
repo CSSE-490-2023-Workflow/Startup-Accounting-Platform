@@ -42,7 +42,20 @@ interface FuncProps {
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
 function FuncBlock(props: FuncProps) {
-  const [ blkId, funcId, funcName, funcOptions, paramTypes, paramNames, outputTypes, outputNames, editCB, removeCB, setArrows, addArrow, ] = [props.blockId, props.funcId, props.funcName, props.funcOptions, props.paramTypes, props.paramNames, props.outputTypes, props.outputNames, props.updateBlkCB, props.removeBlkCB, props.setArrows, props.addArrow]
+  const [ blkId, funcId, funcName, funcOptions, paramTypes, paramNames, outputTypes, outputNames, editCB, removeCB, setArrows, addArrow, ] = [
+    props.blockId, 
+    props.funcId, 
+    props.funcName, 
+    props.funcOptions, 
+    props.paramTypes, 
+    props.paramNames, 
+    props.outputTypes, 
+    props.outputNames, 
+    props.updateBlkCB, 
+    props.removeBlkCB, 
+    props.setArrows, 
+    props.addArrow
+  ]
 
   const dragRef = useRef<Draggable>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -155,14 +168,14 @@ function FuncBlock(props: FuncProps) {
       <>
         <Popover opened={showParamNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
           dropdown: nodeNameStyle
-        }}> 
+        }}>
           <Popover.Target>
-            <div 
-              style={nodeStyle} 
+            <div
+              style={nodeStyle}
               className='connection-handle-wrapper'
               onMouseEnter={() => {setShowParamNodeName(true)}}
               onMouseLeave={() => {setShowParamNodeName(false)}}
-              onDragOver={e => e.preventDefault()} 
+              onDragOver={e => e.preventDefault()}
               onDrop={e => {
                 if (e.dataTransfer.getData("arrow") === handleId + "") {
                   console.log(e.dataTransfer.getData("arrow"), handleId + "");
@@ -172,7 +185,7 @@ function FuncBlock(props: FuncProps) {
                   console.log("droped!", refs);
                 }
               }}
-            > 
+            >
               <div className='connection-handle connection-handle-out' id={handleId}>
                 {faIcon}
               </div>
@@ -238,7 +251,7 @@ function FuncBlock(props: FuncProps) {
       <>
         <Popover opened={showOutputNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
           dropdown: nodeNameStyle
-        }}> 
+        }}>
           <Popover.Target>
             <div
               style={nodeStyle}
@@ -251,7 +264,7 @@ function FuncBlock(props: FuncProps) {
               </div>
               <DotlessConnectPointsWrapper boxId={handleId} dragRef={dragRef} boxRef={boxRef} />
 
-            </div>   
+            </div>
           </Popover.Target>
           <Popover.Dropdown>
             {outputNames[index]}
@@ -381,7 +394,7 @@ function FuncBlock(props: FuncProps) {
           <HoverCard width={100} shadow="md" position={menuDir} closeDelay={30} disabled={showSideMenu[dir] ? false : true}>
             <HoverCard.Target>
               <div className='node-menu-btn' style={menuStyle}>
-                <svg width={sideMenuBtnStyle.svgW} height={sideMenuBtnStyle.svgH} onMouseEnter={() => {
+                <svg width={sideMenuBtnStyle.svgW} height={sideMenuBtnStyle.svgH} className='func-svg' onMouseEnter={() => {
                   showSideMenu[dir] = true;
                   setShowSideMenu([...showSideMenu]);
                 }}>
@@ -412,7 +425,7 @@ function FuncBlock(props: FuncProps) {
 
     return sideMenu;
   })
-  
+
   return (
     <>
      <Draggable
@@ -421,15 +434,15 @@ function FuncBlock(props: FuncProps) {
           // console.log(e);
           setArrows((arrows) => [...arrows]);
         }}
-      > 
+      >
       <div className='block-container'>
-      <Card 
+      <Card
       id={blkId + ""}
       ref={boxRef}
-      className="func-block func-builder-block" 
-      shadow='sm' 
-      padding='lg' 
-      radius='md' 
+      className="func-block func-builder-block"
+      shadow='sm'
+      padding='lg'
+      radius='md'
       withBorder >
         <Card.Section className='block-header'>
           <div className="block-type-desc">Function Block</div>
@@ -450,7 +463,7 @@ function FuncBlock(props: FuncProps) {
       {paramNodes}
       {outputNodes}
       {sideMenus}
-      
+
       {/* <ConnectPointsWrapper boxId={blkId+""} handler={outputNodeDir} dragRef={dragRef} boxRef={boxRef} /> */}
       </div>
       </Draggable>

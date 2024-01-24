@@ -1,18 +1,21 @@
 import React, { ChangeEvent, useCallback, useState} from 'react';
+import { allowed_stack_components } from '../engine/datatype_def';
 
 interface IProps {
-    handleStateChange: (ind: number, value: number) => void
+    handleStateChange: any
     ind: number
     inValue: number | string
+    inputId: number
+    
 }
 
 function NumberInput(props: IProps) {
-  const { handleStateChange, ind, inValue} = props
+  const { handleStateChange, ind, inValue, inputId} = props
   const [inpValue, setInpValue] = useState(inValue);
-  const handleChange= useCallback((event: ChangeEvent) => {
-    const { value } = event.target as HTMLInputElement
+  function handleChange(e: ChangeEvent) {
+    const { value } = e.target as HTMLInputElement
     if(value === "" || value === "-") {
-        handleStateChange(ind, 0)
+        handleStateChange(inputId, 0)
         setInpValue(value)
     }
     else {
@@ -21,11 +24,11 @@ function NumberInput(props: IProps) {
         modifiedValue = value.replace(".","")
       }
       if(!isNaN(Number(modifiedValue))) {
-        handleStateChange(ind, Number(modifiedValue))
+        handleStateChange(inputId, Number(modifiedValue));
         setInpValue(value)
       }
+    }
   }
-  }, [])
   return <input onChange={handleChange} value = {inpValue}></input>;
 }
 

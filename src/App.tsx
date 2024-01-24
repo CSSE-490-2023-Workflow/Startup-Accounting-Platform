@@ -1,37 +1,26 @@
-import { useCallback, useState } from 'react';
-import logo from './logo.svg';
 import '@mantine/core/styles.css';
-import { createTheme, MantineProvider } from '@mantine/core';
 import {Home} from "./Home";
 import {LoginPage} from "./pages/LoginPage/LoginPage";
 import PrivateRoute from "./PrivateRoute";
 import {
-  Route, Routes, BrowserRouter
+    Route, Routes, BrowserRouter
 } from 'react-router-dom'
-
-const theme = createTheme({
-  /** Put your mantine theme override here */
-});
+import WorkflowBuilder from "./pages/WorkflowBuilder/WorkflowBuilder";
+import CustomFunctionBuilder from "./pages/CustomFunctionBuilder/CustomFunctionBuilder";
 
 function App() {
-  const [page, setPage] = useState(0)
-  const handlePageChange = useCallback((val: number) => {
-    setPage(val)
-  }, [])
-  return (
-    <div>
-    <BrowserRouter>
+    return (
+        <BrowserRouter>
             <Routes>
                 <Route path='/' element={<PrivateRoute/>}>
                     <Route path='/' element={<Home/>}/>
+                    <Route path='workflow/:id' element={<WorkflowBuilder/>}/>
+                    <Route path='function/:id' element={<CustomFunctionBuilder/>}/>
                 </Route>
-                <Route path="/login" element={<LoginPage/>} />
+                <Route path="/login" element={<LoginPage/>}/>
             </Routes>
         </BrowserRouter>
-    </div>
-    
-  );
+    );
 }
 
-
-export default App
+export default App;

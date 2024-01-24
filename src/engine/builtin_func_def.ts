@@ -116,7 +116,7 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
         func_name: 'test_func',
         param_types : [data_types.dt_number],
         param_names : ['param 1'],
-        output_types: [data_types.dt_number, data_types.dt_number, data_types.dt_number],
+        output_types: [data_types.dt_number, data_types.dt_number, data_types.dt_series],
         output_names : ['output 1', 'output 2', 'output 3'],
         func: (...args : allowed_stack_components[]) => {
             return [1];

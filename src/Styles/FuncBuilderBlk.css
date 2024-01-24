@@ -7,12 +7,50 @@
   font-size: small;
 }
 
-.input-block-name {
+.input-block-name .mantine-Input-input,
+.output-block-name .mantine-Input-input
+{
   width: fill-available;
+  font-size: 20px;
+  text-align: left;
 }
 
-.input-block-type {
-  width: fill-available;
+.input-block-name, 
+.output-block-name
+{
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.input-block-type-input .mantine-Input-input ,
+.output-block-type-input .mantine-Input-input
+{
+
+  font-size: 14px;
+  /* width: 80%; */
+}
+
+
+.input-block-idx-input .mantine-Input-input,
+.output-block-idx-input .mantine-Input-input
+{
+  font-size: 14px;
+  /* width: 80%; */
+}
+
+
+.input-block-type-input .mantine-Input-wrapper,
+.output-block-type-input .mantine-Input-wrapper
+{
+  min-width: 130px;
+  /* width: 80%; */
+}
+
+.input-block-idx-input .mantine-Input-wrapper,
+.output-block-idx-input .mantine-Input-wrapper
+ {
+  min-width: 50px;
+  padding-left: 10px;
 }
 
 .func-builder-block {
@@ -60,10 +98,11 @@
 .block-container {
   width: auto;
   height: auto;
-  position: relative;
+  position: absolute;
+  text-align: center;
 }
 
-svg {
+.func-svg {
   position: absolute;
   left: 0;
 }

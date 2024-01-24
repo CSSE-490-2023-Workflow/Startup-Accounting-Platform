@@ -1,5 +1,6 @@
 import React, { ChangeEvent, useCallback, useState} from 'react';
 import { data_types } from '../../engine/datatype_def'
+import {Button} from "@mantine/core";
 
 function AddBlockButton(props: any) {
   const onClick = props.onClick;
@@ -9,7 +10,7 @@ function AddBlockButton(props: any) {
     onClick(...defaultAttr);
   }, [onClick])
 
-  return <button onClick={localOnClick}>{buttonText}</button>;
+  return <Button variant='default' onClick={localOnClick}>{buttonText}</Button>;
 }
 
 export default AddBlockButton;

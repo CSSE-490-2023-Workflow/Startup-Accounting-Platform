@@ -1,6 +1,7 @@
-import React, { useCallback, useRef, useState} from 'react';
+import React, { ChangeEvent, useCallback, useRef, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
-import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, FloatingPosition, Container} from '@mantine/core';
+import { StartAndEnd, Arrow } from './FuncBuilderMain'
+import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, Combobox, CheckIcon, useCombobox, InputBase} from '@mantine/core';
 import '../../assets/font-awesome/css/all.css'
 import Draggable from 'react-draggable';
 import DotlessConnectPointsWrapper from "../DotlessConnectPointsWrapper";
@@ -12,10 +13,11 @@ enum direction {
   'right'
 }
 
-interface StartAndEnd {
-  start: string;
-  end: string;
-}
+
+// interface StartAndEnd {
+//   start: string;
+//   end: string;
+// }
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
@@ -24,19 +26,31 @@ interface InputProps {
   inputName: string;
   inputType: data_types;
   inputTypeOptions: [data_types, string][];
-  updateBlkCB: (funcBlockId: number, inputName: string, inputType: data_types) => void;
+  inputIdx: number[]; //the first entry is the current index. The second entry is the # of input blocks (i.e. maximum index)
+  updateBlkCB: (funcBlockId: number, inputName: string | null, inputType: data_types | null, idx: number | null) => void;
   removeBlkCB:  (id: number) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
+  //setArrows: React.Dispatch<React.SetStateAction<Arrow[]>>;
 }
 
 function InputBlock(props: InputProps) {
-  const [ id, name, type, typeOptions, editCB, removeCB , setArrows] = [props.blockId, props.inputName, props.inputType, props.inputTypeOptions, props.updateBlkCB, props.removeBlkCB, props.setArrows]
+  const [ inputId, inputName, inputType, typeOptions, [inputIdx, maxIdx], editCB, removeCB , setArrows] = [
+    props.blockId, 
+    props.inputName, 
+    props.inputType, 
+    props.inputTypeOptions, 
+    props.inputIdx,
+    props.updateBlkCB, 
+    props.removeBlkCB, 
+    props.setArrows
+  ]
   
   const dragRef = useRef<Draggable>(null);
   const boxRef =  useRef<HTMLDivElement>(null);
   
-  const [inputName, setName] = useState(name)
-  const [inputType, setType] = useState(type)
+  //const [ inputName, setName ] = useState(name);
+  //const [ inputType, setType ] = useState(type);
+  //const [ inputIdx, setInputIdx ] = useState(idx);
 
   const outputCount: number = 1;
   const outputNodeInc: number = 100 / (outputCount + 1);
@@ -111,7 +125,7 @@ function InputBlock(props: InputProps) {
       faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
     }
 
-    const handleId : string = id.toString() + 'o1';
+    const handleId : string = inputId.toString() + 'o1';
     return (
       <>
         <Popover opened={showNodeName} arrowSize={3} position={nodeNamePos} width={nodeNameWidth} styles={{
@@ -134,30 +148,12 @@ function InputBlock(props: InputProps) {
     
           </Popover.Target>
           <Popover.Dropdown>
-            {name}
+            {inputName}
           </Popover.Dropdown>
         </Popover>
       </>
     )
   })
-
-  function handleNameChange(e: any) {
-    setName(e.target.value);
-    editCB(id, e.target.value, inputType);
-  }
-
-  function handleTypeChange(e: any) {
-    setType(e.target.value);
-    editCB(id, inputName, e.target.value);
-  }
-
-  function handleRemoveBlock(e: any) {
-    removeCB(id);
-  }
-
-  const data_types_options = typeOptions.map(([id, dt_name] : [data_types, string]) => (
-    <option value={id}>{dt_name}</option>
-  ))
 
   const sideMenus = nodeMenuDir.map((dir) => {
 
@@ -268,7 +264,8 @@ function InputBlock(props: InputProps) {
               <div className='node-menu-btn' style={sideMenuBtnWrapperStyle}>
                 <svg 
                   width={sideMenuBtnStyle.svgW} 
-                  height={sideMenuBtnStyle.svgH} 
+                  height={sideMenuBtnStyle.svgH}
+                  className='func-svg'
                   onMouseEnter={() => {
 
                     //let tmp = showSideMenu.map(e => true);
@@ -308,7 +305,55 @@ function InputBlock(props: InputProps) {
 
     return sideMenu;
   })
+
+  function handleNameChange(e: any) {
+    //setName(e.target.value);
+    editCB(inputId, e.target.value, null, null);
+  }
+
+  function handleTypeChange(t: number) {
+    //setType(t);
+    editCB(inputId, null, t, null);
+  }
+
+  function handleRemoveBlock(e: any) {
+    removeCB(inputId);
+  }
+
+  function handleIdxChange(i: number) {
+    //setInputIdx(i);
+    editCB(inputId, null, null, i);
+  }
+
+  const typeCombobox = useCombobox({
+    //onDropdownClose: () => combobox.resetSelectedOption()
+  });
+
+  const idxCombobox = useCombobox({
+
+  })
+
+  const daat = typeOptions.map(([id, dt_name] : [data_types, string]) => (
+    <option value={id}>{dt_name}</option>
+  ))
+
+  const dataTypeOptions = typeOptions.map(([typeId, dt_name]) => (
+    <Combobox.Option value={typeId.toString()} key={dt_name} active={typeId === inputType}>
+      <Group gap="xs">
+        {typeId === inputType && <CheckIcon size={8} />}
+        <span>{dt_name}</span>
+      </Group>
+    </Combobox.Option>
+  ));
   
+  // the 1st map is because we need to change to 1-based indexing
+  const idxOptions = [...Array(maxIdx).keys()].map(idx => idx+1).map(idx => (
+    <Combobox.Option value={idx.toString()} key={idx} active={idx === idx}>
+      <Group gap="xs">
+        <span>{idx}</span>
+      </Group>
+    </Combobox.Option>
+  ))
 
   /**
    * <div className="input-block-id">{id}</div>
@@ -323,7 +368,15 @@ function InputBlock(props: InputProps) {
         }}
       > 
     <div className='block-container'>
-    <Card className="input-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder>
+    <Card className="input-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder styles={{
+      root: {
+        height: '150px',
+        width: '200px'
+      },
+      section: {
+        padding: '0px 5px 0px 5px'
+      }
+    }}>
       <Card.Section className='block-header'>
         <div className="block-type-desc">Input Block</div>
         <CloseButton className='block-remove' onClick={handleRemoveBlock} />
@@ -331,13 +384,71 @@ function InputBlock(props: InputProps) {
       <CardSection>
         <hr className='solid-divider' />
       </CardSection>
+      <Card.Section>
+        <Input className="input-block-name" onChange={handleNameChange} value={inputName} variant="filled" placeholder="Input Name"/>
+      </Card.Section>
       <CardSection>
-        <Input className="input-block-name" onChange={handleNameChange} value={inputName} variant="filled" placeholder="Input Name" />
+        <hr className='solid-divider' />
       </CardSection>
       <Card.Section>
-        <select className="input-block-type" value={inputType} onChange={handleTypeChange}>
+        {/* <select className="input-block-type" value={inputType} onChange={handleTypeChange}>
           {data_types_options}
-        </select>
+        </select> */}
+      </Card.Section>
+      <Card.Section style={{
+        display: 'flex',
+        flexDirection: 'row'
+      }}>
+        <Combobox
+          onOptionSubmit={(val) => {
+            handleTypeChange(Number(val));
+            typeCombobox.closeDropdown();
+          }
+          }
+          store={typeCombobox}
+          dropdownPadding={4}
+        >
+          <Combobox.Target>
+            <InputBase
+              component="button"
+              type="button"
+              pointer
+              rightSection={<Combobox.Chevron />}
+              rightSectionWidth={20}
+              onClick={() => {typeCombobox.toggleDropdown()}}
+              className='input-block-type-input'
+            >
+              {typeOptions[inputType][1]}
+            </InputBase>
+          </Combobox.Target>
+          <Combobox.Dropdown>
+            <Combobox.Options>{dataTypeOptions}</Combobox.Options>
+          </Combobox.Dropdown>
+        </Combobox>
+        <Combobox
+          onOptionSubmit={(val) => {
+            handleIdxChange(Number(val));
+            idxCombobox.closeDropdown();
+          }
+          }
+          store={idxCombobox}
+          dropdownPadding={4}
+        >
+          <Combobox.Target>
+            <InputBase
+              component="button"
+              type="button"
+              pointer
+              onClick={() => {idxCombobox.toggleDropdown()}}
+              className='input-block-idx-input'
+            >
+              {inputIdx}
+            </InputBase>
+          </Combobox.Target>
+          <Combobox.Dropdown>
+            <Combobox.Options>{idxOptions}</Combobox.Options>
+          </Combobox.Dropdown>
+        </Combobox>
       </Card.Section>
     </Card>
     {outputNodes}
