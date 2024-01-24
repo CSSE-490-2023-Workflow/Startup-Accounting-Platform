@@ -14,6 +14,10 @@ import Xarrow from 'react-xarrows';
 import NumberInput from '../NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 
+interface Pair {
+  x: number
+  y: number
+}
 
 interface InputBlockDS {
   blockId: number
@@ -304,6 +308,7 @@ function FuncBuilderMain() {
   })
 
   const [inputStore, setInputStore] = useState<number[]>([]);
+  const [outputStore, setOutputStore] = useState<Map<string, allowed_stack_components>[]>([]);
 
   const changeInput = useCallback((ind: number, value: number) => {
     inputStore[ind] = value;
@@ -332,10 +337,12 @@ function FuncBuilderMain() {
     let i = 0;
     inputStore.forEach((element: number) => {
       i += 1;
+      console.log(inputBlocks[i-1].inputName);
       paramMap.set(inputBlocks[i-1].inputName, element);
     })
     console.log(paramMap);
     const res: Map<string, allowed_stack_components> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
+    setOutputStore([res])
     console.log(res);
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction])
 
@@ -343,6 +350,10 @@ function FuncBuilderMain() {
   let outputListCount: number = 0;
   const outputList = outputBlocks.map((blk: OutputBlockDS) => {
     outputListCount += 1
+    let data: Pair[] = []
+    console.log(outputStore.length);
+    if(outputStore.length >= outputListCount)
+      data = [{x: 0, y: outputStore[outputListCount - 1].get(blk.outputName) as number}]
     return (
       <>
         <h3>{blk.outputName}</h3>
@@ -350,9 +361,11 @@ function FuncBuilderMain() {
             width={200}
             height={200}
             xDomain={[0,5.5]}
-            yDomain={[0,150]}>
+            yDomain={[0,20]}>
             <HorizontalGridLines />
-            <VerticalBarSeries data={[]} barWidth={0}/>
+            <VerticalBarSeries 
+              data={data}
+              barWidth={0.2} />
             {/*Qingyuan needs to generate the data and place it in here as the comment has it
               // data={op[0].map(([index, value], k) => (
               //   {x: index, y: value}
