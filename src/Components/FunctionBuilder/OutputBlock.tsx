@@ -173,6 +173,7 @@ function OutputBlock(props: OutProps) {
                 changeParamNodeDir(dir);
                 let tmp = showSideMenu.map(e => false);
                 setShowSideMenu(tmp);
+                setArrows(arrows => [...arrows]);
               }}
               active
             />  
