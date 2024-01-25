@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
 import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components} from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
@@ -15,7 +15,7 @@ import NumberInput from '../NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
 import {Button} from "@mantine/core";
-import { FunctionData } from '../../pages/Functions/Functions' 
+import { FunctionData as CustomFunction } from '../../pages/Functions/Functions' 
 
 interface InputBlockDS {
   blockId: number
@@ -96,9 +96,19 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [ arrows, setArrows] = useState<StartAndEnd[]>([]);
   //const [ arrows, setArrows ] = useState<Arrow[]>([]);
 
-  const [functions, setFunctions] = useState<FunctionData[]>([]);
+  const [ customFunctions, setCustomFunctions ] = useState<Map<string, CustomFunction>>(new Map());
   const {currentUser} = useContext(AuthContext);
 
+  useEffect(() => {
+    if(currentUser) {
+        database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
+            functionsFromDb.forEach(functionData => {
+              customFunctions.set(functionData.id, functionData)
+            })
+            setCustomFunctions(new Map(customFunctions));
+        });
+    }
+}, [currentUser]);
 
   const addArrow = useCallback((v: StartAndEnd) => {
     setArrows([...arrows, v]);
