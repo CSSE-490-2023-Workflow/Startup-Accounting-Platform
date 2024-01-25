@@ -45,7 +45,7 @@ const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
 function FuncBlock(props: FuncProps) {
   const [ blkId, funcId, funcType, funcName, funcOptions, paramTypes, paramNames, 
-          outputTypes, outputNames, editCB, removeCB, setArrows, addArrow] = [
+          outputTypes, outputNames, editCB, removeCB, setArrows, addArrow, removeArrow] = [
     props.blockId, 
     props.funcId, 
     props.funcType,
