@@ -36,6 +36,11 @@ interface ioObj {
   value : allowed_stack_components
 }
 
+interface ioObj {
+  name : string,
+  value : allowed_stack_components
+}
+
 interface FuncBlockDS {
   blockId: number
   funcType: FuncType
@@ -158,20 +163,22 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setArrows(tmp);
     }, [arrows])
 
-//   const removeArrow = useCallback((v: string[]) => {
-//     const newArrows: StartAndEnd[] = []
-//     console.log(arrows);
-//      for(let i = 0; i < arrows.length; i++) {
-//       let toRemove: boolean = false;
-//       for(let j = 0; j < v.length; j++) {
-//        if(arrows[i].end === v[j])
-//          toRemove = true;
-//       }
-//       if(!toRemove)
-//         newArrows.push(arrows[i]);
-//      }
-//      console.log(newArrows);
-//      setArrows(newArrows);
+  const removeArrow = useCallback((v: string[]) => {
+    const newArrows: StartAndEnd[] = []
+    console.log(arrows);
+     for(let i = 0; i < arrows.length; i++) {
+      let toRemove: boolean = false;
+      for(let j = 0; j < v.length; j++) {
+       if(arrows[i].end === v[j])
+         toRemove = true;
+      }
+      if(!toRemove)
+        newArrows.push(arrows[i]);
+     }
+     console.log(newArrows);
+     setArrows(newArrows);
+
+  }, [arrows])
 
   function arrowStartBlk(arrow: StartAndEnd) {
     return Number(arrow.start.split('o')[0]);
@@ -226,9 +233,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
   }, [blkMap])
 
-  
 
-  
   const [outputStore, setOutputStore] = useState<Map<number, ioObj>[]>([])
   const evaluateFunction = useCallback(() => {
     const paramMap : Map<number, ioObj> = new Map<number, ioObj>();
@@ -896,7 +901,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         removeBlkCB={removeFuncBlock}
         addArrow={addArrow}
         setArrows={setArrows}
-        //removeArrow={removeArrow}
+        removeArrow={removeArrow}
       />
     );
     
@@ -913,7 +918,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         removeBlkCB={removeOutputBlock}
         addArrow={addArrow}
         setArrows={setArrows}
-        //removeArrow={removeArrow}
+        removeArrow={removeArrow}
       />
     )
   })
