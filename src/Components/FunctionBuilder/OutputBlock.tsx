@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useState} from 'react';
 import { data_types, data_type_enum_name_pairs} from "../../engine/datatype_def"
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, useCombobox, Combobox, InputBase } from '@mantine/core';
-import Draggable from 'react-draggable';
+import Draggable, { DraggableEvent } from 'react-draggable';
 
 enum direction {
   'top'= 0,
@@ -22,24 +22,28 @@ interface OutProps {
   outputName: string;
   outputType: data_types | undefined; //undefined if not connected to another block
   outputIdx: number[]; //the first element is the index of the block. The second element is the # of output blocks (i.e. maximum index)
+  blockLocation: [number, number];
   updateBlkCB: (blkId: number, outputName: string | null, outputType: data_types | null, idx: number | null) => void;
   removeBlkCB: (blkId: number) => void;
   addArrow: (value: StartAndEnd) => void;
   //addArrow: (value: Arrow) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
+  updateBlkLoc: (blkId: number, blockLocation: [number, number]) => void;
   //setArrows: React.Dispatch<React.SetStateAction<Arrow[]>>;
 }
 
 function OutputBlock(props: OutProps) {
-  const [ outputId, outputName, oType, [outputIdx, maxIdx], editCB, removeCB, addArrow, setArrows] = [
+  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc, editCB, removeCB, addArrow, setArrows, updateLoc] = [
     props.blockId, 
     props.outputName, 
     props.outputType,
     props.outputIdx,
+    props.blockLocation,
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.addArrow, 
-    props.setArrows
+    props.setArrows,
+    props.updateBlkLoc
   ];
   //const [ outputName, setName] = useState(name);
   //const [ outputType, setOutputType ] = useState(oType);
@@ -60,6 +64,7 @@ function OutputBlock(props: OutProps) {
 
   // controlls node name popover state
   const [ showNodeName, setShowNodeName ] = useState(false);
+
 
   // Is this even necessary?
   const changeParamNodeDir : any = useCallback((newDir: direction) => {
@@ -321,6 +326,7 @@ function OutputBlock(props: OutProps) {
     editCB(outputId, null, null, i);
   }
 
+
   const typeCombobox = useCombobox({
     //onDropdownClose: () => combobox.resetSelectedOption()
   });
@@ -341,8 +347,22 @@ function OutputBlock(props: OutProps) {
     <>
      <Draggable
         ref={dragRef}
-        onDrag={e => {
-          // console.log(e);
+        // onDrag={e => {
+        //   // console.log(e);
+        //   setArrows((arrows) => [...arrows]);
+        //   updateLoc(handleUpdateLoc);
+        // }}
+        onDrag = {(e: DraggableEvent, data) => {
+          const x: number =  data.x; //dragRef.current.getBoundingClientRect();
+          const y: number = data.y;
+          //console.log("XY", x, y);
+          const newLocation: [number, number] = [x, y];
+          
+          // Update the block location using the callback
+          updateLoc(outputId, newLocation);
+          //console.log("new loc:", newLocation);
+      
+          // Additional logic related to block dragging
           setArrows((arrows) => [...arrows]);
         }}
       > 

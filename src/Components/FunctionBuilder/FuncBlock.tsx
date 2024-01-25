@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useCallback, useRef, useState} from 'react';
 import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, NavLink, Divider, Popover} from '@mantine/core';
-import Draggable from 'react-draggable';
+import Draggable, { DraggableEvent } from 'react-draggable';
 import { data_types } from '../../engine/datatype_def';
 import DotlessConnectPointsWrapper from '../DotlessConnectPointsWrapper';
 
@@ -33,16 +33,18 @@ interface FuncProps {
   paramNames: string[];
   outputTypes: data_types[];
   outputNames: string[];
+  blockLocation: [number, number];
   updateBlkCB: (funcBlockId: number, funcId: number) => void;
   removeBlkCB:  (id: number) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
   addArrow: (value: StartAndEnd) => void;
+  updateBlkLoc: (blkId: number, blockLocation: [number, number]) => void;
 }
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
 function FuncBlock(props: FuncProps) {
-  const [ blkId, funcId, funcName, funcOptions, paramTypes, paramNames, outputTypes, outputNames, editCB, removeCB, setArrows, addArrow, ] = [
+  const [ blkId, funcId, funcName, funcOptions, paramTypes, paramNames, outputTypes, outputNames, blockLoc, editCB, removeCB, setArrows, addArrow, updateLoc] = [
     props.blockId, 
     props.funcId, 
     props.funcName, 
@@ -51,10 +53,12 @@ function FuncBlock(props: FuncProps) {
     props.paramNames, 
     props.outputTypes, 
     props.outputNames, 
+    props.blockLocation,
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.setArrows, 
-    props.addArrow
+    props.addArrow,
+    props.updateBlkLoc
   ]
 
   const dragRef = useRef<Draggable>(null);
@@ -430,8 +434,14 @@ function FuncBlock(props: FuncProps) {
     <>
      <Draggable
         ref={dragRef}
-        onDrag={e => {
-          // console.log(e);
+        onDrag={(e: DraggableEvent, data) => {
+          const x: number =  data.x;
+          const y: number = data.y;
+
+          const newLocation: [number, number] = [x, y];
+          
+          // Update the block location using the callback
+          updateLoc(blkId, newLocation);
           setArrows((arrows) => [...arrows]);
         }}
       >
