@@ -112,10 +112,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const removeArrow = useCallback((v: string) => {
     const newArrows: StartAndEnd[] = []
+    console.log(arrows);
      for(let i = 0; i < arrows.length; i++) {
        if(arrows[i].end !== v)
          newArrows.push(arrows[i]);
      }
+     console.log(newArrows);
      setArrows(newArrows);
   }, [arrows])
 
@@ -294,12 +296,22 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [inputBlkIdxMap, currInputBlockId])
 
   const removeInputBlock = useCallback((blkId: number) => {
+
+    const arrowNames: string[] = [];
+    for(let i = 0; i < arrows.length; i++) {
+      if(arrows[i].start.indexOf(blkId.toString() + "o1") == 0)
+        arrowNames.push(arrows[i].end);
+    }
+    console.log(arrowNames);
+    for(let i = 0; i < arrowNames.length; i++) {
+      removeArrow(arrowNames[i]);
+    }
+
     setInputBlocks(inputBlocks => {
       return inputBlocks.filter((blk) => blk.blockId != blkId)
     });
 
     setBlkMap(blkMap => {blkMap.delete(blkId); return new Map(blkMap)});
-
     //console.log('blkmap after removal input block', blkMap);
 
     // Make all blks with larger indices than the removed blk index--
@@ -321,7 +333,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log('remove intput block. Input blk idx map', inputBlkIdxMap);
     }
 
-  }, [inputBlkIdxMap])
+  }, [arrows, inputBlkIdxMap])
 
   // Updates the information of the block with the given id
   // params that are passed in null will NOT be updated
@@ -403,12 +415,22 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [currOutputBlockId, outputBlkIdxMap])
 
   const removeOutputBlock = useCallback((blkId: number) => {
+
+    const arrowNames: string[] = [];
+    for(let i = 0; i < arrows.length; i++) {
+      if(arrows[i].end.indexOf(blkId.toString() + "i1") == 0)
+        arrowNames.push(arrows[i].end);
+    }
+    console.log(arrowNames);
+    for(let i = 0; i < arrowNames.length; i++) {
+      removeArrow(arrowNames[i]);
+    }
+
     setOutputBlocks(outputBlks => outputBlks.filter((blk) => {
       return blk.blockId != blkId
     })) ;
 
     setBlkMap(blkMap => {blkMap.delete(blkId); return new Map<number, blk>(blkMap)});
-
     // Make all blks with larger indices than the removed blk index--
     let flag : boolean = false;
     for (const [blkIdx, blk] of outputBlkIdxMap) {
@@ -428,7 +450,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log('remove output block. Output blk idx map', outputBlkIdxMap);
     }
 
-  }, [outputBlkIdxMap])
+  }, [arrows, outputBlkIdxMap])
 
   // Updates the information of the block with the given id
   // params that are null will NOT be updated
@@ -500,12 +522,37 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [currFunctionBlockId])
 
   const removeFuncBlock = useCallback((blkId: number) => {
+    // console.log(arrows[0].start);
+    // console.log(arrows[0].start.indexOf(blkId.toString() + "i"));
+    // console.log(arrows[0].end);
+    // console.log(arrows[0].end.indexOf(blkId.toString() + "i"));
+    // console.log(arrows[1].start);
+    // console.log(arrows[1].end);
+    // console.log(arrows[2].start);
+    // console.log(arrows[2].end);
+    // console.log(blkId.toString() + "i");
+    
+    const arrowNames: string[] = [];
+    for(let i = 0; i < arrows.length; i++) {
+      if(arrows[i].end.indexOf(blkId.toString() + "i") == 0)
+        arrowNames.push(arrows[i].end);
+      if(arrows[i].start.indexOf(blkId.toString() + "o") == 0)
+        arrowNames.push(arrows[i].end);
+    }
+    console.log(arrowNames);
+    const values = arrows.forEach((arrow) => {return arrow.start + " " + arrow.end});
+    console.log(blkId + " " + values);
+    for(let i = 0; i < arrowNames.length; i++) {
+      removeArrow(arrowNames[i]);
+    }
+
     setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
       return blk.blockId != blkId;
     }));
+
     blkMap.delete(blkId);
     setBlkMap(new Map<number, blk>(blkMap));
-  }, [funcBlocks, setFuncBlocks])
+  }, [arrows, funcBlocks, setFuncBlocks])
 
   const editFuncBlock = useCallback((blkId: number, funcId: number) => {
     if (config.debug_mode_FuncBuilder == 1) {
