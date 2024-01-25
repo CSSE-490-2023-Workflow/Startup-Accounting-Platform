@@ -30,8 +30,6 @@ function DotlessConnectPointsWrapper(props: IProps) {
               position: "absolute", top: 0, left: 0,
               width: 20,
               height: 15,
-              width: 20,
-              height: 15,
               translate: (-10),
               // borderRadius: "50%",
               // background: "black"
