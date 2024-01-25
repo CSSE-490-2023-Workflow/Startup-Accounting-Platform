@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
 import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components} from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
@@ -22,6 +22,16 @@ interface InputBlockDS {
   inputType: data_types
   inputIdx: number
   val: any
+}
+
+interface Pair {
+  x: number
+  y: number
+}
+
+interface ioObj {
+  name : string,
+  value : allowed_stack_components
 }
 
 interface FuncBlockDS {
@@ -100,6 +110,22 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     updateOutputBlkType(v);
   }, [arrows, blkMap]);
 
+  const removeArrow = useCallback((v: string[]) => {
+    const newArrows: StartAndEnd[] = []
+    console.log(arrows);
+     for(let i = 0; i < arrows.length; i++) {
+      let toRemove: boolean = false;
+      for(let j = 0; j < v.length; j++) {
+       if(arrows[i].end === v[j])
+         toRemove = true;
+      }
+      if(!toRemove)
+        newArrows.push(arrows[i]);
+     }
+     console.log(newArrows);
+     setArrows(newArrows);
+  }, [arrows])
+
   function arrowStartBlk(arrow: StartAndEnd) {
     return Number(arrow.start.split('o')[0]);
   }
@@ -137,19 +163,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
 
   }
-
+  
+  const [outputStore, setOutputStore] = useState<Map<number, ioObj>[]>([])
   const evaluateFunction = useCallback(() => {
-    interface ioObj {
-      name : string,
-      value : allowed_stack_components
-    }
     const paramMap : Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
       paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
     }
 
     const res: Map<number, ioObj> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
-    //setOutputMap(res);
+    setOutputStore([res]);
     console.log('complete. Outputs of the custom function are: ', res);
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction]);
 
@@ -278,12 +301,20 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [inputBlkIdxMap, currInputBlockId])
 
   const removeInputBlock = useCallback((blkId: number) => {
+
+    const arrowNames: string[] = [];
+    for(let i = 0; i < arrows.length; i++) {
+      if(arrows[i].start.indexOf(blkId.toString() + "o1") == 0)
+        arrowNames.push(arrows[i].end);
+    }
+    console.log(arrowNames);
+    removeArrow(arrowNames);
+
     setInputBlocks(inputBlocks => {
       return inputBlocks.filter((blk) => blk.blockId != blkId)
     });
 
     setBlkMap(blkMap => {blkMap.delete(blkId); return new Map(blkMap)});
-
     //console.log('blkmap after removal input block', blkMap);
 
     // Make all blks with larger indices than the removed blk index--
@@ -305,7 +336,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log('remove intput block. Input blk idx map', inputBlkIdxMap);
     }
 
-  }, [inputBlkIdxMap])
+  }, [arrows, inputBlkIdxMap])
 
   // Updates the information of the block with the given id
   // params that are passed in null will NOT be updated
@@ -387,12 +418,20 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [currOutputBlockId, outputBlkIdxMap])
 
   const removeOutputBlock = useCallback((blkId: number) => {
+
+    const arrowNames: string[] = [];
+    for(let i = 0; i < arrows.length; i++) {
+      if(arrows[i].end.indexOf(blkId.toString() + "i1") == 0)
+        arrowNames.push(arrows[i].end);
+    }
+    console.log(arrowNames);
+    removeArrow(arrowNames);
+
     setOutputBlocks(outputBlks => outputBlks.filter((blk) => {
       return blk.blockId != blkId
     })) ;
 
     setBlkMap(blkMap => {blkMap.delete(blkId); return new Map<number, blk>(blkMap)});
-
     // Make all blks with larger indices than the removed blk index--
     let flag : boolean = false;
     for (const [blkIdx, blk] of outputBlkIdxMap) {
@@ -412,7 +451,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log('remove output block. Output blk idx map', outputBlkIdxMap);
     }
 
-  }, [outputBlkIdxMap])
+  }, [arrows, outputBlkIdxMap])
 
   // Updates the information of the block with the given id
   // params that are null will NOT be updated
@@ -484,12 +523,35 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [currFunctionBlockId])
 
   const removeFuncBlock = useCallback((blkId: number) => {
+    // console.log(arrows[0].start);
+    // console.log(arrows[0].start.indexOf(blkId.toString() + "i"));
+    // console.log(arrows[0].end);
+    // console.log(arrows[0].end.indexOf(blkId.toString() + "i"));
+    // console.log(arrows[1].start);
+    // console.log(arrows[1].end);
+    // console.log(arrows[2].start);
+    // console.log(arrows[2].end);
+    // console.log(blkId.toString() + "i");
+    
+    const arrowNames: string[] = [];
+    for(let i = 0; i < arrows.length; i++) {
+      if(arrows[i].end.indexOf(blkId.toString() + "i") == 0)
+        arrowNames.push(arrows[i].end);
+      if(arrows[i].start.indexOf(blkId.toString() + "o") == 0)
+        arrowNames.push(arrows[i].end);
+    }
+    console.log(arrowNames);
+    const values = arrows.forEach((arrow) => {return arrow.start + " " + arrow.end});
+    console.log(blkId + " " + values);
+    removeArrow(arrowNames);
+    
     setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
       return blk.blockId != blkId;
     }));
+
     blkMap.delete(blkId);
     setBlkMap(new Map<number, blk>(blkMap));
-  }, [funcBlocks, setFuncBlocks])
+  }, [arrows, funcBlocks, setFuncBlocks])
 
   const editFuncBlock = useCallback((blkId: number, funcId: number) => {
     if (config.debug_mode_FuncBuilder == 1) {
@@ -556,11 +618,14 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('tmp', inputBlocks);
   }, [inputBlocks, setInputBlocks])
 
-  const inputStore: number[] = []
+  
   let inputListCount: number = 0;
+  const [inputStore, setInputStore] = useState<data_types[]>([]);
   const inputList = inputBlocks.map((blk: InputBlockDS) => {
     inputListCount += 1
-    inputStore.push(0)
+    if(inputStore.length < inputListCount) {
+      setInputStore((inputStore) => [...inputStore, 0])
+    }
     return (
       <>
         <h3>{blk.inputName}</h3>
@@ -568,9 +633,21 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       </>
     );
   })
+
+
+  
   let outputListCount: number = 0;
   const outputList = outputBlocks.map((blk: OutputBlockDS) => {
     outputListCount += 1
+    let data: Pair[] = []
+    //console.log(outputStore.length);
+    if(outputStore.length > 0 && outputStore[0] != undefined) {
+      data = [{x: 0, y: outputStore[0].get(blk.blockId - 2000)?.value as number}]
+      console.log(blk.blockId);
+      console.log(outputStore[0].get(1));
+    }
+    // if(outputStore.length < outputListCount)
+    //   setOutputStore([...outputStore, ])
     return (
       <>
         <h3>{blk.outputName}</h3>
@@ -578,9 +655,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             width={200}
             height={200}
             xDomain={[0,5.5]}
-            yDomain={[0,150]}>
+            yDomain={[0,20]}>
             <HorizontalGridLines />
-            <VerticalBarSeries data={[]} barWidth={0}/>
+            <VerticalBarSeries 
+              data={data}
+              barWidth={0.2} />
             {/*Qingyuan needs to generate the data and place it in here as the comment has it
               // data={op[0].map(([index, value], k) => (
               //   {x: index, y: value}
@@ -608,6 +687,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         removeBlkCB={removeFuncBlock}
         addArrow={addArrow}
         setArrows={setArrows}
+        removeArrow={removeArrow}
       />
     );
     
@@ -624,6 +704,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         removeBlkCB={removeOutputBlock}
         addArrow={addArrow}
         setArrows={setArrows}
+        removeArrow={removeArrow}
       />
     )
   })
