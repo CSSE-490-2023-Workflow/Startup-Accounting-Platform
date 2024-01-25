@@ -144,6 +144,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     updateOutputBlkType(v);
   }, [arrows, blkMap]);
 
+  const removeArrowsAttachedToBlk = useCallback((blkId: number) => {
+    const tmp = arrows.filter((a: StartAndEnd) => {
+      return Number(a.start.split('o')[0]) != blkId && Number(a.end.split('i')[0]) != blkId
+    })
+    setArrows(tmp);
+  }, [arrows])
+
   function arrowStartBlk(arrow: StartAndEnd) {
     return Number(arrow.start.split('o')[0]);
   }
@@ -359,6 +366,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     inputBlkIdxMap.delete(inputBlkIdxMap.size);
     setInputBlkIdxMap(new Map(inputBlkIdxMap));
 
+    removeArrowsAttachedToBlk(blkId);
+
     if (config.debug_mode_FuncBuilder == 1) {
       console.log('remove intput block. Input blk idx map', inputBlkIdxMap);
     }
@@ -464,7 +473,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
     outputBlkIdxMap.delete(outputBlkIdxMap.size);
 
-    setOutputBlkIdxMap(outputBlkIdxMap => {outputBlkIdxMap.delete(outputBlkIdxMap.size); return new Map(outputBlkIdxMap)});
+    setOutputBlkIdxMap(new Map(outputBlkIdxMap));
+
+    removeArrowsAttachedToBlk(blkId);
 
     if (config.debug_mode_FuncBuilder == 1) {
       console.log('remove output block. Output blk idx map', outputBlkIdxMap);
@@ -559,8 +570,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
       return blk.blockId != blkId;
     }));
+
     blkMap.delete(blkId);
     setBlkMap(new Map<number, blk>(blkMap));
+
+    removeArrowsAttachedToBlk(blkId);
+
   }, [funcBlocks, setFuncBlocks])
 
   enum FuncType {
