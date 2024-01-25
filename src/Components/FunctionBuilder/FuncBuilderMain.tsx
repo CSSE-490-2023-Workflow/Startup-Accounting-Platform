@@ -110,6 +110,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     updateOutputBlkType(v);
   }, [arrows, blkMap]);
 
+  const removeArrow = useCallback((v: string) => {
+    const newArrows: StartAndEnd[] = []
+     for(let i = 0; i < arrows.length; i++) {
+       if(arrows[i].end !== v)
+         newArrows.push(arrows[i]);
+     }
+     setArrows(newArrows);
+  }, [arrows])
+
   function arrowStartBlk(arrow: StartAndEnd) {
     return Number(arrow.start.split('o')[0]);
   }
@@ -632,6 +641,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         removeBlkCB={removeFuncBlock}
         addArrow={addArrow}
         setArrows={setArrows}
+        removeArrow={removeArrow}
       />
     );
     
@@ -648,6 +658,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         removeBlkCB={removeOutputBlock}
         addArrow={addArrow}
         setArrows={setArrows}
+        removeArrow={removeArrow}
       />
     )
   })
