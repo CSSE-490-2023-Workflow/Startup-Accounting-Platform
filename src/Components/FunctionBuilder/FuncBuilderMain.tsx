@@ -13,8 +13,9 @@ import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
 import NumberInput from '../NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
-import { database } from "../../auth/firebase";
+import { AuthContext, database } from "../../auth/firebase";
 import {Button} from "@mantine/core";
+import { FunctionData } from '../../pages/Functions/Functions' 
 
 interface InputBlockDS {
   blockId: number
@@ -88,13 +89,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [ outputBlkIdxMap, setOutputBlkIdxMap ] = useState<Map<number, OutputBlockDS>>(new Map());
 
   const [ savedFunction, setSavedFunction ] = useState({});
+  const [ evalResult, setEvalResult ] = useState(new Map<number, ioObj>())
 
   const [ blkMap, setBlkMap ] = useState(new Map<number, blk>());
 
   const [ arrows, setArrows] = useState<StartAndEnd[]>([]);
   //const [ arrows, setArrows ] = useState<Arrow[]>([]);
 
-  const [ evalResult, setEvalResult ] = useState(new Map<number, ioObj>())
+  const [functions, setFunctions] = useState<FunctionData[]>([]);
+  const {currentUser} = useContext(AuthContext);
 
 
   const addArrow = useCallback((v: StartAndEnd) => {
@@ -559,9 +562,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     name: string;
   }
 
-  const func_options: funcInfo[] = Object.entries(id_to_builtin_func).map(([funcId, funcBody]) => {
+  const builtinFuncOptions: funcInfo[] = Object.entries(id_to_builtin_func).map(([funcId, funcBody]) => {
     return {id: funcId, name: funcBody.func_name};
   })
+
+  const customFuncOptions: funcInfo{} = 
 
   const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
     return (

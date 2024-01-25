@@ -479,7 +479,27 @@ function FuncBlock(props: FuncProps) {
           }
         }}>
         <Card.Section className='block-header'>
-          <div className="block-type-desc">{funcType == FuncType.custom ? "Custom Function" : "Built-in Function"}</div>
+
+          <div className="block-type-desc">
+            <Combobox>
+              <Combobox.Target>
+                <InputBase
+                  component="button"
+                  type="button"
+                  pointer
+                  rightSection={<Combobox.Chevron />}
+                  rightSectionWidth={20}
+                  onClick={() => {switchType()}}
+                  className='func-block-type-switch'
+                >
+                  {funcType == FuncType.custom ? "Custom Function" : "Built-in Function"}
+                </InputBase>
+              </Combobox.Target>
+              <Combobox.Dropdown>
+                {}
+              </Combobox.Dropdown>
+            </Combobox>
+          </div>
           <CloseButton className='block-remove' onClick={handleRemoveBlock} />
         </Card.Section>
         <Card.Section>
@@ -503,8 +523,10 @@ function FuncBlock(props: FuncProps) {
                 component="button"
                 type="button"
                 pointer
+                rightSection={<Combobox.Chevron />}
+                rightSectionWidth={20}
                 onClick={() => {funcCombobox.toggleDropdown()}}
-                className='func-block-func-name-input'
+                className='func-block-func-name-select'
               >
                 {funcName}
               </InputBase>
@@ -513,27 +535,13 @@ function FuncBlock(props: FuncProps) {
               <Combobox.Options>{funcSelectOptions}</Combobox.Options>
             </Combobox.Dropdown>
           </Combobox>
-          <Combobox
-            
-          >
-            <Combobox.Target>
-              <InputBase
-                component="button"
-                type="button"
-                pointer
-                onClick={() => {switchType()}}
-                className='output-block-type-input'
-              >
-                {funcType == FuncType.custom ? 'C' : 'B'}
-              </InputBase>
-            </Combobox.Target>
-            <Combobox.Dropdown>
-              {}
-            </Combobox.Dropdown>
-          </Combobox>
+          
         </Card.Section>
         <Card.Section>
           <div className="func-block-func-id">Current Function Id: {funcId}</div>
+        </Card.Section>
+        <Card.Section>
+          
         </Card.Section>
       </Card>
       {paramNodes}
