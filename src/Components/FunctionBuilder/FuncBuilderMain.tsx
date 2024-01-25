@@ -113,6 +113,19 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             tmp.set(functionData.id, functionData)
           })
           setCustomFunctions(tmp);
+          console.log(tmp);
+
+          // We want to update custom function blocks that are using 
+          // the custom function we are building! 
+          setFuncBlocks(funcBlocks => {
+            for (const funcBlk of funcBlocks) {
+              if (funcBlk.funcId == props.functionId) {
+                console.log(funcBlk, props.functionId);
+                setFuncBlockFunction(funcBlk, props.functionId);
+              }
+            }
+            return [...funcBlocks];
+          })
       });
     }
   }, [currentUser])
@@ -243,6 +256,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('saved func', res);
 
     database.updateFunction(props.functionId, { rawJson: JSON.stringify(res) });
+    reloadSavedCustomFunctions();
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId])
   /**
    * Given the node id the head of an arrow is connected to, backtrace the path and return it
@@ -571,19 +585,32 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       blk.outputTypes = f.output_types;
       blk.outputNames = f.output_names;
     } else { // is custom function
-      blk.funcId = funcId;
-      blk.funcType = FuncType.custom;
+      console.log('setting to custom function', blk)
       const f: CustomFunctionDBRecord | undefined = customFunctions.get(funcId);
       if (f == undefined) {
         throw new Error(`Bad custom function id ${funcId}`);
       }
       const customFuncBody : any = JSON.parse(f.rawJson);
       console.log(customFuncBody)
-      blk.funcName = f.name;
-      blk.paramTypes = customFuncBody.paramTypes;
-      blk.paramNames = customFuncBody.paramNames;
-      blk.outputTypes = customFuncBody.outputTypes;
-      blk.outputNames = customFuncBody.outputNames;
+      if (customFuncBody.type == undefined) { // the function has not been constructed
+        // do nothing 
+        blk.funcId = funcId;
+        blk.funcType = FuncType.custom;
+        blk.funcName = f.name;
+        blk.paramTypes = [];
+        blk.paramNames = [];
+        blk.outputTypes =[];
+        blk.outputNames =[];
+      } else {
+        blk.funcId = funcId;
+        blk.funcType = FuncType.custom;
+        blk.funcName = f.name;
+        blk.paramTypes = customFuncBody.paramTypes;
+        blk.paramNames = customFuncBody.paramNames;
+        blk.outputTypes = customFuncBody.outputTypes;
+        blk.outputNames = customFuncBody.outputNames;
+      }
+      
     }
 
   }
@@ -618,7 +645,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       }
 
       setArrows(arrows => [...arrows]);
-      console.log(blk);
       return blk;
     })
 
