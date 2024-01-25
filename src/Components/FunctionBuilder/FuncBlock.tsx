@@ -39,7 +39,6 @@ interface FuncProps {
   removeBlkCB:  (id: number) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
   addArrow: (value: StartAndEnd) => void;
-  removeArrow: (value: string[]) => void;
 }
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
@@ -59,8 +58,7 @@ function FuncBlock(props: FuncProps) {
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.setArrows, 
-    props.addArrow,
-    props.removeArrow
+    props.addArrow
   ]
 
   const dragRef = useRef<Draggable>(null);
@@ -168,7 +166,6 @@ function FuncBlock(props: FuncProps) {
               className='connection-handle-wrapper'
               onMouseEnter={() => {setShowParamNodeName(true)}}
               onMouseLeave={() => {setShowParamNodeName(false)}}
-              onClick={() => {removeArrow([handleId])}}
               onDragOver={e => e.preventDefault()}
               onDrop={e => {
                 if (e.dataTransfer.getData("arrow") === handleId + "") {
@@ -176,7 +173,7 @@ function FuncBlock(props: FuncProps) {
                 } else {
                   const refs = { start: e.dataTransfer.getData("arrow"), end: handleId + "" };
                   addArrow(refs);
-                  console.log("dropped!", refs);
+                  console.log("droped!", refs);
                 }
               }}
             >

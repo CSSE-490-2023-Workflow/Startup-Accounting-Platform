@@ -135,7 +135,6 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
         output_types : [data_types.dt_number],
         output_names : ['sum'],
         func : (...args : allowed_stack_components[]) => {
-            console.log(args[0] + " " + args[1] + " " + args.length);
             if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 0: scalar_addition receives two scalars as parameters')
             return [Number(args[0]) + Number(args[1])];

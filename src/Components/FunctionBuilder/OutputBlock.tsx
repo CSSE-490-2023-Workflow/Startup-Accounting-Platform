@@ -28,11 +28,10 @@ interface OutProps {
   //addArrow: (value: Arrow) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
   //setArrows: React.Dispatch<React.SetStateAction<Arrow[]>>;
-  removeArrow: (value: string[]) => void;
 }
 
 function OutputBlock(props: OutProps) {
-  const [ outputId, outputName, oType, [outputIdx, maxIdx], editCB, removeCB, addArrow, setArrows, removeArrow] = [
+  const [ outputId, outputName, oType, [outputIdx, maxIdx], editCB, removeCB, addArrow, setArrows] = [
     props.blockId, 
     props.outputName, 
     props.outputType,
@@ -40,8 +39,7 @@ function OutputBlock(props: OutProps) {
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.addArrow, 
-    props.setArrows,
-    props.removeArrow
+    props.setArrows
   ];
   //const [ outputName, setName] = useState(name);
   //const [ outputType, setOutputType ] = useState(oType);
@@ -135,7 +133,6 @@ function OutputBlock(props: OutProps) {
               className='connection-handle-wrapper'
               onMouseEnter={() => {setShowNodeName(true)}}
               onMouseLeave={() => {setShowNodeName(false)}}
-              onClick={() => {removeArrow([handleId])}}
               onDragOver={e => e.preventDefault()} 
               onDrop={e => {
                 if (e.dataTransfer.getData("arrow") === handleId + "") {
@@ -143,7 +140,7 @@ function OutputBlock(props: OutProps) {
                 } else {
                   const refs = { start: e.dataTransfer.getData("arrow"), end: handleId + "" };
                   addArrow(refs);
-                  console.log("dropped!", refs);
+                  console.log("droped!", refs);
                 }
               }}>
               <div className='connection-handle connection-handle-out' id={handleId}>

@@ -28,8 +28,8 @@ function DotlessConnectPointsWrapper(props: IProps) {
           // style={connectPointStyle}
           style={{
               position: "absolute", top: 0, left: 0,
-              width: 30,
-              height: 30,
+              width: 20,
+              height: 15,
               translate: (-10),
               // borderRadius: "50%",
               // background: "black"
@@ -40,17 +40,15 @@ function DotlessConnectPointsWrapper(props: IProps) {
           onDragStart={e => {
             setBeingDragged(true);
             e.dataTransfer.setData("arrow", props.boxId);
-            console.log(e.clientX + " " + e.clientY);
             setOriginalPosition({x: e.clientX, y: e.clientY})
           }}
           onDrag={e => {
             const { offsetTop, offsetLeft } = (props.boxRef.current ? props.boxRef.current : {offsetTop: 0, offsetLeft: 0});
-            // const { x, y }= props.dragRef.current?.state as Positioning;
-            // console.log(e.clientX + " " + x + " " + offsetLeft);
+            const { x, y }= props.dragRef.current?.state as Positioning;
             setPosition({
               position: "relative",
-              left: e.clientX - offsetLeft - originalPosition.x,
-              top: e.clientY - offsetTop - originalPosition.y,
+              left: e.clientX - x - offsetLeft - originalPosition.x,
+              top: e.clientY - y - offsetTop - originalPosition.y,
               transform: "none",
               opacity: 0
             });

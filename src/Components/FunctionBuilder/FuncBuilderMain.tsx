@@ -25,19 +25,9 @@ interface InputBlockDS {
   val: any
 }
 
-
 export enum FuncType {
   custom = 0,
   builtin = 1
-
-interface Pair {
-  x: number
-  y: number
-}
-
-interface ioObj {
-  name : string,
-  value : allowed_stack_components
 }
 
 interface FuncBlockDS {
@@ -154,28 +144,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     updateOutputBlkType(v);
   }, [arrows, blkMap]);
 
-
   const removeArrowsAttachedToBlk = useCallback((blkId: number) => {
     const tmp = arrows.filter((a: StartAndEnd) => {
       return Number(a.start.split('o')[0]) != blkId && Number(a.end.split('i')[0]) != blkId
     })
     setArrows(tmp);
-
-//   const removeArrow = useCallback((v: string[]) => {
-//     const newArrows: StartAndEnd[] = []
-//     console.log(arrows);
-//      for(let i = 0; i < arrows.length; i++) {
-//       let toRemove: boolean = false;
-//       for(let j = 0; j < v.length; j++) {
-//        if(arrows[i].end === v[j])
-//          toRemove = true;
-//       }
-//       if(!toRemove)
-//         newArrows.push(arrows[i]);
-//      }
-//      console.log(newArrows);
-//      setArrows(newArrows);
-//   }, [arrows])
+  }, [arrows])
 
   function arrowStartBlk(arrow: StartAndEnd) {
     return Number(arrow.start.split('o')[0]);
@@ -230,9 +204,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
   }, [blkMap])
 
-  
-  const [outputStore, setOutputStore] = useState<Map<number, ioObj>[]>([])
   const evaluateFunction = useCallback(() => {
+    
     const paramMap : Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
       paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
@@ -242,8 +215,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     //setOutputMap(res);
     console.log('Evaluation completed. Outputs of the custom function are: ', res);
     setEvalResult(new Map(res));
-    setOutputStore([res]);
-    console.log('complete. Outputs of the custom function are: ', res);
+
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction]);
 
   const saveFunction = useCallback(() => {
@@ -371,20 +343,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [inputBlkIdxMap, currInputBlockId])
 
   const removeInputBlock = useCallback((blkId: number) => {
-
-    const arrowNames: string[] = [];
-    for(let i = 0; i < arrows.length; i++) {
-      if(arrows[i].start.indexOf(blkId.toString() + "o1") == 0)
-        arrowNames.push(arrows[i].end);
-    }
-    console.log(arrowNames);
-    removeArrow(arrowNames);
-
     setInputBlocks(inputBlocks => {
       return inputBlocks.filter((blk) => blk.blockId != blkId)
     });
 
     setBlkMap(blkMap => {blkMap.delete(blkId); return new Map(blkMap)});
+
     //console.log('blkmap after removal input block', blkMap);
 
     // Make all blks with larger indices than the removed blk index--
@@ -408,7 +372,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log('remove intput block. Input blk idx map', inputBlkIdxMap);
     }
 
-  }, [arrows, inputBlkIdxMap])
+  }, [inputBlkIdxMap])
 
   // Updates the information of the block with the given id
   // params that are passed in null will NOT be updated
@@ -490,20 +454,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [currOutputBlockId, outputBlkIdxMap])
 
   const removeOutputBlock = useCallback((blkId: number) => {
-
-    const arrowNames: string[] = [];
-    for(let i = 0; i < arrows.length; i++) {
-      if(arrows[i].end.indexOf(blkId.toString() + "i1") == 0)
-        arrowNames.push(arrows[i].end);
-    }
-    console.log(arrowNames);
-    removeArrow(arrowNames);
-
     setOutputBlocks(outputBlks => outputBlks.filter((blk) => {
       return blk.blockId != blkId
     })) ;
 
     setBlkMap(blkMap => {blkMap.delete(blkId); return new Map<number, blk>(blkMap)});
+
     // Make all blks with larger indices than the removed blk index--
     let flag : boolean = false;
     for (const [blkIdx, blk] of outputBlkIdxMap) {
@@ -525,7 +481,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log('remove output block. Output blk idx map', outputBlkIdxMap);
     }
 
-  }, [arrows, outputBlkIdxMap])
+  }, [outputBlkIdxMap])
 
   // Updates the information of the block with the given id
   // params that are null will NOT be updated
@@ -611,28 +567,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [currFunctionBlockId])
 
   const removeFuncBlock = useCallback((blkId: number) => {
-    // console.log(arrows[0].start);
-    // console.log(arrows[0].start.indexOf(blkId.toString() + "i"));
-    // console.log(arrows[0].end);
-    // console.log(arrows[0].end.indexOf(blkId.toString() + "i"));
-    // console.log(arrows[1].start);
-    // console.log(arrows[1].end);
-    // console.log(arrows[2].start);
-    // console.log(arrows[2].end);
-    // console.log(blkId.toString() + "i");
-    
-//     const arrowNames: string[] = [];
-//     for(let i = 0; i < arrows.length; i++) {
-//       if(arrows[i].end.indexOf(blkId.toString() + "i") == 0)
-//         arrowNames.push(arrows[i].end);
-//       if(arrows[i].start.indexOf(blkId.toString() + "o") == 0)
-//         arrowNames.push(arrows[i].end);
-//     }
-//     console.log(arrowNames);
-//     const values = arrows.forEach((arrow) => {return arrow.start + " " + arrow.end});
-//     console.log(blkId + " " + values);
-//     removeArrow(arrowNames);
-    
     setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
       return blk.blockId != blkId;
     }));
@@ -643,7 +577,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     removeArrowsAttachedToBlk(blkId);
 
   }, [funcBlocks, setFuncBlocks])
-
 
   enum FuncType {
     custom = 0,
@@ -763,14 +696,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('tmp', inputBlocks);
   }, [inputBlocks, setInputBlocks])
 
- 
-  let inputListCount: number = 0;
-  const [inputStore, setInputStore] = useState<data_types[]>([]);
+  //const inputStore: number[] = []
+  //let inputListCount: number = 0;
   const inputList = inputBlocks.map((blk: InputBlockDS) => {
-    inputListCount += 1
-    if(inputStore.length < inputListCount) {
-      setInputStore((inputStore) => [...inputStore, 0])
-    }
+    //inputListCount += 1
+    //inputStore.push(0)
     return (
       <>
         <h3>{blk.inputName}</h3>
@@ -778,9 +708,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       </>
     );
   })
-
-
-  
   let outputListCount: number = 0;
   const outputList : any[] = [];
   for (const [outputIdx, outputObj] of evalResult) {
@@ -845,40 +772,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         removeBlkCB={removeInputBlock}
         setArrows={setArrows}
       />
-
-//   const outputList = outputBlocks.map((blk: OutputBlockDS) => {
-//     outputListCount += 1
-//     let data: Pair[] = []
-//     //console.log(outputStore.length);
-//     if(outputStore.length > 0 && outputStore[0] != undefined) {
-//       data = [{x: 0, y: outputStore[0].get(blk.blockId - 2000)?.value as number}]
-//       console.log(blk.blockId);
-//       console.log(outputStore[0].get(1));
-//     }
-//     // if(outputStore.length < outputListCount)
-//     //   setOutputStore([...outputStore, ])
-//     return (
-//       <>
-//         <h3>{blk.outputName}</h3>
-//         <XYPlot
-//             width={200}
-//             height={200}
-//             xDomain={[0,5.5]}
-//             yDomain={[0,20]}>
-//             <HorizontalGridLines />
-//             <VerticalBarSeries 
-//               data={data}
-//               barWidth={0.2} />
-//             {/*Qingyuan needs to generate the data and place it in here as the comment has it
-//               // data={op[0].map(([index, value], k) => (
-//               //   {x: index, y: value}
-//     // ))} barWidth={0.2} />*/}
-//             <XAxis />
-//             <YAxis />
-//           </XYPlot>
-//       </>
-//     );
-//   })
+    );
+  })
 
   const funcBlocksList = funcBlocks.map((blk: FuncBlockDS) => {
     return (
@@ -896,7 +791,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         removeBlkCB={removeFuncBlock}
         addArrow={addArrow}
         setArrows={setArrows}
-        removeArrow={removeArrow}
       />
     );
     
@@ -913,7 +807,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         removeBlkCB={removeOutputBlock}
         addArrow={addArrow}
         setArrows={setArrows}
-        removeArrow={removeArrow}
       />
     )
   })
