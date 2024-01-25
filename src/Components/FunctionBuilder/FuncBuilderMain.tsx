@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
-import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components} from '../../engine/datatype_def'
+import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function} from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
@@ -15,7 +15,7 @@ import NumberInput from '../NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
 import {Button} from "@mantine/core";
-import { FunctionData as CustomFunction } from '../../pages/Functions/Functions' 
+import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Functions' 
 
 interface InputBlockDS {
   blockId: number
@@ -25,8 +25,14 @@ interface InputBlockDS {
   val: any
 }
 
+export enum FuncType {
+  custom = 0,
+  builtin = 1
+}
+
 interface FuncBlockDS {
   blockId: number
+  funcType: FuncType
   funcName: string
   funcId: string
   paramTypes: data_types[]
@@ -96,19 +102,24 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [ arrows, setArrows] = useState<StartAndEnd[]>([]);
   //const [ arrows, setArrows ] = useState<Arrow[]>([]);
 
-  const [ customFunctions, setCustomFunctions ] = useState<Map<string, CustomFunction>>(new Map());
+  const [ customFunctions, setCustomFunctions ] = useState<Map<string, CustomFunctionDBRecord>>(new Map());
   const {currentUser} = useContext(AuthContext);
 
-  useEffect(() => {
+  const reloadSavedCustomFunctions = useCallback(() => {
     if(currentUser) {
-        database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
-            functionsFromDb.forEach(functionData => {
-              customFunctions.set(functionData.id, functionData)
-            })
-            setCustomFunctions(new Map(customFunctions));
-        });
+      database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
+          const tmp : Map<string, CustomFunctionDBRecord> = new Map();
+          functionsFromDb.forEach(functionData => {
+            tmp.set(functionData.id, functionData)
+          })
+          setCustomFunctions(tmp);
+      });
     }
-}, [currentUser]);
+  }, [currentUser])
+
+  useEffect(() => {
+    reloadSavedCustomFunctions();
+  }, [currentUser]);
 
   const addArrow = useCallback((v: StartAndEnd) => {
     setArrows([...arrows, v]);
@@ -495,19 +506,33 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
    * Function block logics
    */
   //right now this is hard-coded for built-in functions only
-  const addFuncBlock = useCallback((funcId: string) => {
+  const addFuncBlock = useCallback((funcId: string, funcType: FuncType) => {
     const newId = currFunctionBlockId + 1;
     setCurrFunctionBlockId(newId);
+    
+    let f : builtin_function | CustomFunctionDBRecord | undefined = undefined;
+    let customFuncBody : any = undefined;
+    if (funcType == FuncType.builtin) {
+      f = id_to_builtin_func[funcId];
+    } else if (funcType == FuncType.custom) {
+      f = customFunctions.get(funcId);
+      if (f == undefined) {
+        throw new Error(`Creating Function Block: Bad function id ${funcId}`)
+      }
+      customFuncBody = JSON.parse(f.rawJson);
+    }
 
-    const f: builtin_function = id_to_builtin_func[funcId];
+    const isBuiltin = funcType == FuncType.builtin;
+
     const newBlock : FuncBlockDS = {
       blockId: newId,
+      funcType: funcType,
       funcId: funcId,
-      funcName: f.func_name,
-      paramTypes: f.param_types,
-      paramNames: f.param_names,
-      outputTypes: f.output_types,
-      outputNames: f.output_names
+      funcName: isBuiltin ? (f as builtin_function).func_name : (f as CustomFunctionDBRecord).name,
+      paramTypes: isBuiltin ? (f as builtin_function).param_types : customFuncBody.paramTypes,
+      paramNames: isBuiltin ? (f as builtin_function).param_names : customFuncBody.paramNames,
+      outputTypes: isBuiltin ? (f as builtin_function).output_types : customFuncBody.outputTypes,
+      outputNames: isBuiltin ? (f as builtin_function).output_names : customFuncBody.outputNames
     }
 
     setFuncBlocks(funcBlks => [...funcBlks, newBlock])
@@ -529,6 +554,39 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     builtin = 1
   }
 
+
+  /**
+   * Updates the fields of blk so that it contains the designated function
+   * @param blk blk to update
+   * @param funcId new function to designate
+   */
+  function setFuncBlockFunction(blk: FuncBlockDS, funcId: string) {
+    if (Number(funcId) > 100) { // is builtin function
+      blk.funcId = funcId;
+      blk.funcType = FuncType.builtin;
+      const f: builtin_function = id_to_builtin_func[funcId];
+      blk.funcName = f.func_name;
+      blk.paramTypes = f.param_types;
+      blk.paramNames = f.param_names;
+      blk.outputTypes = f.output_types;
+      blk.outputNames = f.output_names;
+    } else { // is custom function
+      blk.funcId = funcId;
+      blk.funcType = FuncType.custom;
+      const f: CustomFunctionDBRecord | undefined = customFunctions.get(funcId);
+      if (f == undefined) {
+        throw new Error(`Bad custom function id ${funcId}`);
+      }
+      const customFuncBody : any = JSON.parse(f.rawJson);
+      console.log(customFuncBody)
+      blk.funcName = f.name;
+      blk.paramTypes = customFuncBody.paramTypes;
+      blk.paramNames = customFuncBody.paramNames;
+      blk.outputTypes = customFuncBody.outputTypes;
+      blk.outputNames = customFuncBody.outputNames;
+    }
+
+  }
   const editFuncBlock = useCallback((
     blkId: number, 
     funcType: FuncType | null, 
@@ -541,25 +599,26 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     const tmp: FuncBlockDS[] = funcBlocks.map((blk: FuncBlockDS) => {
       if (blk.blockId == blkId) {
-        if (funcType == null &&  funcId != null) { // change to another function of the same type
-          blk.funcId = funcId;
-          const f: builtin_function = id_to_builtin_func[funcId];
-          blk.funcName = f.func_name;
-          blk.paramTypes = f.param_types;
-          blk.paramNames = f.param_names;
-          blk.outputTypes = f.output_types;
-          blk.outputNames = f.output_names;
-        } else { //change function type
-          //...
+        if (funcType == null && funcId != null) { // change to another function of the same type
+          setFuncBlockFunction(blk, funcId);
+        } else if (funcType != null && funcId == null) { //change function type
+          if (funcType == FuncType.builtin) {
+            setFuncBlockFunction(blk, '101'); //default to 101 (add)
+          } else if (funcType == FuncType.custom) {
+            const f : CustomFunctionDBRecord = customFunctions.values().next().value;
+            setFuncBlockFunction(blk, f.id);
+          }
         }
-
+        
         for (const arrow of arrows) {
           if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
             updateOutputBlkType(arrow);
           }
         }
-        console.log(blk);
       }
+
+      setArrows(arrows => [...arrows]);
+      console.log(blk);
       return blk;
     })
 
@@ -572,26 +631,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     name: string;
   }
 
-  const builtinFuncOptions: funcInfo[] = Object.entries(id_to_builtin_func).map(([funcId, funcBody]) => {
+  const builtinFuncOptions: funcInfo[] = Object.entries(id_to_builtin_func).map(
+    ([funcId, funcBody] : [string, builtin_function]) => {
     return {id: funcId, name: funcBody.func_name};
   })
 
-  const customFuncOptions: funcInfo{} = 
-
-  const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
-    return (
-      <InputBlock 
-        blockId={blk.blockId} 
-        inputName={blk.inputName} 
-        inputType={blk.inputType} 
-        inputTypeOptions={data_type_enum_name_pairs}
-        inputIdx={[blk.inputIdx, inputBlkIdxMap.size]}
-        updateBlkCB={editInputBlock}
-        removeBlkCB={removeInputBlock}
-        setArrows={setArrows}
-      />
-    );
-  })
+  const customFuncOptions: funcInfo[] = Array.from(customFunctions.values()).map(
+    (f : CustomFunctionDBRecord) => {
+      return {id: f.id, name: f.name}
+    }
+  )
 
   const changeInput = useCallback((inputId: number, newValue: allowed_stack_components) => {
     console.log('in changeInput, blks are ', inputBlocks);
@@ -670,15 +719,29 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //   );
   // })
 
-  const funcBlocksList = funcBlocks.map((blk: FuncBlockDS) => {
+  const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
+    return (
+      <InputBlock 
+        blockId={blk.blockId} 
+        inputName={blk.inputName} 
+        inputType={blk.inputType} 
+        inputTypeOptions={data_type_enum_name_pairs}
+        inputIdx={[blk.inputIdx, inputBlkIdxMap.size]}
+        updateBlkCB={editInputBlock}
+        removeBlkCB={removeInputBlock}
+        setArrows={setArrows}
+      />
+    );
+  })
 
+  const funcBlocksList = funcBlocks.map((blk: FuncBlockDS) => {
     return (
       <FuncBlock
         blockId={blk.blockId}
-        funcType={FuncType.builtin}
+        funcType={blk.funcType}
         funcId={blk.funcId}
         funcName={blk.funcName}
-        funcOptions={func_options}
+        funcOptions={blk.funcType == FuncType.builtin ? builtinFuncOptions : customFuncOptions}
         paramTypes={blk.paramTypes}
         paramNames={blk.paramNames}
         outputTypes={blk.outputTypes}
@@ -712,7 +775,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       <>
         <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
                         defaultAttr={["new input", data_types.dt_number]}/>
-        <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101']}/>
+        <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101', FuncType.builtin]}/>
         <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined]}/>
         <Button id='save-custom-function' variant='default' onClick={() => {saveFunction()}}>Save</Button>
         <Button id='eval-custom-function' variant='default' onClick={() => {evaluateFunction()}}>Evaluate</Button>

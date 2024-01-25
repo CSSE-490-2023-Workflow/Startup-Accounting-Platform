@@ -3,6 +3,7 @@ import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, 
 import Draggable from 'react-draggable';
 import { data_types } from '../../engine/datatype_def';
 import DotlessConnectPointsWrapper from '../DotlessConnectPointsWrapper';
+import { FuncType } from './FuncBuilderMain'
 
 const NODE_NAME_POPOVER_WIDTH : any = '40px';
 
@@ -21,11 +22,6 @@ interface funcInfo {
 interface StartAndEnd {
   start: string;
   end: string;
-}
-
-enum FuncType {
-  custom = 0,
-  builtin = 1
 }
 
 
@@ -284,6 +280,7 @@ function FuncBlock(props: FuncProps) {
                 changeParamNodeDir(dir)
                 let tmp = showSideMenu.map(e => false);
                 setShowSideMenu(tmp);
+                setArrows(arrows => [...arrows]);
               }}
               active
             />  
@@ -294,9 +291,10 @@ function FuncBlock(props: FuncProps) {
               variant="subtle"
               className='node-menu-item'
               onClick={() => {
-                changeParamNodeDir(dir)
+                changeOutputNodeDir(dir)
                 let tmp = showSideMenu.map(e => false);
                 setShowSideMenu(tmp);
+                setArrows(arrows => [...arrows]);
               }}
               active
             />

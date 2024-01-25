@@ -87,6 +87,8 @@ function InputBlock(props: InputProps) {
     let nodeNameStyle : any = {};
     nodeNameStyle.padding = '0';
     nodeNameStyle.fontSize = '12px';
+    //nodeNameStyle.background = 'rgba(0,0,0,0.1)';
+    nodeNameStyle.width = 'auto'
     if (outputNodeDir === direction.left) {
       nodeStyle.top = offset;
       nodeStyle.left = '0';
@@ -166,6 +168,7 @@ function InputBlock(props: InputProps) {
               variant="subtle"
               className='node-menu-item'
               onClick={() => {
+                setArrows(arrows => [...arrows]);
                 changeOutputNodeDir(dir);
                 let tmp = showSideMenu.map(e => false);
                 setShowSideMenu(tmp);
