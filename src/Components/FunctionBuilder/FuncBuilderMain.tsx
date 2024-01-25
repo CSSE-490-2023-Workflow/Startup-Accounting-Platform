@@ -27,7 +27,7 @@ interface InputBlockDS {
 interface FuncBlockDS {
   blockId: number
   funcName: string
-  funcId: number
+  funcId: string
   paramTypes: data_types[]
   paramNames: string[]
   outputTypes: data_types[]
@@ -65,6 +65,11 @@ interface FuncBuilderMainProps {
 
 type blk = FuncBlockDS | OutputBlockDS | InputBlockDS;
 
+interface ioObj {
+  name: string,
+  value: allowed_stack_components
+}
+
 function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   //const [inputs, setInputs] = useState([0,0])
@@ -86,8 +91,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const [ blkMap, setBlkMap ] = useState(new Map<number, blk>());
 
-  const [arrows, setArrows] = useState<StartAndEnd[]>([]);
+  const [ arrows, setArrows] = useState<StartAndEnd[]>([]);
   //const [ arrows, setArrows ] = useState<Arrow[]>([]);
+
+  const [ evalResult, setEvalResult ] = useState(new Map<number, ioObj>())
 
 
   const addArrow = useCallback((v: StartAndEnd) => {
@@ -122,7 +129,23 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   // Given an arrow leading to an output block
   // Updates the output block's type if needed
-  function updateOutputBlkType(arrow: StartAndEnd) {
+  // function updateOutputBlkType(arrow: StartAndEnd) {
+  //   const endBlkId : number = Number(arrow.end.split('i')[0]);
+  //   if (isOutputBlock(endBlkId)) { //end block is an output block
+  //     const startBlkId : number = Number(arrow.start.split('o')[0]);
+  //     const startNodeIdx : number = Number(arrow.start.split('o')[1]);
+  //     if (isInputBlock(startBlkId)) { //start block is an input block
+  //       const startBlk : InputBlockDS = blkMap.get(startBlkId) as InputBlockDS;
+  //       editOutputBlock(endBlkId, null, startBlk.inputType, null);
+  //     } else if (isFuncBlock(startBlkId)) { //start block is a function block
+  //       const startBlk : FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
+  //       editOutputBlock(endBlkId, null, startBlk.outputTypes[startNodeIdx - 1], null); // change from 1-based to 0-based indexing
+  //     }
+  //   }
+
+  // }
+
+  const updateOutputBlkType = useCallback((arrow: StartAndEnd) => {
     const endBlkId : number = Number(arrow.end.split('i')[0]);
     if (isOutputBlock(endBlkId)) { //end block is an output block
       const startBlkId : number = Number(arrow.start.split('o')[0]);
@@ -135,14 +158,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         editOutputBlock(endBlkId, null, startBlk.outputTypes[startNodeIdx - 1], null); // change from 1-based to 0-based indexing
       }
     }
-
-  }
+  }, [blkMap])
 
   const evaluateFunction = useCallback(() => {
-    interface ioObj {
-      name : string,
-      value : allowed_stack_components
-    }
+    
     const paramMap : Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
       paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
@@ -150,7 +169,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     const res: Map<number, ioObj> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
     //setOutputMap(res);
-    console.log('complete. Outputs of the custom function are: ', res);
+    console.log('Evaluation completed. Outputs of the custom function are: ', res);
+    setEvalResult(new Map(res));
+
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction]);
 
   const saveFunction = useCallback(() => {
@@ -184,7 +205,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     const res : any = {
       type: 'custom_function',
-      functionName: 'MyCustomFunction',
       paramNames: inputBlksSorted.map(iBlk => iBlk.inputName),
       paramTypes: inputBlksSorted.map(iBlk => iBlk.inputType),
       outputNames: outputBlksSorted.map(oBlk => oBlk.outputName),
@@ -462,7 +482,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
    * Function block logics
    */
   //right now this is hard-coded for built-in functions only
-  const addFuncBlock = useCallback((funcId: number) => {
+  const addFuncBlock = useCallback((funcId: string) => {
     const newId = currFunctionBlockId + 1;
     setCurrFunctionBlockId(newId);
 
@@ -491,20 +511,34 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setBlkMap(new Map<number, blk>(blkMap));
   }, [funcBlocks, setFuncBlocks])
 
-  const editFuncBlock = useCallback((blkId: number, funcId: number) => {
+  enum FuncType {
+    custom = 0,
+    builtin = 1
+  }
+
+  const editFuncBlock = useCallback((
+    blkId: number, 
+    funcType: FuncType | null, 
+    funcId: string | null
+  ) => {
     if (config.debug_mode_FuncBuilder == 1) {
       console.log('edit func block callback', blkId, funcId);
       console.log("current function blocks in parents", funcBlocks);
     }
+
     const tmp: FuncBlockDS[] = funcBlocks.map((blk: FuncBlockDS) => {
       if (blk.blockId == blkId) {
-        blk.funcId = funcId;
-        const f: builtin_function = id_to_builtin_func[funcId];
-        blk.funcName = f.func_name;
-        blk.paramTypes = f.param_types;
-        blk.paramNames = f.param_names;
-        blk.outputTypes = f.output_types;
-        blk.outputNames = f.output_names;
+        if (funcType == null &&  funcId != null) { // change to another function of the same type
+          blk.funcId = funcId;
+          const f: builtin_function = id_to_builtin_func[funcId];
+          blk.funcName = f.func_name;
+          blk.paramTypes = f.param_types;
+          blk.paramNames = f.param_names;
+          blk.outputTypes = f.output_types;
+          blk.outputNames = f.output_names;
+        } else { //change function type
+          //...
+        }
 
         for (const arrow of arrows) {
           if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
@@ -521,11 +555,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [funcBlocks, arrows])
   
   interface funcInfo {
-    id: number;
+    id: string;
     name: string;
   }
+
   const func_options: funcInfo[] = Object.entries(id_to_builtin_func).map(([funcId, funcBody]) => {
-    return {id: Number(funcId), name: funcBody.func_name};
+    return {id: funcId, name: funcBody.func_name};
   })
 
   const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
@@ -556,47 +591,76 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('tmp', inputBlocks);
   }, [inputBlocks, setInputBlocks])
 
-  const inputStore: number[] = []
-  let inputListCount: number = 0;
+  //const inputStore: number[] = []
+  //let inputListCount: number = 0;
   const inputList = inputBlocks.map((blk: InputBlockDS) => {
-    inputListCount += 1
-    inputStore.push(0)
+    //inputListCount += 1
+    //inputStore.push(0)
     return (
       <>
         <h3>{blk.inputName}</h3>
-        <NumberInput handleStateChange={changeInput} ind={inputListCount - 1} inValue={0} inputId={blk.blockId}/>
+        <NumberInput handleStateChange={changeInput} ind={blk.inputIdx} inValue={0} inputId={blk.blockId}/>
       </>
     );
   })
   let outputListCount: number = 0;
-  const outputList = outputBlocks.map((blk: OutputBlockDS) => {
-    outputListCount += 1
-    return (
-      <>
-        <h3>{blk.outputName}</h3>
-        <XYPlot
-            width={200}
-            height={200}
-            xDomain={[0,5.5]}
-            yDomain={[0,150]}>
-            <HorizontalGridLines />
-            <VerticalBarSeries data={[]} barWidth={0}/>
-            {/*Qingyuan needs to generate the data and place it in here as the comment has it
-              // data={op[0].map(([index, value], k) => (
-              //   {x: index, y: value}
-    // ))} barWidth={0.2} />*/}
-            <XAxis />
-            <YAxis />
-          </XYPlot>
-      </>
-    );
-  })
+  const outputList : any[] = [];
+  for (const [outputIdx, outputObj] of evalResult) {
+    
+    const data = [{
+      x: 0,
+      y: outputObj['value'] as number
+    }]
+    console.log(data)
+    outputList.push(
+      (
+        <>
+          <h3>{outputObj.name}</h3>
+          <XYPlot
+              width={200}
+              height={200}
+              xDomain={[0,5.5]}
+              yDomain={[0,20]}
+          >
+              <HorizontalGridLines />
+              <VerticalBarSeries data={data} barWidth={0}/>
+              <XAxis />
+              <YAxis />
+            
+            </XYPlot>
+        </>
+      )
+    )
+  }
+  // const outputList = Object.entries(evalResult).map(([outputIdx, outputObj]) => {
+  //   console.log(outputIdx, outputObj)
+  //   outputListCount += 1
+    
+  //   return (
+  //     <>
+  //       <h3>{outputObj.name}</h3>
+  //       <XYPlot
+  //           width={200}
+  //           height={200}
+  //           xDomain={[0,5.5]}
+  //           yDomain={[0,20]}
+  //       >
+  //           <HorizontalGridLines />
+  //           <VerticalBarSeries data={data} barWidth={0}/>
+  //           <XAxis />
+  //           <YAxis />
+          
+  //         </XYPlot>
+  //     </>
+  //   );
+  // })
 
   const funcBlocksList = funcBlocks.map((blk: FuncBlockDS) => {
 
     return (
       <FuncBlock
         blockId={blk.blockId}
+        funcType={FuncType.builtin}
         funcId={blk.funcId}
         funcName={blk.funcName}
         funcOptions={func_options}
@@ -633,7 +697,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       <>
         <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
                         defaultAttr={["new input", data_types.dt_number]}/>
-        <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={[1]}/>
+        <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101']}/>
         <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined]}/>
         <Button id='save-custom-function' variant='default' onClick={() => {saveFunction()}}>Save</Button>
         <Button id='eval-custom-function' variant='default' onClick={() => {evaluateFunction()}}>Evaluate</Button>
