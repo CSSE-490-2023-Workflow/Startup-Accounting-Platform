@@ -13,10 +13,6 @@ import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
 import NumberInput from '../NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
-interface Pair {
-  x: number
-  y: number
-}
 import { database } from "../../auth/firebase";
 import {Button} from "@mantine/core";
 
@@ -26,6 +22,16 @@ interface InputBlockDS {
   inputType: data_types
   inputIdx: number
   val: any
+}
+
+interface Pair {
+  x: number
+  y: number
+}
+
+interface ioObj {
+  name : string,
+  value : allowed_stack_components
 }
 
 interface FuncBlockDS {
@@ -141,19 +147,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
 
   }
-
+  
+  const [outputStore, setOutputStore] = useState<Map<number, ioObj>[]>([])
   const evaluateFunction = useCallback(() => {
-    interface ioObj {
-      name : string,
-      value : allowed_stack_components
-    }
     const paramMap : Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
       paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
     }
 
     const res: Map<number, ioObj> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
-    // setOutputMap(res);
+    setOutputStore([res]);
     console.log('complete. Outputs of the custom function are: ', res);
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction]);
 
@@ -562,10 +565,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   
   let inputListCount: number = 0;
+  const [inputStore, setInputStore] = useState<data_types[]>([]);
   const inputList = inputBlocks.map((blk: InputBlockDS) => {
     inputListCount += 1
     if(inputStore.length < inputListCount) {
-      inputStore.push(0)
+      setInputStore((inputStore) => [...inputStore, 0])
     }
     return (
       <>
@@ -575,30 +579,20 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     );
   })
 
-  let outputListVals: allowed_stack_components;
-
-  const evaluateFunction = useCallback(() => {
-    const paramMap : Map<string, allowed_stack_components> = new Map<string, allowed_stack_components>();
-    let i = 0;
-    inputStore.forEach((element: number) => {
-      i += 1;
-      console.log(inputBlocks[i-1].inputName);
-      paramMap.set(inputBlocks[i-1].inputName, element);
-    })
-    console.log(paramMap);
-    const res: Map<string, allowed_stack_components> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
-    setOutputStore([res])
-    console.log(res);
-  }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction])
 
   
   let outputListCount: number = 0;
   const outputList = outputBlocks.map((blk: OutputBlockDS) => {
     outputListCount += 1
     let data: Pair[] = []
-    console.log(outputStore.length);
-    if(outputStore.length >= outputListCount)
-      data = [{x: 0, y: outputStore[outputListCount - 1].get(blk.outputName) as number}]
+    //console.log(outputStore.length);
+    if(outputStore.length > 0 && outputStore[0] != undefined) {
+      data = [{x: 0, y: outputStore[0].get(blk.blockId - 2000)?.value as number}]
+      console.log(blk.blockId);
+      console.log(outputStore[0].get(1));
+    }
+    // if(outputStore.length < outputListCount)
+    //   setOutputStore([...outputStore, ])
     return (
       <>
         <h3>{blk.outputName}</h3>
