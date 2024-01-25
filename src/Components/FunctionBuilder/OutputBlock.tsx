@@ -28,7 +28,7 @@ interface OutProps {
   //addArrow: (value: Arrow) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
   //setArrows: React.Dispatch<React.SetStateAction<Arrow[]>>;
-  removeArrow: (value: string) => void;
+  removeArrow: (value: string[]) => void;
 }
 
 function OutputBlock(props: OutProps) {
@@ -135,7 +135,7 @@ function OutputBlock(props: OutProps) {
               className='connection-handle-wrapper'
               onMouseEnter={() => {setShowNodeName(true)}}
               onMouseLeave={() => {setShowNodeName(false)}}
-              onClick={() => {removeArrow(handleId)}}
+              onClick={() => {removeArrow([handleId])}}
               onDragOver={e => e.preventDefault()} 
               onDrop={e => {
                 if (e.dataTransfer.getData("arrow") === handleId + "") {

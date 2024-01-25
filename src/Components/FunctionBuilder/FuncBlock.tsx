@@ -37,7 +37,7 @@ interface FuncProps {
   removeBlkCB:  (id: number) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
   addArrow: (value: StartAndEnd) => void;
-  removeArrow: (value: string) => void;
+  removeArrow: (value: string[]) => void;
 }
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
@@ -177,7 +177,7 @@ function FuncBlock(props: FuncProps) {
               className='connection-handle-wrapper'
               onMouseEnter={() => {setShowParamNodeName(true)}}
               onMouseLeave={() => {setShowParamNodeName(false)}}
-              onClick={() => {removeArrow(handleId)}}
+              onClick={() => {removeArrow([handleId])}}
               onDragOver={e => e.preventDefault()}
               onDrop={e => {
                 if (e.dataTransfer.getData("arrow") === handleId + "") {

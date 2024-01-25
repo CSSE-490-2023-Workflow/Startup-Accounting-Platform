@@ -110,12 +110,17 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     updateOutputBlkType(v);
   }, [arrows, blkMap]);
 
-  const removeArrow = useCallback((v: string) => {
+  const removeArrow = useCallback((v: string[]) => {
     const newArrows: StartAndEnd[] = []
     console.log(arrows);
      for(let i = 0; i < arrows.length; i++) {
-       if(arrows[i].end !== v)
-         newArrows.push(arrows[i]);
+      let toRemove: boolean = false;
+      for(let j = 0; j < v.length; j++) {
+       if(arrows[i].end === v[j])
+         toRemove = true;
+      }
+      if(!toRemove)
+        newArrows.push(arrows[i]);
      }
      console.log(newArrows);
      setArrows(newArrows);
@@ -303,9 +308,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         arrowNames.push(arrows[i].end);
     }
     console.log(arrowNames);
-    for(let i = 0; i < arrowNames.length; i++) {
-      removeArrow(arrowNames[i]);
-    }
+    removeArrow(arrowNames);
 
     setInputBlocks(inputBlocks => {
       return inputBlocks.filter((blk) => blk.blockId != blkId)
@@ -422,9 +425,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         arrowNames.push(arrows[i].end);
     }
     console.log(arrowNames);
-    for(let i = 0; i < arrowNames.length; i++) {
-      removeArrow(arrowNames[i]);
-    }
+    removeArrow(arrowNames);
 
     setOutputBlocks(outputBlks => outputBlks.filter((blk) => {
       return blk.blockId != blkId
@@ -542,10 +543,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log(arrowNames);
     const values = arrows.forEach((arrow) => {return arrow.start + " " + arrow.end});
     console.log(blkId + " " + values);
-    for(let i = 0; i < arrowNames.length; i++) {
-      removeArrow(arrowNames[i]);
-    }
-
+    removeArrow(arrowNames);
+    
     setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
       return blk.blockId != blkId;
     }));
