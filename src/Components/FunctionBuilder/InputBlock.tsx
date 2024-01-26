@@ -3,7 +3,7 @@ import { data_types } from "../../engine/datatype_def"
 import { StartAndEnd, Arrow } from './FuncBuilderMain'
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, Combobox, CheckIcon, useCombobox, InputBase} from '@mantine/core';
 import '../../assets/font-awesome/css/all.css'
-import Draggable from 'react-draggable';
+import Draggable, { DraggableEvent } from 'react-draggable';
 import DotlessConnectPointsWrapper from "../DotlessConnectPointsWrapper";
 
 enum direction {
@@ -27,22 +27,26 @@ interface InputProps {
   inputType: data_types;
   inputTypeOptions: [data_types, string][];
   inputIdx: number[]; //the first entry is the current index. The second entry is the # of input blocks (i.e. maximum index)
+  blockLocation: [number, number];
   updateBlkCB: (funcBlockId: number, inputName: string | null, inputType: data_types | null, idx: number | null) => void;
   removeBlkCB:  (id: number) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
+  updateBlkLoc: (blkId: number, blockLocation: [number, number]) => void;
   //setArrows: React.Dispatch<React.SetStateAction<Arrow[]>>;
 }
 
 function InputBlock(props: InputProps) {
-  const [ inputId, inputName, inputType, typeOptions, [inputIdx, maxIdx], editCB, removeCB , setArrows] = [
+  const [ inputId, inputName, inputType, typeOptions, [inputIdx, maxIdx], blockLoc, editCB, removeCB , setArrows, updateLoc] = [
     props.blockId, 
     props.inputName, 
     props.inputType, 
     props.inputTypeOptions, 
     props.inputIdx,
+    props.blockLocation,
     props.updateBlkCB, 
     props.removeBlkCB, 
-    props.setArrows
+    props.setArrows,
+    props.updateBlkLoc
   ]
   
   const dragRef = useRef<Draggable>(null);
@@ -365,8 +369,14 @@ function InputBlock(props: InputProps) {
     <>
     <Draggable cancel='.connection-handle-icon'
         ref={dragRef}
-        onDrag={e => {
-          // console.log(e);
+        onDrag={(e: DraggableEvent, data) => {
+          const x: number =  data.x;
+          const y: number = data.y;
+
+          const newLocation: [number, number] = [x, y];
+
+          // Update the block location using the callback
+          updateLoc(inputId, newLocation);
           setArrows((arrows) => [...arrows]);
         }}
       > 
