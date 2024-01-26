@@ -28,8 +28,8 @@ function DotlessConnectPointsWrapper(props: IProps) {
           // style={connectPointStyle}
           style={{
               position: "absolute", top: 0, left: 0,
-              width: 30,
-              height: 30,
+              width: 20,
+              height: 15,
               translate: (-10),
               // borderRadius: "50%",
               // background: "black"
