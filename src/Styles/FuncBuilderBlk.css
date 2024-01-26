@@ -26,7 +26,7 @@
 .output-block-type-input .mantine-Input-input
 {
 
-  font-size: 14px;
+  font-size: 13px;
   /* width: 80%; */
 }
 
@@ -38,19 +38,32 @@
   /* width: 80%; */
 }
 
-
 .input-block-type-input .mantine-Input-wrapper,
 .output-block-type-input .mantine-Input-wrapper
 {
-  min-width: 130px;
+  min-width: 145px;
   /* width: 80%; */
 }
 
 .input-block-idx-input .mantine-Input-wrapper,
 .output-block-idx-input .mantine-Input-wrapper
- {
-  min-width: 50px;
-  padding-left: 10px;
+{
+  min-width: 40px;
+  padding-left: 5px;
+}
+
+.func-block-func-name-select .mantine-Input-wrapper
+{
+  min-width: 190px;
+  /* max-width: 120px; */
+  word-wrap: break-word;
+  overflow: hidden;
+}
+
+.func-block-type-switch .mantine-Input-wrapper 
+{
+  max-width: 150px;
+  padding-top: 5px;
 }
 
 .func-builder-block {
