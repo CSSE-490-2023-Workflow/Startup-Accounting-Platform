@@ -30,10 +30,11 @@ interface OutProps {
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
   updateBlkLoc: (blkId: number, blockLocation: [number, number]) => void;
   //setArrows: React.Dispatch<React.SetStateAction<Arrow[]>>;
+  removeArrow: (value: string[]) => void;
 }
 
 function OutputBlock(props: OutProps) {
-  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc, editCB, removeCB, addArrow, setArrows, updateLoc] = [
+  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc, editCB, removeCB, addArrow, setArrows, updateLoc, removeArrow] = [
     props.blockId, 
     props.outputName, 
     props.outputType,
@@ -43,7 +44,8 @@ function OutputBlock(props: OutProps) {
     props.removeBlkCB, 
     props.addArrow, 
     props.setArrows,
-    props.updateBlkLoc
+    props.updateBlkLoc,
+    props.removeArrow
   ];
   //const [ outputName, setName] = useState(name);
   //const [ outputType, setOutputType ] = useState(oType);
@@ -138,6 +140,7 @@ function OutputBlock(props: OutProps) {
               className='connection-handle-wrapper'
               onMouseEnter={() => {setShowNodeName(true)}}
               onMouseLeave={() => {setShowNodeName(false)}}
+              onClick={() => {removeArrow([handleId])}}
               onDragOver={e => e.preventDefault()} 
               onDrop={e => {
                 if (e.dataTransfer.getData("arrow") === handleId + "") {
@@ -145,7 +148,7 @@ function OutputBlock(props: OutProps) {
                 } else {
                   const refs = { start: e.dataTransfer.getData("arrow"), end: handleId + "" };
                   addArrow(refs);
-                  console.log("droped!", refs);
+                  console.log("dropped!", refs);
                 }
               }}>
               <div className='connection-handle connection-handle-out' id={handleId}>
@@ -175,6 +178,7 @@ function OutputBlock(props: OutProps) {
                 changeParamNodeDir(dir);
                 let tmp = showSideMenu.map(e => false);
                 setShowSideMenu(tmp);
+                setArrows(arrows => [...arrows]);
               }}
               active
             />  

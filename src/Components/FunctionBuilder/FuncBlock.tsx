@@ -1,8 +1,9 @@
 import React, { ChangeEvent, useCallback, useRef, useState} from 'react';
-import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, NavLink, Divider, Popover} from '@mantine/core';
-import Draggable, { DraggableEvent } from 'react-draggable';
+import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, NavLink, Divider, Popover, useCombobox, Combobox, InputBase} from '@mantine/core';
+import Draggable from 'react-draggable';
 import { data_types } from '../../engine/datatype_def';
 import DotlessConnectPointsWrapper from '../DotlessConnectPointsWrapper';
+import { FuncType } from './FuncBuilderMain'
 
 const NODE_NAME_POPOVER_WIDTH : any = '40px';
 
@@ -14,7 +15,7 @@ enum direction {
 }
 
 interface funcInfo {
-  id: number;
+  id: string;
   name: string;
 }
 
@@ -26,7 +27,8 @@ interface StartAndEnd {
 
 interface FuncProps {
   blockId: number;
-  funcId: number;
+  funcType: FuncType;
+  funcId: string;
   funcName: string;
   funcOptions: funcInfo[];
   paramTypes: data_types[];
@@ -39,14 +41,16 @@ interface FuncProps {
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
   addArrow: (value: StartAndEnd) => void;
   updateBlkLoc: (blkId: number, blockLocation: [number, number]) => void;
+  removeArrow: (value: string[]) => void;
 }
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
 function FuncBlock(props: FuncProps) {
-  const [ blkId, funcId, funcName, funcOptions, paramTypes, paramNames, outputTypes, outputNames, blockLoc, editCB, removeCB, setArrows, addArrow, updateLoc] = [
+  const [ blkId, funcId, funcName, funcOptions, paramTypes, paramNames, outputTypes, outputNames, blockLoc, editCB, removeCB, setArrows, addArrow, updateLoc, removeArrow] = [
     props.blockId, 
     props.funcId, 
+    props.funcType,
     props.funcName, 
     props.funcOptions, 
     props.paramTypes, 
@@ -59,6 +63,7 @@ function FuncBlock(props: FuncProps) {
     props.setArrows, 
     props.addArrow,
     props.updateBlkLoc
+    props.removeArrow
   ]
 
   const dragRef = useRef<Draggable>(null);
@@ -104,20 +109,7 @@ function FuncBlock(props: FuncProps) {
     outputNodePos.push(String(outputNodeInc * i - 4) + '%')
   }
 
-  const [func, setFunc] = useState(funcId);
-
-  function handleFuncChange(e: any) {
-    setFunc(e.target.value);
-    editCB(blkId, e.target.value);
-  }
-
-  const func_options = funcOptions.map(({id, name} : funcInfo) => (
-    <option value={id}>{name}</option>
-  ))
-
-  function handleRemoveBlock(e: any) {
-    removeCB(blkId);
-  }
+  //const [func, setFunc] = useState(funcId);
 
   const paramNodes = paramNodePos.map((offset: string, index: number) => {
     let node : any = null;
@@ -179,6 +171,7 @@ function FuncBlock(props: FuncProps) {
               className='connection-handle-wrapper'
               onMouseEnter={() => {setShowParamNodeName(true)}}
               onMouseLeave={() => {setShowParamNodeName(false)}}
+              onClick={() => {removeArrow([handleId])}}
               onDragOver={e => e.preventDefault()}
               onDrop={e => {
                 if (e.dataTransfer.getData("arrow") === handleId + "") {
@@ -186,7 +179,7 @@ function FuncBlock(props: FuncProps) {
                 } else {
                   const refs = { start: e.dataTransfer.getData("arrow"), end: handleId + "" };
                   addArrow(refs);
-                  console.log("droped!", refs);
+                  console.log("dropped!", refs);
                 }
               }}
             >
@@ -293,6 +286,7 @@ function FuncBlock(props: FuncProps) {
                 changeParamNodeDir(dir)
                 let tmp = showSideMenu.map(e => false);
                 setShowSideMenu(tmp);
+                setArrows(arrows => [...arrows]);
               }}
               active
             />  
@@ -303,9 +297,10 @@ function FuncBlock(props: FuncProps) {
               variant="subtle"
               className='node-menu-item'
               onClick={() => {
-                changeParamNodeDir(dir)
+                changeOutputNodeDir(dir)
                 let tmp = showSideMenu.map(e => false);
                 setShowSideMenu(tmp);
+                setArrows(arrows => [...arrows]);
               }}
               active
             />
@@ -430,6 +425,36 @@ function FuncBlock(props: FuncProps) {
     return sideMenu;
   })
 
+  function handleFuncChange(e: any) {
+    //setFunc(e.target.value);
+    editCB(blkId, null, e);
+  }
+
+  function switchType() {
+    if (funcType == FuncType.builtin) {
+      editCB(blkId, FuncType.custom, null)
+    } else {
+      editCB(blkId, FuncType.builtin, null);
+    }
+  }
+
+  function handleRemoveBlock(e: any) {
+    removeCB(blkId);
+  }
+
+  const funcCombobox = useCombobox({
+    //
+  });
+
+  const funcSelectOptions = funcOptions.map(({id, name} : funcInfo) => (
+    //<option value={id}>{name}</option>
+    <Combobox.Option value={id.toString()} key={id} active={id === funcId}>
+      <Group gap="xs">
+        <span>{name}</span>
+      </Group>
+    </Combobox.Option>
+  ))
+  
   return (
     <>
      <Draggable
@@ -447,27 +472,86 @@ function FuncBlock(props: FuncProps) {
       >
       <div className='block-container'>
       <Card
-      id={blkId + ""}
-      ref={boxRef}
-      className="func-block func-builder-block"
-      shadow='sm'
-      padding='lg'
-      radius='md'
-      withBorder >
+        id={blkId + ""}
+        ref={boxRef}
+        className="func-block func-builder-block"
+        shadow='sm'
+        padding='lg'
+        radius='md'
+        withBorder 
+        styles={{
+          root: {
+            height: '150px',
+            width: '200px'
+          },
+          section: {
+            padding: '0px 3px 0px 3px'
+          }
+        }}>
         <Card.Section className='block-header'>
-          <div className="block-type-desc">Function Block</div>
+
+          <div className="block-type-desc">
+            <Combobox>
+              <Combobox.Target>
+                <InputBase
+                  component="button"
+                  type="button"
+                  pointer
+                  rightSection={<Combobox.Chevron />}
+                  rightSectionWidth={20}
+                  onClick={() => {switchType()}}
+                  className='func-block-type-switch'
+                >
+                  {funcType == FuncType.custom ? "Custom Function" : "Built-in Function"}
+                </InputBase>
+              </Combobox.Target>
+              <Combobox.Dropdown>
+                {}
+              </Combobox.Dropdown>
+            </Combobox>
+          </div>
           <CloseButton className='block-remove' onClick={handleRemoveBlock} />
         </Card.Section>
-        <CardSection>
+        <Card.Section>
           <hr className='solid-divider' />
-        </CardSection>
-        <CardSection>
-          <select className="func-block-func-select" value={funcId} onChange={handleFuncChange}>
-            {func_options}
-          </select>
-        </CardSection>
+        </Card.Section>
+        <Card.Section style={{
+          display: 'flex',
+          flexDirection: 'row'
+        }}>
+          <Combobox
+            store={funcCombobox}
+            dropdownPadding={4}
+            onOptionSubmit={(val) => {
+              handleFuncChange(val);
+              funcCombobox.closeDropdown();
+            }}
+      
+          >
+            <Combobox.Target>
+              <InputBase
+                component="button"
+                type="button"
+                pointer
+                rightSection={<Combobox.Chevron />}
+                rightSectionWidth={20}
+                onClick={() => {funcCombobox.toggleDropdown()}}
+                className='func-block-func-name-select'
+              >
+                {funcName}
+              </InputBase>
+            </Combobox.Target>
+            <Combobox.Dropdown>
+              <Combobox.Options>{funcSelectOptions}</Combobox.Options>
+            </Combobox.Dropdown>
+          </Combobox>
+          
+        </Card.Section>
         <Card.Section>
           <div className="func-block-func-id">Current Function Id: {funcId}</div>
+        </Card.Section>
+        <Card.Section>
+          
         </Card.Section>
       </Card>
       {paramNodes}

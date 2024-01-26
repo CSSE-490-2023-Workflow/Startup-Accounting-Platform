@@ -4,9 +4,9 @@ import { FuncArgError } from './error_def'
 
 export {id_to_builtin_func, name_to_builtin_func}
 
-let id_to_builtin_func : {[ind: number] : builtin_function} = {
+let id_to_builtin_func : {[id: string] : builtin_function} = {
     //addition for scalars
-    1 : {
+    '101' : {
         param_count: 2, 
         func_name : 'scalar_addition',
         param_types : [data_types.dt_number, data_types.dt_number],
@@ -21,7 +21,7 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
     },
 
     //subtraction
-    2 : {
+    '102' : {
         param_count: 2, 
         func_name : 'scalar_subtraction',
         param_types : [data_types.dt_number, data_types.dt_number],
@@ -36,7 +36,7 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
     },
 
     //multiplication
-    3 : {
+    '103' : {
         param_count: 2, 
         func_name : 'scalar_multiplication',
         param_types : [data_types.dt_number, data_types.dt_number],
@@ -51,7 +51,7 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
     },
 
     //division
-    4 : {
+    '104' : {
         param_count: 2, 
         func_name : 'scalar_division',
         param_types : [data_types.dt_number, data_types.dt_number],
@@ -66,7 +66,7 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
     },
 
     //number to function points
-    5 : {
+    '105' : {
         param_count: 2, 
         func_name : 'scalar_to_function_points',
         param_types : [data_types.dt_number, data_types.dt_number],
@@ -92,7 +92,7 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
     },
 
     //apply interest rate
-    6 : {
+    '106' : {
         param_count : 2,
         func_name : 'apply_interest_rate',
         param_types : [data_types.dt_number, data_types.dt_func_pt_series],
@@ -111,7 +111,7 @@ let id_to_builtin_func : {[ind: number] : builtin_function} = {
         }
     },
 
-    7: {
+    '107': {
         param_count: 1,
         func_name: 'test_func',
         param_types : [data_types.dt_number],
@@ -135,6 +135,7 @@ let name_to_builtin_func : {[name: string] : builtin_function} = {
         output_types : [data_types.dt_number],
         output_names : ['sum'],
         func : (...args : allowed_stack_components[]) => {
+            console.log(args[0] + " " + args[1] + " " + args.length);
             if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
                 throw new FuncArgError('Built in function 0: scalar_addition receives two scalars as parameters')
             return [Number(args[0]) + Number(args[1])];
