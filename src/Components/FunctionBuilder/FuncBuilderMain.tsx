@@ -285,6 +285,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     const res : any = {
       type: 'custom_function',
+      useOutput: 'all',
       paramNames: inputBlksSorted.map(iBlk => iBlk.inputName),
       paramTypes: inputBlksSorted.map(iBlk => iBlk.inputType),
       outputNames: outputBlksSorted.map(oBlk => oBlk.outputName),
@@ -332,25 +333,41 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         inputIdx : tailBlk.inputIdx,
         inputBlkLoc : tailBlk.blockLocation
       }
-    } if ('funcName' in tailBlk) { //func block
+    } if ('funcType' in tailBlk) { //func block
       const params : any[] = [];
       for (const i of [...Array(tailBlk.paramNames.length).keys()].map(e => e+1)) { //for i in [1, 2, ..., # of params]
         params.push(tracePath(tailBlk.blockId.toString() + 'i' + i.toString()))
       }
       //console.log('params', params);
-      return {
-        type : 'builtin_function',
-        useOutput : tailBlkOutputIdx,
-        functionName : tailBlk.funcName,
-        paramNames : tailBlk.paramNames,
-        paramTypes : tailBlk.paramTypes,
-        outputNames : tailBlk.outputNames,
-        outputTypes : tailBlk.outputTypes,
-        funcBlkLoc: tailBlk.blockLocation,
-        params : params
+      if (tailBlk.funcType == FuncType.builtin) {
+        return {
+          type : 'builtin_function',
+          useOutput : tailBlkOutputIdx,
+          functionName : tailBlk.funcName,
+          functionId: tailBlk.funcId,
+          paramNames : tailBlk.paramNames,
+          paramTypes : tailBlk.paramTypes,
+          outputNames : tailBlk.outputNames,
+          outputTypes : tailBlk.outputTypes,
+          funcBlkLoc: tailBlk.blockLocation,
+          params : params
+        }
+      } else { // custom
+        if (customFunctions.get(tailBlk.funcId) == undefined) {
+          throw new Error(`Custom function cannot be found ${tailBlk.funcId}`)
+        } else {
+          return {
+            type : 'custom_function_call',
+            useOutput : tailBlkOutputIdx,
+            paramNames: tailBlk.paramNames,
+            paramTypes: tailBlk.paramTypes,
+            params: params,
+            outputs: customFunctions.get(tailBlk.funcId) == undefined ? undefined : customFunctions.get(tailBlk.funcId)?.rawJson
+          }
+        }
       }
     } else {
-      throw new Error(`Arrow tail is a block of an illegal type: ${arrow}`);
+      throw new Error(`Arrow tail is a block of an illegal type: ${arrow.start} ${arrow.end}`);
     }
   }
 
