@@ -16,13 +16,19 @@ import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 're
 import { AuthContext, database } from "../../auth/firebase";
 import {Button} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Functions' 
+import SeriesInput from '../SeriesInput';
 
 interface InputBlockDS {
   blockId: number
   inputName: string
   inputType: data_types
   inputIdx: number
-  val: any
+  val: allowed_stack_components
+}
+
+interface Pair {
+  x: number
+  y: number
 }
 
 
@@ -760,6 +766,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       if (blk.blockId == inputId) {
         blk.val = newValue;
       }
+      console.log(blk.val);
       return blk;
     })
     setInputBlocks([...inputBlocks]);
@@ -774,6 +781,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //   if(inputStore.length < inputListCount) {
   //     setInputStore((inputStore) => [...inputStore, 0])
   //   }
+    console.log("called");
+    if(blk.inputType === data_types.dt_series) {
+      return (
+        <>
+          <h3>{blk.inputName}</h3>
+          <SeriesInput handleStateChange={changeInput} ind={blk.inputIdx} inValues={[0, 0, 0, 0, 0]} inputId={blk.blockId}/>
+        </>
+      );
+    }
     return (
       <>
         <h3>{blk.inputName}</h3>
