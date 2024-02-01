@@ -118,7 +118,7 @@ interface JSONOutput {
   outputType: number;
   outputIdx: number;
   outputBlkLoc: [number, number];
-  params: JSONInput[];
+  params: JSONInput[] | JSONBuiltinFunction[] | JSONCustomFunction[];
 }
 
 interface JSONCustomFunction {
@@ -202,6 +202,21 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log(currentUser);
   }, [currentUser]);
 
+  function isBuiltinFunction(param: any): param is JSONBuiltinFunction {
+    console.log(param.type);
+    return param && param.type === "builtin_function";
+  }
+
+  function isCustomFunction(param: any): param is JSONCustomFunction {
+    console.log(param.type);
+    return param && param.type === "custom_function";
+  }
+
+  function isInput(param: any): param is JSONInput {
+    console.log(param.type);
+    return param && param.type === "input";
+  }
+
   const testLoadFunctions = () => {
     if (currentUser) {
       database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
@@ -224,6 +239,24 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
                 // setAddedOutputIds([...addedOutputIds, output.outputIdx]);
                 console.log(output.outputIdx);
                 addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc);
+
+                const param = output.params;
+                if (isBuiltinFunction(param[0])) {
+                  console.log(param);
+
+                  for (const input of (param[0] as JSONBuiltinFunction).params) {
+                    console.log(input.inputName);
+                    addInputBlock(input.inputName, input.inputType, input.inputBlkLoc);
+                  }
+                }
+
+                else if (isCustomFunction(param[0])) {
+
+                }
+
+                else if (isInput(param[0])) {
+
+                }
               }
             }
           }
@@ -442,7 +475,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   /**
    * Input block Logics
    */
-  const addInputBlock = useCallback((inputName: string, inputType: data_types) => {
+  const addInputBlock = useCallback((inputName: string, inputType: data_types, inputBlkLoc: [number, number]) => {
     const newId = currInputBlockId + 1;
     const newIdx = inputBlkIdxMap.size + 1;
     setCurrInputBlockId(id => id + 1);
@@ -453,7 +486,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       inputType: inputType,
       inputIdx: newIdx,
       val: 0,
-      blockLocation: [0, 0]
+      blockLocation: inputBlkLoc
     }
     setInputBlocks(inputBlocks => [...inputBlocks, newBlock])
 
