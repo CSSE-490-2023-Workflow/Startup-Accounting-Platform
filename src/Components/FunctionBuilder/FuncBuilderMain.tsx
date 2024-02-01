@@ -18,6 +18,7 @@ import { Button } from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Functions'
 import SeriesInput from '../SeriesInput';
 import { MyDraggable } from './MyDraggable';
+import {flushSync} from "react-dom";
 
 interface InputBlockDS {
   blockId: number
@@ -247,27 +248,40 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               if (!outputBlkIdxMap.has(output.outputIdx)) {
                 // setAddedOutputIds([...addedOutputIds, output.outputIdx]);
                 console.log(output.outputIdx);
-                addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc);
+                const newOutputId = flushSync(() => {
+                  return addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc);
+                });
 
-                const param = output.params;
-                if (isBuiltinFunction(param[0])) {
-                  console.log(param);
-                  addFuncBlock((param[0].functionId).toString(), param[0].type == "builtin_function"? 1:0, param[0].funcBlkLoc);
+                const params = output.params;
 
-                  for (const input of (param[0] as JSONBuiltinFunction).params) {
-                    console.log(input.inputName);
-                    addInputBlock(input.inputName, input.inputType, input.inputBlkLoc);
+                for (let [paramIdx, param] of params.entries()) {
+                  if (isBuiltinFunction(param)) {
+                    console.log(param);
+
+                    const newFuncId = addFuncBlock((param.functionId).toString(), param.type == "builtin_function" ? 1 : 0, param.funcBlkLoc);
+
+
+                    for (const [inputBlockIdx, input] of (param as JSONBuiltinFunction).params.entries()) {
+                      console.log(input.inputName);
+                      const newInputId = flushSync(() => {
+                        return addInputBlock(input.inputName, input.inputType, input.inputBlkLoc);
+                      })
+
+                        addArrow({start: newInputId + "o1", end: newFuncId + "i" + (inputBlockIdx)} as StartAndEnd)
+
+                    }
+
+                    addArrow({start: newFuncId + "o1", end: newOutputId + "i" + (paramIdx + 1)} as StartAndEnd)
+
+                  } else if (isCustomFunction(param)) {
+
+                  } else if (isInput(param)) {
+
                   }
-                }
-
-                else if (isCustomFunction(param[0])) {
-
-                }
-
-                else if (isInput(param[0])) {
 
                 }
               }
+
             }
           }
         })
@@ -277,7 +291,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
 
   const addArrow = useCallback((v: StartAndEnd) => {
-    setArrows([...arrows, v]);
+    console.log("ARROW", v);
+    setArrows(oldArrows => [...oldArrows, v]);
     /**
      * tail(start) block  ------>   head(end) block
      */
@@ -516,6 +531,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     const newId = currInputBlockId + 1;
     const newIdx = inputBlkIdxMap.size + 1;
     console.log("index", inputBlkIdxMap);
+    console.log("ID", currInputBlockId);
     setCurrInputBlockId(id => id + 1);
     const newBlock: InputBlockDS = {
       blockId: newId,
@@ -537,6 +553,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log('add input block. block map', blkMap);
       console.log('add input block. inputBlkIdxMap', inputBlkIdxMap);
     }
+
+    return newId;
   }, [inputBlkIdxMap, currInputBlockId, blkMap])
 
   const removeInputBlock = useCallback((blkId: number) => {
@@ -658,7 +676,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const addOutputBlock = useCallback((outputName: string, outputType: data_types, outputBlkLoc: [number, number]) => {
     const newId = currOutputBlockId + 1;
     const newIdx = outputBlkIdxMap.size + 1;
-    setCurrOutputBlockId(newId);
+    setCurrOutputBlockId(id => id + 1);
 
     const newBlock: OutputBlockDS = {
       blockId: newId,
@@ -678,6 +696,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     if (config.debug_mode_FuncBuilder == 1) {
       console.log('Add output block. Output blk idx map', outputBlkIdxMap);
     }
+
+    return newId;
   }, [currOutputBlockId, outputBlkIdxMap])
 
   const removeOutputBlock = useCallback((blkId: number) => {
@@ -789,7 +809,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //right now this is hard-coded for built-in functions only
   const addFuncBlock = useCallback((funcId: string, funcType: FuncType, funcBlkLoc: [number, number]) => {
     const newId = currFunctionBlockId + 1;
-    setCurrFunctionBlockId(newId);
+    setCurrFunctionBlockId(id => id + 1);
 
     let f: builtin_function | CustomFunctionDBRecord | undefined = undefined;
     let customFuncBody: any = undefined;
@@ -821,6 +841,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setFuncBlocks(funcBlks => [...funcBlks, newBlock])
 
     setBlkMap(blkMap => { blkMap.set(newId, newBlock); return new Map(blkMap) });
+
+    return newId;
 
   }, [currFunctionBlockId])
 
@@ -1249,6 +1271,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   })
 
 
+  console.log(arrows);
   return (<>
     <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
       defaultAttr={["new input", data_types.dt_number, [200,200]]} />
