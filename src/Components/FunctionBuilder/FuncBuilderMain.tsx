@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
-import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function} from '../../engine/datatype_def'
+import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series} from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
@@ -16,6 +16,7 @@ import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 're
 import { AuthContext, database } from "../../auth/firebase";
 import {Button} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Functions' 
+import SeriesInput from '../SeriesInput';
 import { MyDraggable } from './MyDraggable';
 
 interface InputBlockDS {
@@ -23,8 +24,13 @@ interface InputBlockDS {
   inputName: string
   inputType: data_types
   inputIdx: number
-  val: any
+  val: allowed_stack_components
   blockLocation: [number, number]
+}
+
+interface Pair {
+  x: number
+  y: number
 }
 
 
@@ -383,7 +389,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     const newId = currInputBlockId + 1;
     const newIdx = inputBlkIdxMap.size + 1;
     setCurrInputBlockId(id => id + 1);
-
     const newBlock : InputBlockDS = {
       blockId: newId,
       inputName: inputName,
@@ -392,6 +397,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       val: 0,
       blockLocation: [0, 0]
     }
+
     setInputBlocks(inputBlocks => [...inputBlocks, newBlock])
 
     setBlkMap(blkMap => {blkMap.set(newId, newBlock); return new Map(blkMap)});
@@ -464,7 +470,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           }
           if (inputType != null) {
             blk.inputType = inputType;
-
+            if(inputType == data_types.dt_series) {
+              const temp = [];
+              for(let i = 0; i < INVALUECAP; i++) {
+                temp.push(0)
+              }
+              blk.val = temp;
+            }
             // we need to update all outputs connected to the block
             for (const arrow of arrows) {
               if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
@@ -590,6 +602,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       outputType: data_types | null,
       idx: number | null
     ) => {
+      console.log("pain");
       if (config.debug_mode_FuncBuilder == 1) {
         console.log('edit callback', blkId, outputName, outputType);
         console.log("current output blocks in parents", outputBlocks);
@@ -873,12 +886,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   )
 
   const changeInput = useCallback((inputId: number, newValue: allowed_stack_components) => {
-    console.log('in changeInput, blks are ', inputBlocks);
+    console.log('in changeInput, blks are ', inputBlocks, newValue);
     const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS, index: number) => {
-      console.log('in changeInput',index, blk);
-      if (blk.blockId == inputId) {
+      console.log('in changeInput',index, blk, newValue);
+      if (blk.blockId == inputId+1000) {
         blk.val = newValue;
       }
+      console.log(blk.val);
       return blk;
     })
     setInputBlocks([...inputBlocks]);
@@ -888,18 +902,36 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
  
   // let inputListCount: number = 0;
   // const [inputStore, setInputStore] = useState<data_types[]>([]);
-  const inputList = inputBlocks.map((blk: InputBlockDS) => {
+  const INVALUECAP = 20;
+  const [fullInputBlocks, setFullInputBlocks] = useState<React.JSX.Element[]>([]);
+  useEffect(() => {
+    console.log("also called");
+  setFullInputBlocks(inputBlocks.map((blk: InputBlockDS) => {
   //   inputListCount += 1
   //   if(inputStore.length < inputListCount) {
   //     setInputStore((inputStore) => [...inputStore, 0])
   //   }
+    console.log("called", inputBlocks);
+    if(blk.inputType === data_types.dt_series) {
+      // const temp = []
+      // for(let i = 0; i < INVALUECAP; i++) {
+      //   temp.push(0)
+      // }
+      console.log(blk.val);
+      return (
+        <>
+          <h3>{blk.inputName}</h3>
+          <SeriesInput handleStateChange={changeInput} ind={blk.inputIdx} inValues={blk.val as series} inputValueCap={INVALUECAP}/>
+        </>
+      );
+    }
     return (
       <>
         <h3>{blk.inputName}</h3>
         <NumberInput handleStateChange={changeInput} ind={blk.inputIdx} inValue={0} inputId={blk.blockId}/>
       </>
     );
-  })
+  }))}, [inputBlocks])
 
 
 
@@ -907,11 +939,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   let outputListCount: number = 0;
   const outputList : any[] = [];
   for (const [outputIdx, outputObj] of evalResult) {
-    
-    const data = [{
+    let data = [{
       x: 0,
-      y: outputObj['value'] as number
+      y: outputObj.value as number
     }]
+    if((typeof outputObj.value) !== "number") {
+      data = []
+      for(let i = 0; i < (outputObj.value as series).length; i++) {
+        data.push({x: i, y: (outputObj.value as series)[i] as number})
+      }
+    }
     console.log(data)
     outputList.push(
       (
@@ -924,7 +961,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               yDomain={[0,20]}
           >
               <HorizontalGridLines />
-              <VerticalBarSeries data={data} barWidth={0}/>
+              <VerticalBarSeries data={data} barWidth={0.2}/>
               <XAxis />
               <YAxis />
             
@@ -1069,7 +1106,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         <Button id='eval-custom-function' variant='default' onClick={() => {evaluateFunction()}}>Evaluate</Button>
         <h3>Function Builder</h3>
         <div style={{display: "flex"}}>
-          {inputList}
+          {fullInputBlocks}
         </div>
         {inputBlocksList}
         {funcBlocksList}

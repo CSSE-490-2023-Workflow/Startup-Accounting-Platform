@@ -24,6 +24,7 @@ function NumberInput(props: IProps) {
         modifiedValue = value.replace(".","")
       }
       if(!isNaN(Number(modifiedValue))) {
+        console.log(inputId);
         handleStateChange(inputId, Number(modifiedValue));
         setInpValue(value)
       }
