@@ -76,9 +76,9 @@ interface builtin_function {
     // TODO add an id
     param_count : number;
     func_name: string;
-    param_types: data_types[];
+    param_types: data_types[][];
     param_names: string[];
-    output_types: data_types[];
+    output_types: data_types[][];
     output_names: string[];
     func: (...args : allowed_stack_components[]) => allowed_stack_components[];
 }

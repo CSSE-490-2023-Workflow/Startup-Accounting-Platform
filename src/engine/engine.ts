@@ -9,8 +9,10 @@
 
 import {data_types, declared_type_verifier, is_integer, is_number} from './datatype_def'
 import type {func_pt, func_pt_series, series, allowed_stack_components, custom_function, builtin_function} from './datatype_def'
-import { id_to_builtin_func, name_to_builtin_func } from './builtin_func_def';
+import { id_to_builtin_func } from './builtin_func_def';
 import { FuncArgError } from './error_def';
+import { exec } from 'child_process';
+import { log } from 'console';
 
 let func_2 : custom_function = {
     func_name : 'test_func2',
@@ -122,50 +124,107 @@ interface ioObj {
     name : string,
     value: allowed_stack_components
 }
+
+/**
+ * Deprecated. Use func_interpreter_new instead
+ * Evaluates a custom function
+ * @param func_str JSON string representation of the custom function
+ * @param args a map from input index to {name : inputName, value : inputValue}
+ * @returns a map from output index to {name : outputName, value : outputValue}
+ */
 export function func_interpreter_new_caller(func_str : string, args: Map<number, ioObj>) {
-    console.log(`Starting the evaluation of ${func_str} with args ${args}`)
-    let ret : Map<number, ioObj> = new Map<number, ioObj>();
-    func_interpreter_new(func_str, ret, args);
-    return ret;
+    return func_interpreter_new(func_str, args);
 }
 
-const func_interpreter_new : any = function(func_str: string, ret: Map<number, ioObj>, args: Map<number, ioObj>) {
+/**
+ * When useOutput = 'all', a custom function evaluation will return a MAP in the form
+ * {
+ *  outputIdx : {
+ *                  name : someName,
+ *                  value : someValue
+ *              }
+ *  ...
+ * }
+ * a builtin function evaluation will return a LIST containing all outputs
+ * When use output = some integer, both function types will return a plain value
+ * NOTE: this function is designed for evaluting a custom function
+ * @param func_str json string representation of the custom function
+ * @param ret a map from output index to {name : outputName, value : outputValue}. Will be filled in the course of evaluation
+ * @param args a map from input index to {name : inputName, value : inputValue}
+ * @returns Map<number, ioObj> if custom function, allowed_stack_components[] if builtin function, an allowed_stack_component otherwise
+ */
+const func_interpreter_new : any = function(func_str: string, args: Map<number, ioObj>) {
     const func_content = JSON.parse(func_str);
-    if (func_content['type'] == 'custom_function') {
+    if (func_content.type == 'custom_function') {
         //console.log("in function, return");
         //console.log(func_content['param'][0]);
-        const ret_arr : allowed_stack_components[] = [];
+        //const ret_arr : allowed_stack_components[] = [];
+        const outputDict : Map<number, ioObj> = new Map();
         let counter : number = 1;
         for (const func_param of func_content['outputs']) {
-            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), ret, args);
-            console.log(`evalution of output no.${counter} finished. Got `, eval_res);
+            // This should return null
+            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), args);
+            console.log(`evalution of output no.${counter} finished. Got ${eval_res}`);
+            outputDict.set(counter, { name : func_content.outputNames[counter - 1], value : eval_res})
+            counter++;
         }
         if (Number.isInteger(func_content['useOutput'])) {
-            return ret_arr[func_content['useOutput']];
+            if (func_content['useOutput'] > outputDict.size) {
+                throw new Error(`Function interpreter: output index ${func_content['useOutput']} out of range for ${outputDict.size} outputs`);
+            } else {
+                return (outputDict.get(func_content['useOutput']) as ioObj).value;
+            }
         } else if (func_content['useOutput'] = 'all') {
-            return ret_arr;
+            return outputDict;
+        } else {
+            throw new Error('useOutput should either be the index of the output to use, or \'all\' to use all outputs');
+        }
+    } else if (func_content.type == 'custom_function_call') {
+        const paramDict : Map<number, ioObj> = new Map();
+        let counter : number = 1;
+        for (const param of func_content.params) {
+            const paramValue : any = func_interpreter_new(JSON.stringify(param), args);
+            paramDict.set(counter, {name : func_content.paramNames[counter - 1], value : paramValue});
+            counter++;
+        } 
+        const outputDict : Map<number, ioObj> = func_interpreter_new(func_content.body, paramDict);
+        //console.log(outputDict);
+        if (Number.isInteger(func_content['useOutput'])) {
+            if (func_content['useOutput'] > outputDict.size) {
+                throw new Error(`Function interpreter: output index ${func_content['useOutput']} out of range for ${outputDict.size} outputs`);
+            } else {
+
+                return (outputDict.get(func_content['useOutput']) as ioObj).value;
+            }
+        } else if (func_content['useOutput'] = 'all') {
+            return outputDict;
         } else {
             throw new Error('useOutput should either be the index of the output to use, or \'all\' to use all outputs');
         }
     } else if (func_content['type'] == 'output') {
-        const outputEvalRes : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), ret, args);
-        ret.set(func_content['outputIdx'], { name: func_content['outputName'], value: outputEvalRes });
-        return null;
+        const outputEvalRes : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), args);
+        console.log('evaluated output', outputEvalRes);
+        //ret.set(func_content['outputIdx'], { name: func_content['outputName'], value: outputEvalRes });
+        return outputEvalRes;
     } else if (func_content['type'] == 'builtin_function') {
         let param_arr : allowed_stack_components[] = [];
         for (const func_param of func_content['params']) {
         
-            const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), ret, args);
+            const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), args);
             console.log('evaluting', func_content['functionName'], ', param is:', func_param, ', evaluated param is:', func_param_eval_res);    
             param_arr.push(func_param_eval_res);
         }
-        const func_eval_res : allowed_stack_components[] = name_to_builtin_func[func_content['functionName']].func(...param_arr);
+        const func_eval_res : allowed_stack_components[] = id_to_builtin_func[func_content['functionId']].func(...param_arr);
         //console.log(name_to_builtin_func[func_content['functionName']].func)
         console.log('evaluated', func_content['functionName'], ' with params ', param_arr, '. Got result ', new Array(func_eval_res));
         //return func_eval_res;
         if (Number.isInteger(func_content['useOutput'])) {
-            console.log('using output no.', func_content['useOutput'], ' of ', func_content['functionName'], '. It\'s evaluated to be: ', func_eval_res[func_content['useOutput']])
-            return func_eval_res[func_content['useOutput']];
+            if (func_content['useOutput'] > func_eval_res.length) {
+                throw new Error(`Function interpreter: output index ${func_content['useOutput']} out of range for ${func_eval_res.length} outputs`);
+            } else {
+                console.log('using output no.', func_content['useOutput'], ' of ', func_content['functionName'], '. It\'s evaluated to be: ', func_eval_res[func_content['useOutput']])
+                return func_eval_res[func_content['useOutput'] - 1]
+            }
         } else if (func_content['useOutput'] = 'all') {
             return func_eval_res;
         } else {
@@ -175,16 +234,17 @@ const func_interpreter_new : any = function(func_str: string, ret: Map<number, i
         //console.log('in constant');
         return func_content['value'];
     } else if (func_content['type'] == 'input') {
-        console.log('Evaluating user input no.', func_content['inputIdx'])
         const arg : ioObj | undefined = args.get(func_content['inputIdx'])
         if (arg == undefined) {
             throw new Error(`User input no.${func_content['inputIdx']} not found in given argument dictionary.`);
         } else {
+            console.log('Evaluated user input no.', func_content['inputIdx'], args)
             return arg['value'];
         }
     } else {
-        throw new FuncArgError(`Unrecognized function component type : ${func_content}`);
-    }
+        console.log(func_content)
+        throw new Error(`Unrecognized function component type : ${func_content}`);
+    } 
 
 }
 

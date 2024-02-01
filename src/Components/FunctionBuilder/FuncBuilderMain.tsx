@@ -17,6 +17,7 @@ import { AuthContext, database } from "../../auth/firebase";
 import {Button} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Functions' 
 import SeriesInput from '../SeriesInput';
+import { MyDraggable } from './MyDraggable';
 
 interface InputBlockDS {
   blockId: number
@@ -24,6 +25,7 @@ interface InputBlockDS {
   inputType: data_types
   inputIdx: number
   val: allowed_stack_components
+  blockLocation: [number, number]
 }
 
 interface Pair {
@@ -52,10 +54,11 @@ interface FuncBlockDS {
   funcType: FuncType
   funcName: string
   funcId: string
-  paramTypes: data_types[]
+  paramTypes: data_types[][]
   paramNames: string[]
-  outputTypes: data_types[]
+  outputTypes: data_types[][]
   outputNames: string[]
+  blockLocation: [number, number]
 }
 
 interface OutputBlockDS {
@@ -64,6 +67,7 @@ interface OutputBlockDS {
   outputType: data_types | undefined
   outputIdx: number
   val: any
+  blockLocation: [number, number]
 }
 
 export interface StartAndEnd {
@@ -234,7 +238,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         editOutputBlock(endBlkId, null, startBlk.inputType, null);
       } else if (isFuncBlock(startBlkId)) { //start block is a function block
         const startBlk : FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
-        editOutputBlock(endBlkId, null, startBlk.outputTypes[startNodeIdx - 1], null); // change from 1-based to 0-based indexing
+        // editOutputBlock(endBlkId, null, startBlk.outputTypes[startNodeIdx - 1], null); // change from 1-based to 0-based indexing
       }
     }
   }, [blkMap])
@@ -246,8 +250,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     for (let inputBlk of inputBlocks) {
       paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
     }
-
-    const res: Map<number, ioObj> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
+    console.log(`starting evaluation`)
+    for (const [i, v] of paramMap.entries()) {
+      console.log('param:', i, v.value)
+    }
+    console.log(savedFunction)
+    const res: Map<number, ioObj> = func_interpreter_new(JSON.stringify(savedFunction), paramMap)
     //setOutputMap(res);
     console.log('Evaluation completed. Outputs of the custom function are: ', res);
     setEvalResult(new Map(res));
@@ -261,11 +269,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     //back trace each output block
     for (const outputBlk  of outputBlocks) {
+      console.log("loc: ", outputBlk.blockLocation);
       let path : any = {
         type : 'output',
         outputName : outputBlk.outputName,
         outputType : outputBlk.outputType,
         outputIdx : outputBlk.outputIdx,
+        outputBlkLoc: outputBlk.blockLocation,
         params : [
           tracePath(outputBlk.blockId.toString() + 'i1')
         ]
@@ -286,6 +296,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     const res : any = {
       type: 'custom_function',
+      useOutput: 'all',
       paramNames: inputBlksSorted.map(iBlk => iBlk.inputName),
       paramTypes: inputBlksSorted.map(iBlk => iBlk.inputType),
       outputNames: outputBlksSorted.map(oBlk => oBlk.outputName),
@@ -320,7 +331,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
      * tail block  ------>   head block
      */
     // which output of the tail block to use
-    const tailBlkOutputIdx : number | undefined = Number(arrow.start.split('o')[1]) - 1;
+    const tailBlkOutputIdx : number | undefined = Number(arrow.start.split('o')[1]);
 
     if (tailBlk == undefined) {
       throw new Error(`Arrow tail does not exist: ${arrow.start} to ${arrow.end}`);
@@ -330,26 +341,44 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         type : 'input',
         inputName : tailBlk.inputName,
         inputType : tailBlk.inputType,
-        inputIdx : tailBlk.inputIdx
+        inputIdx : tailBlk.inputIdx,
+        inputBlkLoc : tailBlk.blockLocation
       }
-    } if ('funcName' in tailBlk) { //func block
+    } if ('funcType' in tailBlk) { //func block
       const params : any[] = [];
       for (const i of [...Array(tailBlk.paramNames.length).keys()].map(e => e+1)) { //for i in [1, 2, ..., # of params]
         params.push(tracePath(tailBlk.blockId.toString() + 'i' + i.toString()))
       }
       //console.log('params', params);
-      return {
-        type : 'builtin_function',
-        useOutput : tailBlkOutputIdx,
-        functionName : tailBlk.funcName,
-        paramNames : tailBlk.paramNames,
-        paramTypes : tailBlk.paramTypes,
-        outputNames : tailBlk.outputNames,
-        outputTypes : tailBlk.outputTypes,
-        params : params
+      if (tailBlk.funcType == FuncType.builtin) {
+        return {
+          type : 'builtin_function',
+          useOutput : tailBlkOutputIdx,
+          functionName : tailBlk.funcName,
+          functionId: tailBlk.funcId,
+          paramNames : tailBlk.paramNames,
+          paramTypes : tailBlk.paramTypes,
+          outputNames : tailBlk.outputNames,
+          outputTypes : tailBlk.outputTypes,
+          funcBlkLoc: tailBlk.blockLocation,
+          params : params
+        }
+      } else { // custom
+        if (customFunctions.get(tailBlk.funcId) == undefined) {
+          throw new Error(`Custom function cannot be found ${tailBlk.funcId}`)
+        } else {
+          return {
+            type : 'custom_function_call',
+            useOutput : tailBlkOutputIdx,
+            paramNames: tailBlk.paramNames,
+            paramTypes: tailBlk.paramTypes,
+            params: params,
+            body: (customFunctions.get(tailBlk.funcId) as CustomFunctionDBRecord).rawJson
+          }
+        }
       }
     } else {
-      throw new Error(`Arrow tail is a block of an illegal type: ${arrow}`);
+      throw new Error(`Arrow tail is a block of an illegal type: ${arrow.start} ${arrow.end}`);
     }
   }
 
@@ -365,7 +394,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       inputName: inputName,
       inputType: inputType,
       inputIdx: newIdx,
-      val: 0
+      val: 0,
+      blockLocation: [0, 0]
     }
 
     setInputBlocks(inputBlocks => [...inputBlocks, newBlock])
@@ -477,6 +507,26 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     }, [inputBlocks, inputBlkIdxMap, arrows])
 
+    const updateInputBlkLoc = useCallback(
+      (blkId: number, newLocation: [number, number]) => {
+
+        console.log("block location in func builder: ", newLocation);
+
+        // Map over the outputBlocks array and update the specified block's location
+        const updatedBlocks: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS) => {
+          if (blk.blockId === blkId) {
+            // Update the block's location
+            blk.blockLocation = newLocation;
+          }
+          return blk;
+        });
+
+        // Update the state with the modified outputBlocks array
+        setInputBlocks(updatedBlocks);
+      },
+      [inputBlocks] // Include dependencies if needed
+    );
+
   /**
    * Output block logics
    */
@@ -490,7 +540,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       outputName: outputName,
       outputType: outputType,
       outputIdx: newIdx,
-      val: 0
+      val: 0,
+      blockLocation: [0,0]
     }
 
     setOutputBlocks(outputBlks => [...outputBlks, newBlock]);
@@ -586,6 +637,26 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       }
     }, [outputBlocks, outputBlkIdxMap])
 
+    const updateOutputBlkLoc = useCallback(
+      (blkId: number, newLocation: [number, number]) => {
+
+        console.log("output block location in func builder: ", newLocation);
+
+        // Map over the outputBlocks array and update the specified block's location
+        const updatedBlocks: OutputBlockDS[] = outputBlocks.map((blk: OutputBlockDS) => {
+          if (blk.blockId === blkId) {
+            // Update the block's location
+            blk.blockLocation = newLocation;
+          }
+          return blk;
+        });
+
+        // Update the state with the modified outputBlocks array
+        setOutputBlocks(updatedBlocks);
+      },
+      [outputBlocks] // Include dependencies if needed
+    );
+
 
   /**
    * Function block logics
@@ -617,7 +688,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       paramTypes: isBuiltin ? (f as builtin_function).param_types : customFuncBody.paramTypes,
       paramNames: isBuiltin ? (f as builtin_function).param_names : customFuncBody.paramNames,
       outputTypes: isBuiltin ? (f as builtin_function).output_types : customFuncBody.outputTypes,
-      outputNames: isBuiltin ? (f as builtin_function).output_names : customFuncBody.outputNames
+      outputNames: isBuiltin ? (f as builtin_function).output_names : customFuncBody.outputNames,
+      blockLocation: [0, 0]
     }
 
     setFuncBlocks(funcBlks => [...funcBlks, newBlock])
@@ -749,11 +821,58 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setFuncBlocks(tmp);
 
   }, [funcBlocks, arrows])
+
+  const updateFuncBlkLoc = useCallback(
+    (blkId: number, newLocation: [number, number]) => {
+
+      console.log("func block location in func builder: ", newLocation);
+
+      // Map over the outputBlocks array and update the specified block's location
+      const updatedBlocks: FuncBlockDS[] = funcBlocks.map((blk: FuncBlockDS) => {
+        if (blk.blockId === blkId) {
+          // Update the block's location
+          blk.blockLocation = newLocation;
+        }
+        return blk;
+      });
+
+      // Update the state with the modified outputBlocks array
+      setFuncBlocks(updatedBlocks);
+    },
+    [funcBlocks] // Include dependencies if needed
+  );
   
   interface funcInfo {
     id: string;
     name: string;
   }
+
+  const updateBlockLocation = useCallback(
+    (blkId: number, left: number, top: number) => {
+      if (isInputBlock(blkId)) {
+        for (const blk of inputBlocks) {
+          if (blk.blockId == blkId) {
+            blk.blockLocation = [left, top]
+          }
+        }
+        setInputBlocks(blks => [...blks])
+        console.log(inputBlocks)
+      } else if (isFuncBlock(blkId)) {
+        for (const blk of funcBlocks) {
+          if (blk.blockId == blkId) {
+            blk.blockLocation = [left, top]
+          }
+        }
+        setFuncBlocks(blks => [...blks])
+      } else if (isOutputBlock(blkId)) {
+        for (const blk of outputBlocks) {
+          if (blk.blockId == blkId) {
+            blk.blockLocation = [left, top]
+          }
+        }
+        setOutputBlocks(blks => [...blks])
+      }
+  }, [inputBlocks, funcBlocks, outputBlocks])
 
   const builtinFuncOptions: funcInfo[] = Object.entries(id_to_builtin_func).map(
     ([funcId, funcBody] : [string, builtin_function]) => {
@@ -815,6 +934,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }))}, [inputBlocks])
 
 
+
   
   let outputListCount: number = 0;
   const outputList : any[] = [];
@@ -874,16 +994,27 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   // })
 
   const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
-    return (
+    const element = (
       <InputBlock 
         blockId={blk.blockId} 
         inputName={blk.inputName} 
         inputType={blk.inputType} 
         inputTypeOptions={data_type_enum_name_pairs}
         inputIdx={[blk.inputIdx, inputBlkIdxMap.size]}
+        blockLocation={blk.blockLocation}
         updateBlkCB={editInputBlock}
         removeBlkCB={removeInputBlock}
         setArrows={setArrows}
+        updateBlkLoc={updateInputBlkLoc}
+      />
+    )
+    return (
+      <MyDraggable
+        left={blk.blockLocation[0]}
+        top={blk.blockLocation[1]}
+        children={element}
+        updateLocationCB={updateBlockLocation}
+        id={blk.blockId}
       />
     )
   })
@@ -934,11 +1065,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         paramNames={blk.paramNames}
         outputTypes={blk.outputTypes}
         outputNames={blk.outputNames}
+        blockLocation={blk.blockLocation}
         updateBlkCB={editFuncBlock}
         removeBlkCB={removeFuncBlock}
         addArrow={addArrow}
         setArrows={setArrows}
         removeArrow={removeArrow}
+        updateBlkLoc={updateFuncBlkLoc}
       />
     );
     
@@ -951,11 +1084,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         outputName={blk.outputName}
         outputType={blk.outputType}
         outputIdx={[blk.outputIdx, outputBlkIdxMap.size]}
+        blockLocation={blk.blockLocation}
         updateBlkCB={editOutputBlock}
         removeBlkCB={removeOutputBlock}
         addArrow={addArrow}
         setArrows={setArrows}
         removeArrow={removeArrow}
+        updateBlkLoc={updateOutputBlkLoc}
       />
     )
   })

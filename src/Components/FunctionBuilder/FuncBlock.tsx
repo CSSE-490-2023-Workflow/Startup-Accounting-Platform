@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useCallback, useRef, useState} from 'react';
 import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, NavLink, Divider, Popover, useCombobox, Combobox, InputBase} from '@mantine/core';
-import Draggable from 'react-draggable';
+import Draggable, { DraggableEvent } from 'react-draggable';
 import { data_types } from '../../engine/datatype_def';
 import DotlessConnectPointsWrapper from '../DotlessConnectPointsWrapper';
 import { FuncType } from './FuncBuilderMain'
@@ -31,22 +31,24 @@ interface FuncProps {
   funcId: string;
   funcName: string;
   funcOptions: funcInfo[];
-  paramTypes: data_types[];
+  paramTypes: data_types[][];
   paramNames: string[];
-  outputTypes: data_types[];
+  outputTypes: data_types[][];
   outputNames: string[];
+  blockLocation: [number, number];
   updateBlkCB: (funcBlockId: number, funcType: FuncType | null, funcId: string | null) => void;
   removeBlkCB:  (id: number) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
   addArrow: (value: StartAndEnd) => void;
   removeArrow: (value: string[]) => void;
+  updateBlkLoc: (blkId: number, blockLocation: [number, number]) => void;
 }
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
 function FuncBlock(props: FuncProps) {
   const [ blkId, funcId, funcType, funcName, funcOptions, paramTypes, paramNames, 
-          outputTypes, outputNames, editCB, removeCB, setArrows, addArrow, removeArrow] = [
+          outputTypes, outputNames, blockLoc, editCB, removeCB, setArrows, addArrow, removeArrow, updateLoc] = [
     props.blockId, 
     props.funcId, 
     props.funcType,
@@ -55,12 +57,14 @@ function FuncBlock(props: FuncProps) {
     props.paramTypes, 
     props.paramNames, 
     props.outputTypes, 
-    props.outputNames, 
+    props.outputNames,
+    props.blockLocation, 
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.setArrows, 
     props.addArrow,
-    props.removeArrow
+    props.removeArrow,
+    props.updateBlkLoc
   ]
 
   const dragRef = useRef<Draggable>(null);
@@ -456,8 +460,14 @@ function FuncBlock(props: FuncProps) {
     <>
      <Draggable
         ref={dragRef}
-        onDrag={e => {
-          // console.log(e);
+        onDrag={(e: DraggableEvent, data) => {
+          const x: number =  data.x;
+          const y: number = data.y;
+
+          const newLocation: [number, number] = [x, y];
+
+          // Update the block location using the callback
+          updateLoc(blkId, newLocation);
           setArrows((arrows) => [...arrows]);
         }}
       >
