@@ -132,6 +132,8 @@ interface JSONCustomFunction {
 
 function FuncBuilderMain(props: FuncBuilderMainProps) {
 
+  const mounted = useRef<boolean>(false);
+
   //const [inputs, setInputs] = useState([0,0])
   //const [result, setResult] = useState(0)
   const [inputBlocks, setInputBlocks] = useState<InputBlockDS[]>([]);
@@ -184,10 +186,18 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [currentUser])
 
   useEffect(() => {
+    if (!mounted.current) {
+      // do componentDidMount logic
+      console.log("mounted");
+      mounted.current = true;
+    } else {
+      // do componentDidUpdate logic
+      console.log("this should only print once");
+    }
     console.log("effect is running");
+    console.log(currentUser);
     reloadSavedCustomFunctions();
-    testLoadFunctions();
-  }, []);
+  }, [currentUser]);
 
   const testLoadFunctions = () => {
     if (currentUser) {
@@ -212,12 +222,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             }
           }
         })
-
-
-
       });
     }
   }
+
+  testLoadFunctions();
 
   const addArrow = useCallback((v: StartAndEnd) => {
     setArrows([...arrows, v]);
