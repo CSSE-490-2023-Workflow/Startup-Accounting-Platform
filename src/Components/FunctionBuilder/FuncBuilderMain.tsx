@@ -192,11 +192,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       mounted.current = true;
     } else {
       // do componentDidUpdate logic
-      console.log("this should only print once");
+      console.log("this should only print after mounted");
+      reloadSavedCustomFunctions();
+      testLoadFunctions();
     }
     console.log("effect is running");
     console.log(currentUser);
-    reloadSavedCustomFunctions();
   }, [currentUser]);
 
   const testLoadFunctions = () => {
@@ -226,7 +227,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
   }
 
-  testLoadFunctions();
 
   const addArrow = useCallback((v: StartAndEnd) => {
     setArrows([...arrows, v]);
