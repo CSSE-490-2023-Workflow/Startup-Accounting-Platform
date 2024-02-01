@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+import { IconSeparatorVertical } from "@tabler/icons-react";
+import { useCallback, useEffect, useState } from "react";
 
 export { MyDraggable };
 
@@ -14,6 +15,11 @@ function MyDraggable (props: any) {
     //const [isDragging, setIsDragging] = useState(false);
     const updateLocation = props.updateLocationCB;
     const id = props.id;
+    const setArrows = props.setArrows;
+
+    useEffect(() => {
+      setArrows((arrows : any) => [...arrows])
+    }, [styles])
 
     const dragStart = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
       const boundingRect = 

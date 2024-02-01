@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useCallback, useRef, useState} from 'react';
+import React, { ChangeEvent, useCallback, useEffect, useRef, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
 import { StartAndEnd, Arrow } from './FuncBuilderMain'
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, Combobox, CheckIcon, useCombobox, InputBase} from '@mantine/core';
@@ -68,6 +68,10 @@ function InputBlock(props: InputProps) {
 
   // controlls node name popover state
   const [ showNodeName, setShowNodeName ] = useState(false);
+
+  useEffect(() => {
+    setArrows(arrows => [...arrows])
+  }, [outputNodeDir])
 
   // Is this even necessary?
   const changeOutputNodeDir : any = useCallback((newDir: direction) => {
@@ -144,7 +148,7 @@ function InputBlock(props: InputProps) {
               className='connection-handle-wrapper'
               onMouseEnter={() => {setShowNodeName(true)}}
               onMouseLeave={() => {setShowNodeName(false)}}
-              onDragStart={(e) => {e.stopPropagation()}}
+              onDragStart={(e) => {setShowNodeName(false);e.stopPropagation()}}
               onDragEnd={(e) => {e.stopPropagation()}}
             >
               <div className='connection-handle connection-handle-out' id={handleId}>

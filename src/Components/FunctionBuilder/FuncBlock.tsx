@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useCallback, useRef, useState} from 'react';
+import React, { ChangeEvent, useCallback, useEffect, useRef, useState} from 'react';
 import { Card, Input, CloseButton, CardSection, HoverCard, Button, Text, Group, NavLink, Divider, Popover, useCombobox, Combobox, InputBase} from '@mantine/core';
 import Draggable, { DraggableEvent } from 'react-draggable';
 import { data_types } from '../../engine/datatype_def';
@@ -89,6 +89,9 @@ function FuncBlock(props: FuncProps) {
 
   const [ showSideMenu, setShowSideMenu ] = useState([true, true, true, true]);
 
+  useEffect(() => {
+    setArrows(arrows => [...arrows]);
+  }, [outputNodeDir, paramNodeDir])
 
   const changeParamNodeDir : any = useCallback((newDir: direction) => {
     setParamNodeDir(newDir);
@@ -183,6 +186,9 @@ function FuncBlock(props: FuncProps) {
                   console.log("dropped!", refs);
                 }
               }}
+              onDragStart={e => {setShowParamNodeName(false); e.stopPropagation()}}
+              onDragEnd={e => {e.stopPropagation()}}
+
             >
               <div className='connection-handle connection-handle-out' id={handleId}>
                 {faIcon}
@@ -256,6 +262,8 @@ function FuncBlock(props: FuncProps) {
               className='connection-handle-wrapper'
               onMouseEnter={() => setShowOutputNodeName(true)}
               onMouseLeave={() => setShowOutputNodeName(false)}
+              onDragStart={e => {setShowOutputNodeName(false); e.stopPropagation()}}
+              onDragEnd={e => {e.stopPropagation()}}
             >
               <div className='connection-handle connection-handle-out' id={handleId}>
                 {faIcon}
@@ -303,6 +311,8 @@ function FuncBlock(props: FuncProps) {
                 setShowSideMenu(tmp);
                 setArrows(arrows => [...arrows]);
               }}
+              onDragStart={e => {e.stopPropagation()}}
+              onDragEnd={e => {e.stopPropagation()}}
               active
             />
           </div>  
@@ -458,7 +468,7 @@ function FuncBlock(props: FuncProps) {
   
   return (
     <>
-     <Draggable
+     {/* <Draggable
         ref={dragRef}
         onDrag={(e: DraggableEvent, data) => {
           const x: number =  data.x;
@@ -470,7 +480,7 @@ function FuncBlock(props: FuncProps) {
           updateLoc(blkId, newLocation);
           setArrows((arrows) => [...arrows]);
         }}
-      >
+      > */}
       <div className='block-container'>
       <Card
         id={blkId + ""}
@@ -561,7 +571,6 @@ function FuncBlock(props: FuncProps) {
 
       {/* <ConnectPointsWrapper boxId={blkId+""} handler={outputNodeDir} dragRef={dragRef} boxRef={boxRef} /> */}
       </div>
-      </Draggable>
     </>
   );
 }
