@@ -160,6 +160,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [customFunctions, setCustomFunctions] = useState<Map<string, CustomFunctionDBRecord>>(new Map());
   const { currentUser } = useContext(AuthContext);
 
+  // const [addedOutputIds, setAddedOutputIds] = useState<number[]>([]);
+
   const reloadSavedCustomFunctions = useCallback(() => {
     if (currentUser) {
       database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
@@ -217,8 +219,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             console.log("json", json);
             const outputs: JSONOutput[] = data.outputs;
             for (const output of outputs) {
-              console.log(output.outputName);
-              addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc);
+              // console.log("ids", addedOutputIds);              
+              if (!outputBlkIdxMap.has(output.outputIdx)) {
+                // setAddedOutputIds([...addedOutputIds, output.outputIdx]);
+                console.log(output.outputIdx);
+                addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc);
+              }
             }
           }
         })
