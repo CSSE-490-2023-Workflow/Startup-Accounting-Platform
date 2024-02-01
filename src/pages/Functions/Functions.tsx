@@ -34,6 +34,11 @@ function Functions() {
         window.open(`/function/${functionId}`, '_blank');
     }
 
+    const editFunctionPage = (functionId: string, json: string) => {
+        window.open(`/function/${functionId}`, '_blank');
+        console.log(json);
+    }
+
     const createNewFunction = () => {
 
         if(!currentUser) {
@@ -65,7 +70,16 @@ function Functions() {
                         </Text>
 
                         <Group mt='xs'>
-                            <Button radius="md" style={{flex: 1}} onClick={() => openFunctionPage(functionData.id)}>
+                        <Button radius="md" style={{flex: 1}} onClick={() => {
+                                console.log("the function being edited is ", database.getFunction(functionData.id).then((result) => {
+                                    // Handle the resolved value (result) here
+                                    editFunctionPage(functionData.id, result.rawJson);
+                                  
+                                  }).catch((error) => {
+                                    // Handle any errors that occur during the promise
+                                    console.error("Error:", error);
+                                  }));
+                                }}>
                                 Edit
                             </Button>
                             <ActionIcon variant="default" radius="md" size={36} onClick={() => { setSelectedFunction(functionData); openDelete(); }}>
