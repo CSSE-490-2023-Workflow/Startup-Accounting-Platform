@@ -76,9 +76,9 @@ interface builtin_function {
     // TODO add an id
     param_count : number;
     func_name: string;
-    param_types: data_types[];
+    param_types: data_types[][];
     param_names: string[];
-    output_types: data_types[];
+    output_types: data_types[][];
     output_names: string[];
     func: (...args : allowed_stack_components[]) => allowed_stack_components[];
 }
@@ -89,6 +89,18 @@ export function is_number(val : any) {
 
 export function is_integer(val: any) {
     return Number.isInteger(Number(val));
+}
+
+export function is_series(val: any) {
+    if (!Array.isArray(val)) {
+        return false;
+    }
+    for (const e of val) {
+        if (!is_number(e)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 //export * from './datatype_def'
