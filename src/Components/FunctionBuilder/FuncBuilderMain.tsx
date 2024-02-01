@@ -819,11 +819,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   let outputListCount: number = 0;
   const outputList : any[] = [];
   for (const [outputIdx, outputObj] of evalResult) {
-    
-    const data = [{
+    let data = [{
       x: 0,
-      y: outputObj['value'] as number
+      y: outputObj.value as number
     }]
+    if((typeof outputObj.value) !== "number") {
+      data = []
+      for(let i = 0; i < (outputObj.value as series).length; i++) {
+        data.push({x: i, y: (outputObj.value as series)[i] as number})
+      }
+    }
     console.log(data)
     outputList.push(
       (
@@ -836,7 +841,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               yDomain={[0,20]}
           >
               <HorizontalGridLines />
-              <VerticalBarSeries data={data} barWidth={0}/>
+              <VerticalBarSeries data={data} barWidth={0.2}/>
               <XAxis />
               <YAxis />
             
