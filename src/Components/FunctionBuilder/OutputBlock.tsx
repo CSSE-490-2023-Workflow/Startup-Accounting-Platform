@@ -34,7 +34,7 @@ interface OutProps {
 }
 
 function OutputBlock(props: OutProps) {
-  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc, editCB, removeCB, addArrow, setArrows, removeArrow, updateLoc] = [
+  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc = [0,0], editCB, removeCB, addArrow, setArrows, removeArrow, updateLoc] = [
     props.blockId, 
     props.outputName, 
     props.outputType,
@@ -448,6 +448,7 @@ function OutputBlock(props: OutProps) {
     {paramNodes}
     {sideMenus}
     </div>
+
     </>
   );
 }

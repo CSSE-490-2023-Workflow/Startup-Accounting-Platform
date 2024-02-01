@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
 import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series} from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
@@ -40,13 +40,13 @@ export enum FuncType {
 }
 
 interface ioObj {
-  name : string,
-  value : allowed_stack_components
+  name: string,
+  value: allowed_stack_components
 }
 
 interface ioObj {
-  name : string,
-  value : allowed_stack_components
+  name: string,
+  value: allowed_stack_components
 }
 
 interface FuncBlockDS {
@@ -98,62 +98,180 @@ interface ioObj {
   value: allowed_stack_components
 }
 
+///////
+interface JSONInput {
+  type: string;
+  inputName: string;
+  inputType: number;
+  inputIdx: number;
+  inputBlkLoc: [number, number];
+}
+
+interface JSONBuiltinFunction {
+  type: string;
+  useOutput: number;
+  functionName: string;
+  paramNames: string[];
+  paramTypes: number[];
+  outputNames: string[];
+  outputTypes: number[];
+  funcBlkLoc: [number, number];
+  params: JSONInput[];
+}
+
+interface JSONOutput {
+  type: string;
+  outputName: string;
+  outputType: number;
+  outputIdx: number;
+  outputBlkLoc: [number, number];
+  params: JSONInput[] | JSONBuiltinFunction[] | JSONCustomFunction[];
+}
+
+interface JSONCustomFunction {
+  type: string;
+  paramNames: string[];
+  paramTypes: number[];
+  outputNames: string[];
+  outputTypes: number[];
+  outputs: JSONOutput[];
+}
+
 function FuncBuilderMain(props: FuncBuilderMainProps) {
+
+  const mounted = useRef<boolean>(false);
 
   //const [inputs, setInputs] = useState([0,0])
   //const [result, setResult] = useState(0)
-  const [ inputBlocks, setInputBlocks ] = useState<InputBlockDS[]>([]);
-  const [ funcBlocks, setFuncBlocks ] = useState<FuncBlockDS[]>([]);
-  const [ outputBlocks, setOutputBlocks ] = useState<OutputBlockDS[]>([]);
+  const [inputBlocks, setInputBlocks] = useState<InputBlockDS[]>([]);
+  const [funcBlocks, setFuncBlocks] = useState<FuncBlockDS[]>([]);
+  const [outputBlocks, setOutputBlocks] = useState<OutputBlockDS[]>([]);
 
   // stores the blk ids
-  const [ currInputBlockId, setCurrInputBlockId ] = useState(1000);
-  const [ currFunctionBlockId, setCurrFunctionBlockId ] = useState(3000);
-  const [ currOutputBlockId, setCurrOutputBlockId ] = useState(2000);
+  const [currInputBlockId, setCurrInputBlockId] = useState(1000);
+  const [currFunctionBlockId, setCurrFunctionBlockId] = useState(3000);
+  const [currOutputBlockId, setCurrOutputBlockId] = useState(2000);
 
   // a map from input idx to the block ds. The index starts at 1.
-  const [ inputBlkIdxMap, setInputBlkIdxMap ] = useState<Map<number, InputBlockDS>>(new Map());
-  const [ outputBlkIdxMap, setOutputBlkIdxMap ] = useState<Map<number, OutputBlockDS>>(new Map());
+  const [inputBlkIdxMap, setInputBlkIdxMap] = useState<Map<number, InputBlockDS>>(new Map());
+  const [outputBlkIdxMap, setOutputBlkIdxMap] = useState<Map<number, OutputBlockDS>>(new Map());
 
-  const [ savedFunction, setSavedFunction ] = useState({});
-  const [ evalResult, setEvalResult ] = useState(new Map<number, ioObj>())
+  const [savedFunction, setSavedFunction] = useState({});
+  const [evalResult, setEvalResult] = useState(new Map<number, ioObj>())
 
-  const [ blkMap, setBlkMap ] = useState(new Map<number, blk>());
+  const [blkMap, setBlkMap] = useState(new Map<number, blk>());
 
-  const [ arrows, setArrows] = useState<StartAndEnd[]>([]);
+  const [arrows, setArrows] = useState<StartAndEnd[]>([]);
   //const [ arrows, setArrows ] = useState<Arrow[]>([]);
 
-  const [ customFunctions, setCustomFunctions ] = useState<Map<string, CustomFunctionDBRecord>>(new Map());
-  const {currentUser} = useContext(AuthContext);
+  const [customFunctions, setCustomFunctions] = useState<Map<string, CustomFunctionDBRecord>>(new Map());
+  const { currentUser } = useContext(AuthContext);
+
+  // const [addedOutputIds, setAddedOutputIds] = useState<number[]>([]);
 
   const reloadSavedCustomFunctions = useCallback(() => {
-    if(currentUser) {
+    if (currentUser) {
       database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
-          const tmp : Map<string, CustomFunctionDBRecord> = new Map();
-          functionsFromDb.forEach(functionData => {
-            tmp.set(functionData.id, functionData)
-          })
-          setCustomFunctions(tmp);
-          console.log(tmp);
+        const tmp: Map<string, CustomFunctionDBRecord> = new Map();
+        functionsFromDb.forEach(functionData => {
+          tmp.set(functionData.id, functionData)
+        })
+        setCustomFunctions(tmp);
+        console.log("custom functions: ", tmp);
 
-          // We want to update custom function blocks that are using 
-          // the custom function we are building! 
-          setFuncBlocks(funcBlocks => {
-            for (const funcBlk of funcBlocks) {
-              if (funcBlk.funcId == props.functionId) {
-                console.log(funcBlk, props.functionId);
-                setFuncBlockFunction(funcBlk, props.functionId);
-              }
+        // We want to update custom function blocks that are using 
+        // the custom function we are building! 
+        setFuncBlocks(funcBlocks => {
+          for (const funcBlk of funcBlocks) {
+            if (funcBlk.funcId == props.functionId) {
+              console.log(funcBlk, props.functionId);
+              setFuncBlockFunction(funcBlk, props.functionId);
             }
-            return [...funcBlocks];
-          })
+          }
+          return [...funcBlocks];
+        })
       });
     }
   }, [currentUser])
 
   useEffect(() => {
-    reloadSavedCustomFunctions();
+    if (!mounted.current) {
+      // do componentDidMount logic
+      console.log("mounted");
+      mounted.current = true;
+    } else {
+      // do componentDidUpdate logic
+      console.log("this should only print after mounted");
+      reloadSavedCustomFunctions();
+      testLoadFunctions();
+    }
+    console.log("effect is running");
+    console.log(currentUser);
   }, [currentUser]);
+
+  function isBuiltinFunction(param: any): param is JSONBuiltinFunction {
+    console.log(param.type);
+    return param && param.type === "builtin_function";
+  }
+
+  function isCustomFunction(param: any): param is JSONCustomFunction {
+    console.log(param.type);
+    return param && param.type === "custom_function";
+  }
+
+  function isInput(param: any): param is JSONInput {
+    console.log(param.type);
+    return param && param.type === "input";
+  }
+
+  const testLoadFunctions = () => {
+    if (currentUser) {
+      database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
+        let currFunc: CustomFunctionDBRecord;
+        let json: string = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
+        functionsFromDb.forEach(functionData => {
+          if (functionData.id == props.functionId) {
+            currFunc = functionData;
+            json = currFunc.rawJson;
+            if (json === "{}") {
+              json = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
+            }
+
+            const data: JSONCustomFunction = (JSON.parse(json));
+            console.log("json", json);
+            const outputs: JSONOutput[] = data.outputs;
+            for (const output of outputs) {
+              // console.log("ids", addedOutputIds);              
+              if (!outputBlkIdxMap.has(output.outputIdx)) {
+                // setAddedOutputIds([...addedOutputIds, output.outputIdx]);
+                console.log(output.outputIdx);
+                addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc);
+
+                const param = output.params;
+                if (isBuiltinFunction(param[0])) {
+                  console.log(param);
+
+                  for (const input of (param[0] as JSONBuiltinFunction).params) {
+                    console.log(input.inputName);
+                    addInputBlock(input.inputName, input.inputType, input.inputBlkLoc);
+                  }
+                }
+
+                else if (isCustomFunction(param[0])) {
+
+                }
+
+                else if (isInput(param[0])) {
+
+                }
+              }
+            }
+          }
+        })
+      });
+    }
+  }
+
 
   const addArrow = useCallback((v: StartAndEnd) => {
     setArrows([...arrows, v]);
@@ -171,22 +289,22 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       return Number(a.start.split('o')[0]) != blkId && Number(a.end.split('i')[0]) != blkId
     })
     setArrows(tmp);
-    }, [arrows])
+  }, [arrows])
 
   const removeArrow = useCallback((v: string[]) => {
     const newArrows: StartAndEnd[] = []
     console.log(arrows);
-     for(let i = 0; i < arrows.length; i++) {
+    for (let i = 0; i < arrows.length; i++) {
       let toRemove: boolean = false;
-      for(let j = 0; j < v.length; j++) {
-       if(arrows[i].end === v[j])
-         toRemove = true;
+      for (let j = 0; j < v.length; j++) {
+        if (arrows[i].end === v[j])
+          toRemove = true;
       }
-      if(!toRemove)
+      if (!toRemove)
         newArrows.push(arrows[i]);
-     }
-     console.log(newArrows);
-     setArrows(newArrows);
+    }
+    console.log(newArrows);
+    setArrows(newArrows);
 
   }, [arrows])
 
@@ -233,12 +351,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   // }
 
   const updateOutputBlkType = useCallback((arrow: StartAndEnd) => {
-    const endBlkId : number = Number(arrow.end.split('i')[0]);
+    const endBlkId: number = Number(arrow.end.split('i')[0]);
     if (isOutputBlock(endBlkId)) { //end block is an output block
-      const startBlkId : number = Number(arrow.start.split('o')[0]);
-      const startNodeIdx : number = Number(arrow.start.split('o')[1]);
+      const startBlkId: number = Number(arrow.start.split('o')[0]);
+      const startNodeIdx: number = Number(arrow.start.split('o')[1]);
       if (isInputBlock(startBlkId)) { //start block is an input block
-        const startBlk : InputBlockDS = blkMap.get(startBlkId) as InputBlockDS;
+        const startBlk: InputBlockDS = blkMap.get(startBlkId) as InputBlockDS;
         editOutputBlock(endBlkId, null, startBlk.inputType, null);
       } else if (isFuncBlock(startBlkId)) { //start block is a function block
         const startBlk : FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
@@ -250,7 +368,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const [outputStore, setOutputStore] = useState<Map<number, ioObj>[]>([])
   const evaluateFunction = useCallback(() => {
-    const paramMap : Map<number, ioObj> = new Map<number, ioObj>();
+    const paramMap: Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
       paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
     }
@@ -269,18 +387,18 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const saveFunction = useCallback(() => {
     console.log('saving')
-    const tmp : any[] = [];
+    const tmp: any[] = [];
 
     //back trace each output block
-    for (const outputBlk  of outputBlocks) {
+    for (const outputBlk of outputBlocks) {
       console.log("loc: ", outputBlk.blockLocation);
-      let path : any = {
-        type : 'output',
-        outputName : outputBlk.outputName,
-        outputType : outputBlk.outputType,
-        outputIdx : outputBlk.outputIdx,
+      let path: any = {
+        type: 'output',
+        outputName: outputBlk.outputName,
+        outputType: outputBlk.outputType,
+        outputIdx: outputBlk.outputIdx,
         outputBlkLoc: outputBlk.blockLocation,
-        params : [
+        params: [
           tracePath(outputBlk.blockId.toString() + 'i1')
         ]
       };
@@ -290,15 +408,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     //sort input / output blocks by indices
 
-    const inputBlksSorted : InputBlockDS[] = inputBlocks.sort((blk1, blk2) =>
+    const inputBlksSorted: InputBlockDS[] = inputBlocks.sort((blk1, blk2) =>
       blk1.inputIdx - blk2.inputIdx
     )
 
-    const outputBlksSorted : OutputBlockDS[] = outputBlocks.sort((blk1, blk2) =>
+    const outputBlksSorted: OutputBlockDS[] = outputBlocks.sort((blk1, blk2) =>
       blk1.outputIdx - blk2.outputIdx
     )
 
-    const res : any = {
+    const res: any = {
       type: 'custom_function',
       useOutput: 'all',
       paramNames: inputBlksSorted.map(iBlk => iBlk.inputName),
@@ -309,7 +427,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
 
 
-    var blob = new Blob([JSON.stringify(res)], {type: "application/json; charset=utf-8"});
+    var blob = new Blob([JSON.stringify(res)], { type: "application/json; charset=utf-8" });
     saveAs(blob, "hello world.json");
     setSavedFunction(res);
     console.log('saved func', res);
@@ -324,11 +442,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const tracePath = function (arrowHead: string) {
     console.log('arrow head', arrowHead);
     //console.log(arrows);
-    let arrow : StartAndEnd = arrows.filter((sae: StartAndEnd) => {
+    let arrow: StartAndEnd = arrows.filter((sae: StartAndEnd) => {
       return sae.end == arrowHead
     })[0]
-    const tailBlkId : number = Number(arrow.start.split('o')[0]);
-    const tailBlk : blk | undefined = blkMap.get(tailBlkId);
+    const tailBlkId: number = Number(arrow.start.split('o')[0]);
+    const tailBlk: blk | undefined = blkMap.get(tailBlkId);
     console.log('blkMap', blkMap);
 
     /**
@@ -342,11 +460,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
     if ('inputName' in tailBlk) { // input block
       return {
-        type : 'input',
-        inputName : tailBlk.inputName,
-        inputType : tailBlk.inputType,
-        inputIdx : tailBlk.inputIdx,
-        inputBlkLoc : tailBlk.blockLocation
+        type: 'input',
+        inputName: tailBlk.inputName,
+        inputType: tailBlk.inputType,
+        inputIdx: tailBlk.inputIdx,
+        inputBlkLoc: tailBlk.blockLocation
       }
     } if ('funcType' in tailBlk) { //func block
       const params : any[] = [];
@@ -389,7 +507,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   /**
    * Input block Logics
    */
-  const addInputBlock = useCallback((inputName: string, inputType: data_types) => {
+  const addInputBlock = useCallback((inputName: string, inputType: data_types, inputBlkLoc: [number, number]) => {
     const newId = currInputBlockId + 1;
     const newIdx = inputBlkIdxMap.size + 1;
     setCurrInputBlockId(id => id + 1);
@@ -399,14 +517,14 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       inputType: inputType,
       inputIdx: newIdx,
       val: 0,
-      blockLocation: [0, 0]
+      blockLocation: inputBlkLoc
     }
 
     setInputBlocks(inputBlocks => {console.log('in', newBlock); return [...inputBlocks, newBlock]})
 
-    setBlkMap(blkMap => {blkMap.set(newId, newBlock); return new Map(blkMap)});
+    setBlkMap(blkMap => { blkMap.set(newId, newBlock); return new Map(blkMap) });
 
-    setInputBlkIdxMap(inputBlkIdxMap => {inputBlkIdxMap.set(newIdx, newBlock); return new Map(inputBlkIdxMap)});
+    setInputBlkIdxMap(inputBlkIdxMap => { inputBlkIdxMap.set(newIdx, newBlock); return new Map(inputBlkIdxMap) });
 
     if (config.debug_mode_FuncBuilder == 1) {
       console.log('add input block. inputBlocks', inputBlocks);
@@ -422,11 +540,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       return inputBlocks.filter((blk) => blk.blockId != blkId)
     });
 
-    setBlkMap(blkMap => {blkMap.delete(blkId); return new Map(blkMap)});
+    setBlkMap(blkMap => { blkMap.delete(blkId); return new Map(blkMap) });
     //console.log('blkmap after removal input block', blkMap);
 
     // Make all blks with larger indices than the removed blk index--
-    let flag : boolean = false;
+    let flag: boolean = false;
     for (const [blkIdx, blk] of inputBlkIdxMap) {
       if (flag) {
         //console.log('setting', blkIdx - 1, blk);
@@ -466,7 +584,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
       const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS) => {
         if (blk.blockId == blkId) {
-          if (inputName != null)  {
+          if (inputName != null) {
             blk.inputName = inputName;
           }
           if (inputType != null) {
@@ -486,9 +604,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             }
           }
           if (idx != null) {
-            const oldIdx : number = blk.inputIdx;
+            const oldIdx: number = blk.inputIdx;
             blk.inputIdx = idx;
-            const blkToSwap : InputBlockDS | undefined = inputBlkIdxMap.get(idx);
+            const blkToSwap: InputBlockDS | undefined = inputBlkIdxMap.get(idx);
             if (blkToSwap != undefined) {
               blkToSwap.inputIdx = oldIdx;
               inputBlkIdxMap.set(oldIdx, blkToSwap);
@@ -508,48 +626,48 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     }, [inputBlocks, inputBlkIdxMap, arrows])
 
-    const updateInputBlkLoc = useCallback(
-      (blkId: number, newLocation: [number, number]) => {
+  const updateInputBlkLoc = useCallback(
+    (blkId: number, newLocation: [number, number]) => {
 
-        console.log("block location in func builder: ", newLocation);
+      console.log("block location in func builder: ", newLocation);
 
-        // Map over the outputBlocks array and update the specified block's location
-        const updatedBlocks: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS) => {
-          if (blk.blockId === blkId) {
-            // Update the block's location
-            blk.blockLocation = newLocation;
-          }
-          return blk;
-        });
+      // Map over the outputBlocks array and update the specified block's location
+      const updatedBlocks: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS) => {
+        if (blk.blockId === blkId) {
+          // Update the block's location
+          blk.blockLocation = newLocation;
+        }
+        return blk;
+      });
 
-        // Update the state with the modified outputBlocks array
-        setInputBlocks(updatedBlocks);
-      },
-      [inputBlocks] // Include dependencies if needed
-    );
+      // Update the state with the modified outputBlocks array
+      setInputBlocks(updatedBlocks);
+    },
+    [inputBlocks] // Include dependencies if needed
+  );
 
   /**
    * Output block logics
    */
-  const addOutputBlock = useCallback((outputName: string, outputType: data_types) => {
+  const addOutputBlock = useCallback((outputName: string, outputType: data_types, outputBlkLoc: [number, number]) => {
     const newId = currOutputBlockId + 1;
     const newIdx = outputBlkIdxMap.size + 1;
     setCurrOutputBlockId(newId);
 
-    const newBlock : OutputBlockDS = {
+    const newBlock: OutputBlockDS = {
       blockId: newId,
       outputName: outputName,
       outputType: outputType,
       outputIdx: newIdx,
       val: 0,
-      blockLocation: [0,0]
+      blockLocation: outputBlkLoc
     }
 
     setOutputBlocks(outputBlks => [...outputBlks, newBlock]);
 
-    setBlkMap(blkMap => {blkMap.set(newId, newBlock); return new Map(blkMap)});
+    setBlkMap(blkMap => { blkMap.set(newId, newBlock); return new Map(blkMap) });
 
-    setOutputBlkIdxMap(outputBlkIdxMap => {outputBlkIdxMap.set(newIdx, newBlock); return new Map(outputBlkIdxMap)});
+    setOutputBlkIdxMap(outputBlkIdxMap => { outputBlkIdxMap.set(newIdx, newBlock); return new Map(outputBlkIdxMap) });
 
     if (config.debug_mode_FuncBuilder == 1) {
       console.log('Add output block. Output blk idx map', outputBlkIdxMap);
@@ -559,8 +677,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const removeOutputBlock = useCallback((blkId: number) => {
 
     const arrowNames: string[] = [];
-    for(let i = 0; i < arrows.length; i++) {
-      if(arrows[i].end.indexOf(blkId.toString() + "i1") == 0)
+    for (let i = 0; i < arrows.length; i++) {
+      if (arrows[i].end.indexOf(blkId.toString() + "i1") == 0)
         arrowNames.push(arrows[i].end);
     }
     console.log(arrowNames);
@@ -568,11 +686,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     setOutputBlocks(outputBlks => outputBlks.filter((blk) => {
       return blk.blockId != blkId
-    })) ;
+    }));
 
-    setBlkMap(blkMap => {blkMap.delete(blkId); return new Map<number, blk>(blkMap)});
+    setBlkMap(blkMap => { blkMap.delete(blkId); return new Map<number, blk>(blkMap) });
     // Make all blks with larger indices than the removed blk index--
-    let flag : boolean = false;
+    let flag: boolean = false;
     for (const [blkIdx, blk] of outputBlkIdxMap) {
       if (flag) {
         outputBlkIdxMap.set(blkIdx - 1, blk);
@@ -617,9 +735,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             blk.outputType = outputType;
           }
           if (idx != null) {
-            const oldIdx : number = blk.outputIdx;
+            const oldIdx: number = blk.outputIdx;
             blk.outputIdx = idx;
-            const blkToSwap : OutputBlockDS | undefined = outputBlkIdxMap.get(idx);
+            const blkToSwap: OutputBlockDS | undefined = outputBlkIdxMap.get(idx);
             if (blkToSwap != undefined) {
               blkToSwap.outputIdx = oldIdx;
               outputBlkIdxMap.set(oldIdx, blkToSwap);
@@ -638,25 +756,25 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       }
     }, [outputBlocks, outputBlkIdxMap])
 
-    const updateOutputBlkLoc = useCallback(
-      (blkId: number, newLocation: [number, number]) => {
+  const updateOutputBlkLoc = useCallback(
+    (blkId: number, newLocation: [number, number]) => {
 
-        console.log("output block location in func builder: ", newLocation);
+      console.log("output block location in func builder: ", newLocation);
 
-        // Map over the outputBlocks array and update the specified block's location
-        const updatedBlocks: OutputBlockDS[] = outputBlocks.map((blk: OutputBlockDS) => {
-          if (blk.blockId === blkId) {
-            // Update the block's location
-            blk.blockLocation = newLocation;
-          }
-          return blk;
-        });
+      // Map over the outputBlocks array and update the specified block's location
+      const updatedBlocks: OutputBlockDS[] = outputBlocks.map((blk: OutputBlockDS) => {
+        if (blk.blockId === blkId) {
+          // Update the block's location
+          blk.blockLocation = newLocation;
+        }
+        return blk;
+      });
 
-        // Update the state with the modified outputBlocks array
-        setOutputBlocks(updatedBlocks);
-      },
-      [outputBlocks] // Include dependencies if needed
-    );
+      // Update the state with the modified outputBlocks array
+      setOutputBlocks(updatedBlocks);
+    },
+    [outputBlocks] // Include dependencies if needed
+  );
 
 
   /**
@@ -666,9 +784,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const addFuncBlock = useCallback((funcId: string, funcType: FuncType) => {
     const newId = currFunctionBlockId + 1;
     setCurrFunctionBlockId(newId);
-    
-    let f : builtin_function | CustomFunctionDBRecord | undefined = undefined;
-    let customFuncBody : any = undefined;
+
+    let f: builtin_function | CustomFunctionDBRecord | undefined = undefined;
+    let customFuncBody: any = undefined;
     if (funcType == FuncType.builtin) {
       f = id_to_builtin_func[funcId];
     } else if (funcType == FuncType.custom) {
@@ -681,7 +799,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     const isBuiltin = funcType == FuncType.builtin;
 
-    const newBlock : FuncBlockDS = {
+    const newBlock: FuncBlockDS = {
       blockId: newId,
       funcType: funcType,
       funcId: funcId,
@@ -695,7 +813,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     setFuncBlocks(funcBlks => [...funcBlks, newBlock])
 
-    setBlkMap(blkMap => {blkMap.set(newId, newBlock); return new Map(blkMap)});
+    setBlkMap(blkMap => { blkMap.set(newId, newBlock); return new Map(blkMap) });
 
   }, [currFunctionBlockId])
 
@@ -709,19 +827,19 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     // console.log(arrows[2].start);
     // console.log(arrows[2].end);
     // console.log(blkId.toString() + "i");
-    
-//     const arrowNames: string[] = [];
-//     for(let i = 0; i < arrows.length; i++) {
-//       if(arrows[i].end.indexOf(blkId.toString() + "i") == 0)
-//         arrowNames.push(arrows[i].end);
-//       if(arrows[i].start.indexOf(blkId.toString() + "o") == 0)
-//         arrowNames.push(arrows[i].end);
-//     }
-//     console.log(arrowNames);
-//     const values = arrows.forEach((arrow) => {return arrow.start + " " + arrow.end});
-//     console.log(blkId + " " + values);
-//     removeArrow(arrowNames);
-    
+
+    //     const arrowNames: string[] = [];
+    //     for(let i = 0; i < arrows.length; i++) {
+    //       if(arrows[i].end.indexOf(blkId.toString() + "i") == 0)
+    //         arrowNames.push(arrows[i].end);
+    //       if(arrows[i].start.indexOf(blkId.toString() + "o") == 0)
+    //         arrowNames.push(arrows[i].end);
+    //     }
+    //     console.log(arrowNames);
+    //     const values = arrows.forEach((arrow) => {return arrow.start + " " + arrow.end});
+    //     console.log(blkId + " " + values);
+    //     removeArrow(arrowNames);
+
     setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
       return blk.blockId != blkId;
     }));
@@ -761,7 +879,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       if (f == undefined) {
         throw new Error(`Bad custom function id ${funcId}`);
       }
-      const customFuncBody : any = JSON.parse(f.rawJson);
+      const customFuncBody: any = JSON.parse(f.rawJson);
       console.log(customFuncBody)
       if (customFuncBody.type == undefined) { // the function has not been constructed
         // do nothing 
@@ -770,8 +888,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         blk.funcName = f.name;
         blk.paramTypes = [];
         blk.paramNames = [];
-        blk.outputTypes =[];
-        blk.outputNames =[];
+        blk.outputTypes = [];
+        blk.outputNames = [];
       } else {
         blk.funcId = funcId;
         blk.funcType = FuncType.custom;
@@ -781,13 +899,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         blk.outputTypes = customFuncBody.outputTypes;
         blk.outputNames = customFuncBody.outputNames;
       }
-      
+
     }
 
   }
   const editFuncBlock = useCallback((
-    blkId: number, 
-    funcType: FuncType | null, 
+    blkId: number,
+    funcType: FuncType | null,
     funcId: string | null
   ) => {
     if (config.debug_mode_FuncBuilder == 1) {
@@ -803,11 +921,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           if (funcType == FuncType.builtin) {
             setFuncBlockFunction(blk, '101'); //default to 101 (add)
           } else if (funcType == FuncType.custom) {
-            const f : CustomFunctionDBRecord = customFunctions.values().next().value;
+            const f: CustomFunctionDBRecord = customFunctions.values().next().value;
             setFuncBlockFunction(blk, f.id);
           }
         }
-        
+
         for (const arrow of arrows) {
           if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
             updateOutputBlkType(arrow);
@@ -842,7 +960,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     },
     [funcBlocks] // Include dependencies if needed
   );
-  
+
   interface funcInfo {
     id: string;
     name: string;
@@ -875,13 +993,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [inputBlocks, funcBlocks, outputBlocks])
 
   const builtinFuncOptions: funcInfo[] = Object.entries(id_to_builtin_func).map(
-    ([funcId, funcBody] : [string, builtin_function]) => {
-    return {id: funcId, name: funcBody.func_name};
-  })
+    ([funcId, funcBody]: [string, builtin_function]) => {
+      return { id: funcId, name: funcBody.func_name };
+    })
 
   const customFuncOptions: funcInfo[] = Array.from(customFunctions.values()).map(
-    (f : CustomFunctionDBRecord) => {
-      return {id: f.id, name: f.name}
+    (f: CustomFunctionDBRecord) => {
+      return { id: f.id, name: f.name }
     }
   )
 
@@ -899,7 +1017,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('tmp', inputBlocks);
   }, [inputBlocks, setInputBlocks])
 
- 
+
   // let inputListCount: number = 0;
   // const [inputStore, setInputStore] = useState<data_types[]>([]);
   const INVALUECAP = 20;
@@ -925,19 +1043,20 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         </>
       );
     }
+
     return (
       <>
         <h3>{blk.inputName}</h3>
-        <NumberInput handleStateChange={changeInput} ind={blk.inputIdx} inValue={0} inputId={blk.blockId}/>
+        <NumberInput handleStateChange={changeInput} ind={blk.inputIdx} inValue={0} inputId={blk.blockId} />
       </>
     );
   }))}, [inputBlocks])
 
 
 
-  
+
   let outputListCount: number = 0;
-  const outputList : any[] = [];
+  const outputList: any[] = [];
   for (const [outputIdx, outputObj] of evalResult) {
     let data = [{
       x: 0,
@@ -955,10 +1074,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         <>
           <h3>{outputObj.name}</h3>
           <XYPlot
-              width={200}
-              height={200}
-              xDomain={[0,5.5]}
-              yDomain={[0,20]}
+            width={200}
+            height={200}
+            xDomain={[0, 5.5]}
+            yDomain={[0, 20]}
           >
               <HorizontalGridLines />
               <VerticalBarSeries data={data} barWidth={0.2}/>
@@ -973,7 +1092,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   // const outputList = Object.entries(evalResult).map(([outputIdx, outputObj]) => {
   //   console.log(outputIdx, outputObj)
   //   outputListCount += 1
-    
+
   //   return (
   //     <>
   //       <h3>{outputObj.name}</h3>
@@ -987,7 +1106,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //           <VerticalBarSeries data={data} barWidth={0}/>
   //           <XAxis />
   //           <YAxis />
-          
+
   //         </XYPlot>
   //     </>
   //   );
@@ -1021,39 +1140,39 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     )
   })
 
-//   const outputList = outputBlocks.map((blk: OutputBlockDS) => {
-//     outputListCount += 1
-//     let data: Pair[] = []
-//     //console.log(outputStore.length);
-//     if(outputStore.length > 0 && outputStore[0] != undefined) {
-//       data = [{x: 0, y: outputStore[0].get(blk.blockId - 2000)?.value as number}]
-//       console.log(blk.blockId);
-//       console.log(outputStore[0].get(1));
-//     }
-//     // if(outputStore.length < outputListCount)
-//     //   setOutputStore([...outputStore, ])
-//     return (
-//       <>
-//         <h3>{blk.outputName}</h3>
-//         <XYPlot
-//             width={200}
-//             height={200}
-//             xDomain={[0,5.5]}
-//             yDomain={[0,20]}>
-//             <HorizontalGridLines />
-//             <VerticalBarSeries 
-//               data={data}
-//               barWidth={0.2} />
-//             {/*Qingyuan needs to generate the data and place it in here as the comment has it
-//               // data={op[0].map(([index, value], k) => (
-//               //   {x: index, y: value}
-//     // ))} barWidth={0.2} />*/}
-//             <XAxis />
-//             <YAxis />
-//           </XYPlot>
-//       </>
-//     );
-//   })
+  //   const outputList = outputBlocks.map((blk: OutputBlockDS) => {
+  //     outputListCount += 1
+  //     let data: Pair[] = []
+  //     //console.log(outputStore.length);
+  //     if(outputStore.length > 0 && outputStore[0] != undefined) {
+  //       data = [{x: 0, y: outputStore[0].get(blk.blockId - 2000)?.value as number}]
+  //       console.log(blk.blockId);
+  //       console.log(outputStore[0].get(1));
+  //     }
+  //     // if(outputStore.length < outputListCount)
+  //     //   setOutputStore([...outputStore, ])
+  //     return (
+  //       <>
+  //         <h3>{blk.outputName}</h3>
+  //         <XYPlot
+  //             width={200}
+  //             height={200}
+  //             xDomain={[0,5.5]}
+  //             yDomain={[0,20]}>
+  //             <HorizontalGridLines />
+  //             <VerticalBarSeries 
+  //               data={data}
+  //               barWidth={0.2} />
+  //             {/*Qingyuan needs to generate the data and place it in here as the comment has it
+  //               // data={op[0].map(([index, value], k) => (
+  //               //   {x: index, y: value}
+  //     // ))} barWidth={0.2} />*/}
+  //             <XAxis />
+  //             <YAxis />
+  //           </XYPlot>
+  //       </>
+  //     );
+  //   })
 
   const funcBlocksList = funcBlocks.map((blk: FuncBlockDS) => {
     const element = (
@@ -1088,7 +1207,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         setArrows={setArrows}
       />
     );
-    
+
   })
 
   const outputBlocksList = outputBlocks.map((blk: OutputBlockDS) => {
@@ -1123,7 +1242,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
 
   return (
-      <>
         <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
                         defaultAttr={["new input", data_types.dt_number]}/>
         <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101', FuncType.builtin]}/>

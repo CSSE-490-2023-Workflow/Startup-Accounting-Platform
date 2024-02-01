@@ -36,7 +36,7 @@ interface InputProps {
 }
 
 function InputBlock(props: InputProps) {
-  const [ inputId, inputName, inputType, typeOptions, [inputIdx, maxIdx], blockLoc, editCB, removeCB , setArrows, updateLoc] = [
+  const [ inputId, inputName, inputType, typeOptions, [inputIdx, maxIdx], blockLoc = [0,0], editCB, removeCB , setArrows, updateLoc] = [
     props.blockId, 
     props.inputName, 
     props.inputType, 
@@ -475,6 +475,7 @@ function InputBlock(props: InputProps) {
     {outputNodes}
     {sideMenus}
     </div>
+
     </>
     
   );
