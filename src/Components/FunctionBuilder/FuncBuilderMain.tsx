@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
-import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series} from '../../engine/datatype_def'
+import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series } from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
@@ -14,8 +14,8 @@ import Xarrow from 'react-xarrows';
 import NumberInput from '../NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
-import {Button} from "@mantine/core";
-import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Functions' 
+import { Button } from "@mantine/core";
+import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Functions'
 import SeriesInput from '../SeriesInput';
 import { MyDraggable } from './MyDraggable';
 
@@ -111,6 +111,7 @@ interface JSONBuiltinFunction {
   type: string;
   useOutput: number;
   functionName: string;
+  functionId: number;
   paramNames: string[];
   paramTypes: number[];
   outputNames: string[];
@@ -129,6 +130,7 @@ interface JSONOutput {
 }
 
 interface JSONCustomFunction {
+  functionId: number;
   type: string;
   paramNames: string[];
   paramTypes: number[];
@@ -224,7 +226,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     return param && param.type === "input";
   }
 
-  const testLoadFunctions = () => {
+  const testLoadFunctions = useCallback(() => {
     if (currentUser) {
       database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
         let currFunc: CustomFunctionDBRecord;
@@ -250,6 +252,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
                 const param = output.params;
                 if (isBuiltinFunction(param[0])) {
                   console.log(param);
+                  addFuncBlock((param[0].functionId).toString(), param[0].type == "builtin_function"? 1:0, param[0].funcBlkLoc);
 
                   for (const input of (param[0] as JSONBuiltinFunction).params) {
                     console.log(input.inputName);
@@ -270,7 +273,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         })
       });
     }
-  }
+  }, [currentUser, inputBlkIdxMap, outputBlkIdxMap])
 
 
   const addArrow = useCallback((v: StartAndEnd) => {
@@ -359,7 +362,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         const startBlk: InputBlockDS = blkMap.get(startBlkId) as InputBlockDS;
         editOutputBlock(endBlkId, null, startBlk.inputType, null);
       } else if (isFuncBlock(startBlkId)) { //start block is a function block
-        const startBlk : FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
+        const startBlk: FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
         // editOutputBlock(endBlkId, null, startBlk.outputTypes[startNodeIdx - 1], null); // change from 1-based to 0-based indexing
       }
     }
@@ -453,7 +456,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
      * tail block  ------>   head block
      */
     // which output of the tail block to use
-    const tailBlkOutputIdx : number | undefined = Number(arrow.start.split('o')[1]);
+    const tailBlkOutputIdx: number | undefined = Number(arrow.start.split('o')[1]);
 
     if (tailBlk == undefined) {
       throw new Error(`Arrow tail does not exist: ${arrow.start} to ${arrow.end}`);
@@ -467,34 +470,36 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         inputBlkLoc: tailBlk.blockLocation
       }
     } if ('funcType' in tailBlk) { //func block
-      const params : any[] = [];
-      for (const i of [...Array(tailBlk.paramNames.length).keys()].map(e => e+1)) { //for i in [1, 2, ..., # of params]
+      const params: any[] = [];
+      for (const i of [...Array(tailBlk.paramNames.length).keys()].map(e => e + 1)) { //for i in [1, 2, ..., # of params]
         params.push(tracePath(tailBlk.blockId.toString() + 'i' + i.toString()))
       }
       //console.log('params', params);
       if (tailBlk.funcType == FuncType.builtin) {
         return {
-          type : 'builtin_function',
-          useOutput : tailBlkOutputIdx,
-          functionName : tailBlk.funcName,
+          type: 'builtin_function',
+          useOutput: tailBlkOutputIdx,
+          functionName: tailBlk.funcName,
           functionId: tailBlk.funcId,
-          paramNames : tailBlk.paramNames,
-          paramTypes : tailBlk.paramTypes,
-          outputNames : tailBlk.outputNames,
-          outputTypes : tailBlk.outputTypes,
+          paramNames: tailBlk.paramNames,
+          paramTypes: tailBlk.paramTypes,
+          outputNames: tailBlk.outputNames,
+          outputTypes: tailBlk.outputTypes,
           funcBlkLoc: tailBlk.blockLocation,
-          params : params
+          params: params
         }
       } else { // custom
         if (customFunctions.get(tailBlk.funcId) == undefined) {
           throw new Error(`Custom function cannot be found ${tailBlk.funcId}`)
         } else {
           return {
-            type : 'custom_function_call',
-            useOutput : tailBlkOutputIdx,
+            type: 'custom_function_call',
+            functionId: tailBlk.funcId,
+            useOutput: tailBlkOutputIdx,
             paramNames: tailBlk.paramNames,
             paramTypes: tailBlk.paramTypes,
             params: params,
+            blockLocation: tailBlk.blockLocation,
             body: (customFunctions.get(tailBlk.funcId) as CustomFunctionDBRecord).rawJson
           }
         }
@@ -510,8 +515,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const addInputBlock = useCallback((inputName: string, inputType: data_types, inputBlkLoc: [number, number]) => {
     const newId = currInputBlockId + 1;
     const newIdx = inputBlkIdxMap.size + 1;
+    console.log("index", inputBlkIdxMap);
     setCurrInputBlockId(id => id + 1);
-    const newBlock : InputBlockDS = {
+    const newBlock: InputBlockDS = {
       blockId: newId,
       inputName: inputName,
       inputType: inputType,
@@ -520,7 +526,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       blockLocation: inputBlkLoc
     }
 
-    setInputBlocks(inputBlocks => {console.log('in', newBlock); return [...inputBlocks, newBlock]})
+    setInputBlocks(inputBlocks => { console.log('in', newBlock); return [...inputBlocks, newBlock] })
 
     setBlkMap(blkMap => { blkMap.set(newId, newBlock); return new Map(blkMap) });
 
@@ -589,9 +595,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           }
           if (inputType != null) {
             blk.inputType = inputType;
-            if(inputType == data_types.dt_series) {
+            if (inputType == data_types.dt_series) {
               const temp = [];
-              for(let i = 0; i < INVALUECAP; i++) {
+              for (let i = 0; i < INVALUECAP; i++) {
                 temp.push(0)
               }
               blk.val = temp;
@@ -781,13 +787,14 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
    * Function block logics
    */
   //right now this is hard-coded for built-in functions only
-  const addFuncBlock = useCallback((funcId: string, funcType: FuncType) => {
+  const addFuncBlock = useCallback((funcId: string, funcType: FuncType, funcBlkLoc: [number, number]) => {
     const newId = currFunctionBlockId + 1;
     setCurrFunctionBlockId(newId);
 
     let f: builtin_function | CustomFunctionDBRecord | undefined = undefined;
     let customFuncBody: any = undefined;
     if (funcType == FuncType.builtin) {
+      console.log("typr", funcType, "id", funcId);
       f = id_to_builtin_func[funcId];
     } else if (funcType == FuncType.custom) {
       f = customFunctions.get(funcId);
@@ -808,7 +815,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       paramNames: isBuiltin ? (f as builtin_function).param_names : customFuncBody.paramNames,
       outputTypes: isBuiltin ? (f as builtin_function).output_types : customFuncBody.outputTypes,
       outputNames: isBuiltin ? (f as builtin_function).output_names : customFuncBody.outputNames,
-      blockLocation: [0, 0]
+      blockLocation: funcBlkLoc
     }
 
     setFuncBlocks(funcBlks => [...funcBlks, newBlock])
@@ -990,7 +997,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
         setOutputBlocks(blks => [...blks])
       }
-  }, [inputBlocks, funcBlocks, outputBlocks])
+    }, [inputBlocks, funcBlocks, outputBlocks])
 
   const builtinFuncOptions: funcInfo[] = Object.entries(id_to_builtin_func).map(
     ([funcId, funcBody]: [string, builtin_function]) => {
@@ -1006,8 +1013,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const changeInput = useCallback((inputId: number, newValue: allowed_stack_components) => {
     console.log('in changeInput, blks are ', inputBlocks, newValue);
     const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS, index: number) => {
-      console.log('in changeInput',index, blk, newValue);
-      if (blk.blockId == inputId+1000) {
+      console.log('in changeInput', index, blk, newValue);
+      if (blk.blockId == inputId + 1000) {
         blk.val = newValue;
       }
       console.log(blk.val);
@@ -1024,33 +1031,34 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [fullInputBlocks, setFullInputBlocks] = useState<React.JSX.Element[]>([]);
   useEffect(() => {
     console.log("also called");
-  setFullInputBlocks(inputBlocks.map((blk: InputBlockDS) => {
-  //   inputListCount += 1
-  //   if(inputStore.length < inputListCount) {
-  //     setInputStore((inputStore) => [...inputStore, 0])
-  //   }
-    console.log("called", inputBlocks);
-    if(blk.inputType === data_types.dt_series) {
-      // const temp = []
-      // for(let i = 0; i < INVALUECAP; i++) {
-      //   temp.push(0)
-      // }
-      console.log(blk.val);
+    setFullInputBlocks(inputBlocks.map((blk: InputBlockDS) => {
+      //   inputListCount += 1
+      //   if(inputStore.length < inputListCount) {
+      //     setInputStore((inputStore) => [...inputStore, 0])
+      //   }
+      console.log("called", inputBlocks);
+      if (blk.inputType === data_types.dt_series) {
+        // const temp = []
+        // for(let i = 0; i < INVALUECAP; i++) {
+        //   temp.push(0)
+        // }
+        console.log(blk.val);
+        return (
+          <>
+            <h3>{blk.inputName}</h3>
+            <SeriesInput handleStateChange={changeInput} ind={blk.inputIdx} inValues={blk.val as series} inputValueCap={INVALUECAP} />
+          </>
+        );
+      }
+
       return (
         <>
           <h3>{blk.inputName}</h3>
-          <SeriesInput handleStateChange={changeInput} ind={blk.inputIdx} inValues={blk.val as series} inputValueCap={INVALUECAP}/>
+          <NumberInput handleStateChange={changeInput} ind={blk.inputIdx} inValue={0} inputId={blk.blockId} />
         </>
       );
-    }
-
-    return (
-      <>
-        <h3>{blk.inputName}</h3>
-        <NumberInput handleStateChange={changeInput} ind={blk.inputIdx} inValue={0} inputId={blk.blockId} />
-      </>
-    );
-  }))}, [inputBlocks])
+    }))
+  }, [inputBlocks])
 
 
 
@@ -1062,10 +1070,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       x: 0,
       y: outputObj.value as number
     }]
-    if((typeof outputObj.value) !== "number") {
+    if ((typeof outputObj.value) !== "number") {
       data = []
-      for(let i = 0; i < (outputObj.value as series).length; i++) {
-        data.push({x: i, y: (outputObj.value as series)[i] as number})
+      for (let i = 0; i < (outputObj.value as series).length; i++) {
+        data.push({ x: i, y: (outputObj.value as series)[i] as number })
       }
     }
     console.log(data)
@@ -1079,12 +1087,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             xDomain={[0, 5.5]}
             yDomain={[0, 20]}
           >
-              <HorizontalGridLines />
-              <VerticalBarSeries data={data} barWidth={0.2}/>
-              <XAxis />
-              <YAxis />
-            
-            </XYPlot>
+            <HorizontalGridLines />
+            <VerticalBarSeries data={data} barWidth={0.2} />
+            <XAxis />
+            <YAxis />
+
+          </XYPlot>
         </>
       )
     )
@@ -1115,9 +1123,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
     const element = (
       <InputBlock
-        blockId={blk.blockId} 
-        inputName={blk.inputName} 
-        inputType={blk.inputType} 
+        blockId={blk.blockId}
+        inputName={blk.inputName}
+        inputType={blk.inputType}
         inputTypeOptions={data_type_enum_name_pairs}
         inputIdx={[blk.inputIdx, inputBlkIdxMap.size]}
         blockLocation={blk.blockLocation}
@@ -1241,29 +1249,29 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   })
 
 
-  return (
-        <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
-                        defaultAttr={["new input", data_types.dt_number]}/>
-        <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101', FuncType.builtin]}/>
-        <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined]}/>
-        <Button id='save-custom-function' variant='default' onClick={() => {saveFunction()}}>Save</Button>
-        <Button id='eval-custom-function' variant='default' onClick={() => {evaluateFunction()}}>Evaluate</Button>
-        <h3>Function Builder</h3>
-        <div style={{display: "flex"}}>
-          {fullInputBlocks}
-        </div>
-        {inputBlocksList}
-        {funcBlocksList}
-        {outputBlocksList}
-        {arrows.map(ar => (
-            <Xarrow
-                start={ar.start}
-                end={ar.end}
-                key={ar.start + "-." + ar.start}
-            />
-        ))}
-        {outputList}
-      </>
+  return (<>
+    <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
+      defaultAttr={["new input", data_types.dt_number, [200,200]]} />
+    <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101', FuncType.builtin, [200,200]]} />
+    <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined, [200,200]]} />
+    <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
+    <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
+    <h3>Function Builder</h3>
+    <div style={{ display: "flex" }}>
+      {fullInputBlocks}
+    </div>
+    {inputBlocksList}
+    {funcBlocksList}
+    {outputBlocksList}
+    {arrows.map(ar => (
+      <Xarrow
+        start={ar.start}
+        end={ar.end}
+        key={ar.start + "-." + ar.start}
+      />
+    ))}
+    {outputList}
+  </>
   );
 }
 
