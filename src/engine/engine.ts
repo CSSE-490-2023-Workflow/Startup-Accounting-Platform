@@ -138,15 +138,28 @@ const func_interpreter_new : any = function(func_str: string, ret: Map<number, i
         let counter : number = 1;
         for (const func_param of func_content['outputs']) {
             const eval_res : any = func_interpreter_new(JSON.stringify(func_param), ret, args);
-            console.log(`evalution of output no.${counter} finished. Got `, eval_res);
+            console.log(`evaluation of output no.${counter} finished. Got `, eval_res);
         }
         if (Number.isInteger(func_content['useOutput'])) {
-            return ret_arr[func_content['useOutput']];
+            try {
+                return ret_arr[func_content['useOutput']];
+            } ex
+            
         } else if (func_content['useOutput'] = 'all') {
             return ret_arr;
         } else {
             throw new Error('useOutput should either be the index of the output to use, or \'all\' to use all outputs');
         }
+    } else if (func_content['type'] == 'custom_function_call') {
+        const paramDict : Map<number, ioObj> = new Map();
+        let counter : number = 0;
+        for (const param of func_content.params) {
+            const paramValue : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), ret, args);
+            paramDict.set(counter + 1, {name : func_content.paramNames[counter], value : paramValue});
+        } 
+        const outputDict : Map<number, ioObj> = func_interpreter_new(func_content.body, paramDict);
+        
+
     } else if (func_content['type'] == 'output') {
         const outputEvalRes : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), ret, args);
         ret.set(func_content['outputIdx'], { name: func_content['outputName'], value: outputEvalRes });

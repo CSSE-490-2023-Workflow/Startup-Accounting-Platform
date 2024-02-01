@@ -362,7 +362,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             paramNames: tailBlk.paramNames,
             paramTypes: tailBlk.paramTypes,
             params: params,
-            outputs: customFunctions.get(tailBlk.funcId) == undefined ? undefined : customFunctions.get(tailBlk.funcId)?.rawJson
+            body: customFunctions.get(tailBlk.funcId)?.rawJson
           }
         }
       }
