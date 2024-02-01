@@ -34,7 +34,7 @@ interface OutProps {
 }
 
 function OutputBlock(props: OutProps) {
-  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc, editCB, removeCB, addArrow, setArrows, removeArrow, updateLoc] = [
+  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc = [0,0], editCB, removeCB, addArrow, setArrows, removeArrow, updateLoc] = [
     props.blockId, 
     props.outputName, 
     props.outputType,
@@ -347,6 +347,7 @@ function OutputBlock(props: OutProps) {
 
   return (
     <>
+    <div style={{ position: 'absolute', top: blockLoc[1], left: blockLoc[0]}}>
      <Draggable
         ref={dragRef}
         onDrag = {(e: DraggableEvent, data) => {
@@ -439,6 +440,7 @@ function OutputBlock(props: OutProps) {
     {sideMenus}
     </div>
     </Draggable>
+    </div>
     </>
   );
 }

@@ -97,7 +97,7 @@ interface JSONInput {
   inputName: string;
   inputType: number;
   inputIdx: number;
-  inputBlkLoc: number[];
+  inputBlkLoc: [number, number];
 }
 
 interface JSONBuiltinFunction {
@@ -108,7 +108,7 @@ interface JSONBuiltinFunction {
   paramTypes: number[];
   outputNames: string[];
   outputTypes: number[];
-  funcBlkLoc: number[];
+  funcBlkLoc: [number, number];
   params: JSONInput[];
 }
 
@@ -117,7 +117,7 @@ interface JSONOutput {
   outputName: string;
   outputType: number;
   outputIdx: number;
-  outputBlkLoc: number[];
+  outputBlkLoc: [number, number];
   params: JSONInput[];
 }
 
@@ -205,7 +205,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
         let currFunc: CustomFunctionDBRecord;
         let json: string = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
-        console.log("json", json);
         functionsFromDb.forEach(functionData => {
           if (functionData.id == props.functionId) {
             currFunc = functionData;
@@ -219,7 +218,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             const outputs: JSONOutput[] = data.outputs;
             for (const output of outputs) {
               console.log(output.outputName);
-              addOutputBlock(output.outputName, output.outputType);
+              addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc);
             }
           }
         })
@@ -576,7 +575,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   /**
    * Output block logics
    */
-  const addOutputBlock = useCallback((outputName: string, outputType: data_types) => {
+  const addOutputBlock = useCallback((outputName: string, outputType: data_types, outputBlkLoc: [number, number]) => {
     const newId = currOutputBlockId + 1;
     const newIdx = outputBlkIdxMap.size + 1;
     setCurrOutputBlockId(newId);
@@ -587,7 +586,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       outputType: outputType,
       outputIdx: newIdx,
       val: 0,
-      blockLocation: [0, 0]
+      blockLocation: outputBlkLoc
     }
 
     setOutputBlocks(outputBlks => [...outputBlks, newBlock]);
