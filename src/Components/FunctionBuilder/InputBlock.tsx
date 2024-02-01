@@ -367,7 +367,7 @@ function InputBlock(props: InputProps) {
    */
   return (
     <>
-    <Draggable cancel='.connection-handle-icon'
+    {/* <Draggable cancel='.connection-handle-icon'
         ref={dragRef}
         onDrag={(e: DraggableEvent, data) => {
           const x: number =  data.x;
@@ -379,7 +379,7 @@ function InputBlock(props: InputProps) {
           updateLoc(inputId, newLocation);
           setArrows((arrows) => [...arrows]);
         }}
-      > 
+      >  */}
     <div className='block-container'>
     <Card className="input-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder styles={{
       root: {
@@ -467,7 +467,6 @@ function InputBlock(props: InputProps) {
     {outputNodes}
     {sideMenus}
     </div>
-    </Draggable>
     </>
     
   );

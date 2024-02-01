@@ -16,6 +16,7 @@ import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 're
 import { AuthContext, database } from "../../auth/firebase";
 import {Button} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Functions' 
+import { MyDraggable } from './MyDraggable';
 
 interface InputBlockDS {
   blockId: number
@@ -47,9 +48,9 @@ interface FuncBlockDS {
   funcType: FuncType
   funcName: string
   funcId: string
-  paramTypes: data_types[]
+  paramTypes: data_types[][]
   paramNames: string[]
-  outputTypes: data_types[]
+  outputTypes: data_types[][]
   outputNames: string[]
   blockLocation: [number, number]
 }
@@ -231,7 +232,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         editOutputBlock(endBlkId, null, startBlk.inputType, null);
       } else if (isFuncBlock(startBlkId)) { //start block is a function block
         const startBlk : FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
-        editOutputBlock(endBlkId, null, startBlk.outputTypes[startNodeIdx - 1], null); // change from 1-based to 0-based indexing
+        // editOutputBlock(endBlkId, null, startBlk.outputTypes[startNodeIdx - 1], null); // change from 1-based to 0-based indexing
       }
     }
   }, [blkMap])
@@ -243,8 +244,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     for (let inputBlk of inputBlocks) {
       paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
     }
-
-    const res: Map<number, ioObj> = func_interpreter_new_caller(JSON.stringify(savedFunction), paramMap)
+    console.log(`starting evaluation`)
+    for (const [i, v] of paramMap.entries()) {
+      console.log('param:', i, v.value)
+    }
+    console.log(savedFunction)
+    const res: Map<number, ioObj> = func_interpreter_new(JSON.stringify(savedFunction), paramMap)
     //setOutputMap(res);
     console.log('Evaluation completed. Outputs of the custom function are: ', res);
     setEvalResult(new Map(res));
@@ -320,7 +325,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
      * tail block  ------>   head block
      */
     // which output of the tail block to use
-    const tailBlkOutputIdx : number | undefined = Number(arrow.start.split('o')[1]) - 1;
+    const tailBlkOutputIdx : number | undefined = Number(arrow.start.split('o')[1]);
 
     if (tailBlk == undefined) {
       throw new Error(`Arrow tail does not exist: ${arrow.start} to ${arrow.end}`);
@@ -362,7 +367,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             paramNames: tailBlk.paramNames,
             paramTypes: tailBlk.paramTypes,
             params: params,
-            body: customFunctions.get(tailBlk.funcId)?.rawJson
+            body: (customFunctions.get(tailBlk.funcId) as CustomFunctionDBRecord).rawJson
           }
         }
       }
@@ -829,6 +834,33 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     name: string;
   }
 
+  const updateBlockLocation = useCallback(
+    (blkId: number, left: number, top: number) => {
+      if (isInputBlock(blkId)) {
+        for (const blk of inputBlocks) {
+          if (blk.blockId == blkId) {
+            blk.blockLocation = [left, top]
+          }
+        }
+        setInputBlocks(blks => [...blks])
+        console.log(inputBlocks)
+      } else if (isFuncBlock(blkId)) {
+        for (const blk of funcBlocks) {
+          if (blk.blockId == blkId) {
+            blk.blockLocation = [left, top]
+          }
+        }
+        setFuncBlocks(blks => [...blks])
+      } else if (isOutputBlock(blkId)) {
+        for (const blk of outputBlocks) {
+          if (blk.blockId == blkId) {
+            blk.blockLocation = [left, top]
+          }
+        }
+        setOutputBlocks(blks => [...blks])
+      }
+  }, [inputBlocks, funcBlocks, outputBlocks])
+
   const builtinFuncOptions: funcInfo[] = Object.entries(id_to_builtin_func).map(
     ([funcId, funcBody] : [string, builtin_function]) => {
     return {id: funcId, name: funcBody.func_name};
@@ -868,6 +900,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       </>
     );
   })
+
 
 
   
@@ -924,7 +957,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   // })
 
   const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
-    return (
+    const element = (
       <InputBlock 
         blockId={blk.blockId} 
         inputName={blk.inputName} 
@@ -936,6 +969,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         removeBlkCB={removeInputBlock}
         setArrows={setArrows}
         updateBlkLoc={updateInputBlkLoc}
+      />
+    )
+    return (
+      <MyDraggable
+        left={blk.blockLocation[0]}
+        top={blk.blockLocation[1]}
+        children={element}
+        updateLocationCB={updateBlockLocation}
+        id={blk.blockId}
       />
     )
   })

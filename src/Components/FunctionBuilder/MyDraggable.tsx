@@ -1,38 +1,37 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 export { MyDraggable };
 
+/**
+ * Credits: https://stackoverflow.com/questions/63862794/custom-draggable-component-too-slow-in-reactjs-when-using-onmousemove
+ * HoldOffHunger, joe
+ */
+
+
 function MyDraggable (props: any) {
-    const [styles, setStyles] = useState({});
+    const [styles, setStyles] = useState({left: props.left, top: props.top});
     const [diffPos, setDiffPos] = useState({ diffX: 0, diffY: 0 });
-    // const [isDragging, setIsDragging] = useState(false);
+    //const [isDragging, setIsDragging] = useState(false);
+    const updateLocation = props.updateLocationCB;
+    const id = props.id;
 
     const dragStart = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-      console.log(props.draggable);
-      // if (!props.draggable) {
-      //   return
-      // }
-      const boundingRect =
-          (e.currentTarget as HTMLElement).getBoundingClientRect();
-
+      const boundingRect = 
+        (e.currentTarget as HTMLElement).getBoundingClientRect();
       setDiffPos({
-          diffX: e.screenX - boundingRect.left,
-          diffY: e.screenY - boundingRect.top,
+        diffX: e.screenX - boundingRect.left,
+        diffY: e.screenY - boundingRect.top,
       });
-
     }
 
-    const dragEnd = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-      // if (!props.draggable) {
-      //   return
-      // }
-        const left = e.screenX - diffPos.diffX;
-        const top = e.screenY - diffPos.diffY;
-        console.log('top', top)
-        if (top > 100) {
-          setStyles({ left: left, top: top });
-        }
-    }
+    const dragEnd = useCallback((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+      const left = e.screenX - diffPos.diffX;
+      const top = e.screenY - diffPos.diffY;
+      if (top > 100) {
+        setStyles({ left: left, top: top });
+      }
+      updateLocation(id, left, top)
+    }, [diffPos])
 
     return (
         <div
