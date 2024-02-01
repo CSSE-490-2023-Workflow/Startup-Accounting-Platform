@@ -91,6 +91,18 @@ export function is_integer(val: any) {
     return Number.isInteger(Number(val));
 }
 
+export function is_series(val: any) {
+    if (!Array.isArray(val)) {
+        return false;
+    }
+    for (const e of val) {
+        if (!is_number(e)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 //export * from './datatype_def'
 
 export { data_types, declared_type_verifier }

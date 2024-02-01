@@ -69,11 +69,11 @@ function FuncBlock(props: FuncProps) {
 
   const dragRef = useRef<Draggable>(null);
   const boxRef = useRef<HTMLDivElement>(null);
-  const paramCount: number = paramTypes.length;
+  const paramCount: number = paramNames.length;
   const paramNodeInc: number = 100 / (paramCount + 1);
   const paramNodePos: string[] = [];
 
-  const outputCount: number = outputTypes.length;
+  const outputCount: number = outputNames.length;
   const outputNodeInc: number = 100 / (outputCount + 1);
   const outputNodePos: string[] = [];
 

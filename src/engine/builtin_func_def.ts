@@ -20,13 +20,14 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
             } else if (is_series(args[0]) && is_series(args[1])) {
                 const ser1 : series = args[0] as series;
                 const ser2 : series = args[1] as series;
+                const ser3 : series = []
                 if (ser1.length != ser2.length) {
                     throw new Error(`scalar_addition: input series must be the same length`)
                 }
                 for (let i = 0; i < ser1.length; i++) {
-                    ser1[i] += ser2[i];
+                    ser3[i] = ser1[i] + ser2[i];
                 }
-                return ser1;
+                return [ser3];
             } else {
                 throw new Error(`scalar_addition: unknown input types`)
             }

@@ -144,6 +144,8 @@ function InputBlock(props: InputProps) {
               className='connection-handle-wrapper'
               onMouseEnter={() => {setShowNodeName(true)}}
               onMouseLeave={() => {setShowNodeName(false)}}
+              onDragStart={(e) => {e.stopPropagation()}}
+              onDragEnd={(e) => {e.stopPropagation()}}
             >
               <div className='connection-handle connection-handle-out' id={handleId}>
               {faIcon}
@@ -177,6 +179,8 @@ function InputBlock(props: InputProps) {
                 let tmp = showSideMenu.map(e => false);
                 setShowSideMenu(tmp);
               }}
+              onDragStart={e => e.preventDefault()}
+              onDragEnd={e => e.preventDefault()}
               active
             />  
           </div>  

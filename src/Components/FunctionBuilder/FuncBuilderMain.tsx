@@ -210,6 +210,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     return blkId > 3000 && blkId < 4000;
   }
 
+  // useEffect(() => {
+  //   console.log('input blocks changing', inputBlocks)
+  // }, [inputBlocks])
+
   // Given an arrow leading to an output block
   // Updates the output block's type if needed
   // function updateOutputBlkType(arrow: StartAndEnd) {
@@ -398,26 +402,21 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       blockLocation: [0, 0]
     }
 
-    setInputBlocks(inputBlocks => [...inputBlocks, newBlock])
+    setInputBlocks(inputBlocks => {console.log('in', newBlock); return [...inputBlocks, newBlock]})
 
     setBlkMap(blkMap => {blkMap.set(newId, newBlock); return new Map(blkMap)});
 
     setInputBlkIdxMap(inputBlkIdxMap => {inputBlkIdxMap.set(newIdx, newBlock); return new Map(inputBlkIdxMap)});
 
     if (config.debug_mode_FuncBuilder == 1) {
-      console.log('Add input block. Input blk idx map', inputBlkIdxMap);
+      console.log('add input block. inputBlocks', inputBlocks);
+      console.log('add input block. block map', blkMap);
+      console.log('add input block. inputBlkIdxMap', inputBlkIdxMap);
     }
-  }, [inputBlkIdxMap, currInputBlockId])
+  }, [inputBlkIdxMap, currInputBlockId, blkMap])
 
   const removeInputBlock = useCallback((blkId: number) => {
-
-    const arrowNames: string[] = [];
-    for(let i = 0; i < arrows.length; i++) {
-      if(arrows[i].start.indexOf(blkId.toString() + "o1") == 0)
-        arrowNames.push(arrows[i].end);
-    }
-    console.log(arrowNames);
-    //removeArrow(arrowNames);
+    console.log('removing', blkId)
 
     setInputBlocks(inputBlocks => {
       return inputBlocks.filter((blk) => blk.blockId != blkId)
@@ -430,7 +429,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     let flag : boolean = false;
     for (const [blkIdx, blk] of inputBlkIdxMap) {
       if (flag) {
-        console.log('setting', blkIdx - 1, blk);
+        //console.log('setting', blkIdx - 1, blk);
         inputBlkIdxMap.set(blkIdx - 1, blk);
         blk.inputIdx = blk.inputIdx - 1;
       }
@@ -444,7 +443,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     removeArrowsAttachedToBlk(blkId);
 
     if (config.debug_mode_FuncBuilder == 1) {
-      console.log('remove intput block. Input blk idx map', inputBlkIdxMap);
+      console.log('remove intput block. inputBlocks', inputBlocks);
+      console.log('remove intput block. block map', blkMap);
+      console.log('remove intput block. inputBlkIdxMap', inputBlkIdxMap);
     }
 
   }, [arrows, inputBlkIdxMap])
@@ -895,7 +896,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log(blk.val);
       return blk;
     })
-    setInputBlocks([...inputBlocks]);
+    setInputBlocks(inputBlocks => [...inputBlocks]);
     console.log('tmp', inputBlocks);
   }, [inputBlocks, setInputBlocks])
 
@@ -995,7 +996,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
     const element = (
-      <InputBlock 
+      <InputBlock
         blockId={blk.blockId} 
         inputName={blk.inputName} 
         inputType={blk.inputType} 
@@ -1010,6 +1011,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     )
     return (
       <MyDraggable
+        key={blk.blockId}
         left={blk.blockLocation[0]}
         top={blk.blockLocation[1]}
         children={element}
@@ -1056,6 +1058,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const funcBlocksList = funcBlocks.map((blk: FuncBlockDS) => {
     return (
       <FuncBlock
+        key={blk.blockId}
         blockId={blk.blockId}
         funcType={blk.funcType}
         funcId={blk.funcId}
@@ -1066,12 +1069,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         outputTypes={blk.outputTypes}
         outputNames={blk.outputNames}
         blockLocation={blk.blockLocation}
+        updateBlkLoc={updateFuncBlkLoc}
         updateBlkCB={editFuncBlock}
         removeBlkCB={removeFuncBlock}
         addArrow={addArrow}
         setArrows={setArrows}
         removeArrow={removeArrow}
-        updateBlkLoc={updateFuncBlkLoc}
       />
     );
     
@@ -1080,6 +1083,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const outputBlocksList = outputBlocks.map((blk: OutputBlockDS) => {
     return (
       <OutputBlock
+        key={blk.blockId}
         blockId={blk.blockId}
         outputName={blk.outputName}
         outputType={blk.outputType}
