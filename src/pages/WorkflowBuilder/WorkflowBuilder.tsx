@@ -6,65 +6,51 @@ import React, {useEffect, useState} from "react";
 import {database} from "../../auth/firebase";
 import {useFocusWithin} from "@mantine/hooks";
 import Workspace from "../../Components/Workspace/Workspace";
+import {WorkflowData} from "../Workflow/Workflows";
 
-function WorkflowBuilder() {
+const WorkflowBuilder = () => {
     const { id } = useParams();
-    const [workflowData, setWorkflowData] = useState<object | null>(null)
-    const { ref: workflowNameRef, focused: workflowNameFocused } = useFocusWithin();
-    const [textboxText, setTextboxText] = useState<string | null>(null);
-
-    useEffect(() => {
-        if(!workflowNameFocused && textboxText) {
-            setWorkflowName(textboxText);
-        }
-    }, [workflowNameFocused]);
-
-    useEffect(() => {
-        console.log(workflowData);
-    }, [workflowData]);
+    const [workflowData, setWorkflowData] = useState<WorkflowData>();
+    const {ref: workflowNameRef, focused: workflowNameInputFocused} = useFocusWithin();
+    const [workflowNameInputText, setWorkflowNameInputText] = useState<string | null>(null);
 
     useEffect(() => {
         if(id) {
-            database.getWorkflow(id).then((workflow) => {
-                setWorkflowData(workflow);
+            database.subscribeToWorkflow(id, (workflowDataFromDB: WorkflowData) => {
+                setWorkflowData(workflowDataFromDB);
             });
         }
-    }, [id])
+    }, [id]);
 
-    const setWorkflowName = (name: string) => {
-        const workflowDataCopy = { ...workflowData };
-        // @ts-ignore
-        workflowDataCopy.name = name;
-        setWorkflowData(workflowDataCopy);
-    }
+    useEffect(() => {
+        if(!workflowNameInputFocused && workflowNameInputText && workflowData) {
+            database.updateWorkflow(workflowData.id, { name: workflowNameInputText });
+        }
+    }, [workflowNameInputFocused]);
 
-    if(!workflowData) {
-        return <LoadingOverlay visible={true} />
+    if(!id || !workflowData) {
+        return <LoadingOverlay />
     }
 
     return (
         <>
-            <header>
-                <Toolbar>
-                    <Button leftSection={<IconChevronLeft/>}>Save & Exit</Button>
-                    { /* @ts-ignore */ }
-                    <TextInput ref={workflowNameRef} defaultValue={workflowData.name}
-                        onChange={(event) => setTextboxText(event.currentTarget.value)}/>
-                    <Tooltip label="Add function">
-                        <ActionIcon size={'lg'} variant={'default'}>
-                            <IconLayoutGridAdd />
-                        </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Add model">
-                        <ActionIcon size={'lg'} variant={'default'}>
-                            <IconChartBar />
-                        </ActionIcon>
-                    </Tooltip>
-                </Toolbar>
-            </header>
+            <Toolbar>
+                <Button leftSection={<IconChevronLeft/>}>Save & Exit</Button>
+                { /* @ts-ignore */ }
+                <TextInput ref={workflowNameRef} defaultValue={workflowData.name}
+                    onChange={(event) => setWorkflowNameInputText(event.currentTarget.value)}/>
+                <Tooltip label="Add function">
+                    <ActionIcon size={'lg'} variant={'default'}>
+                        <IconLayoutGridAdd />
+                    </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Add model">
+                    <ActionIcon size={'lg'} variant={'default'}>
+                        <IconChartBar />
+                    </ActionIcon>
+                </Tooltip>
+            </Toolbar>
             <Workspace>
-                Workflow {id // @ts-ignore
-                } <br/> Name: {workflowData.name}
             </Workspace>
         </>
     );

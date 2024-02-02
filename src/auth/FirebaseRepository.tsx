@@ -6,6 +6,7 @@ import Firestore = firebase.firestore.Firestore;
 import { ModelData } from "../pages/Models/Models";
 import { FunctionData } from "../pages/Functions/Functions";
 import { FirestoreDataConverter, QueryDocumentSnapshot, SnapshotOptions, DocumentData } from "firebase/firestore";
+import {WorkflowData} from "../pages/Workflow/Workflows";
 
 const modelConverter: FirestoreDataConverter<ModelData> = {
     toFirestore(model: ModelData): DocumentData {
@@ -28,12 +29,14 @@ export class FirestoreRepository {
     private modelsRef;
     private usersRef;
     private functionsRef;
+    private workflowsRef;
 
     constructor(db: Firestore) {
         this.db = db;
         this.modelsRef = collection(db, "Models").withConverter(modelConverter);
         this.usersRef = collection(db, "Users");
         this.functionsRef = collection(db, "Functions");
+        this.workflowsRef = collection(db, "Workflows");
     }
 
     async createUserIfNotExists(uid: string, email: string | null | undefined, photoUrl: string | null | undefined) {
@@ -70,14 +73,6 @@ export class FirestoreRepository {
         return querySnapshot.docs.map(doc => doc.data())
     }
 
-    async getWorkflow(workflowId: string) {
-        return new Promise<object>((resolve) => {
-            setTimeout(() => {
-                resolve({name: "Workflow Name for ID " + workflowId})
-            }, 1000);
-        })
-    }
-
     async createEmptyFunction(uid: string) {
         const emptyFunctionData: FunctionData = {
             rawJson: "{}",
@@ -109,7 +104,40 @@ export class FirestoreRepository {
         });
     }
 
-    deleteFunction(id: string) {
+    async deleteFunction(id: string) {
         return deleteDoc(doc(this.functionsRef, id));
+    }
+
+    subscribeToWorkflowsForUser(userId: string, callback: (workflows: WorkflowData[]) => void) {
+        const q = query(this.workflowsRef, where('ownerUid', '==', userId));
+        return onSnapshot(q, (snapshot) => {
+            callback(snapshot.docs.map(doc => {
+                return {...doc.data(), id: doc.id} as WorkflowData
+            }))
+        })
+    }
+
+    async createEmptyWorkflow(uid: string) {
+        const emptyWorkflowData: WorkflowData = {
+            id: "",
+            name: "New Workflow",
+            ownerUid: uid
+        }
+        const docRef = await addDoc(this.workflowsRef, emptyWorkflowData);
+        return docRef.id;
+    }
+
+    async deleteWorkflow(id: string) {
+        return deleteDoc(doc(this.workflowsRef, id));
+    }
+
+    subscribeToWorkflow(workflowId: string, callback: (workflowData: WorkflowData) => void) {
+        return onSnapshot(doc(this.workflowsRef, workflowId), (doc) => {
+            callback({...doc.data(), id: doc.id} as WorkflowData);
+        });
+    }
+
+    async updateWorkflow(workflowId: string, data: object) {
+        return updateDoc(doc(this.workflowsRef, workflowId), data);
     }
 }
