@@ -90,6 +90,7 @@ export interface Arrow {
 
 interface FuncBuilderMainProps {
   functionId: string;
+  functionRawJson?: string;
 }
 
 type blk = FuncBlockDS | OutputBlockDS | InputBlockDS;
@@ -106,6 +107,7 @@ interface JSONInput {
   inputType: number;
   inputIdx: number;
   inputBlkLoc: [number, number];
+  blockId: number;
 }
 
 interface JSONBuiltinFunction {
@@ -118,6 +120,7 @@ interface JSONBuiltinFunction {
   outputNames: string[];
   outputTypes: number[];
   funcBlkLoc: [number, number];
+  blockId: number;
   params: JSONInput[];
 }
 
@@ -127,6 +130,7 @@ interface JSONOutput {
   outputType: number;
   outputIdx: number;
   outputBlkLoc: [number, number];
+  blockId: number;
   params: JSONInput[] | JSONBuiltinFunction[] | JSONCustomFunction[];
 }
 
@@ -182,8 +186,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         setCustomFunctions(tmp);
         console.log("custom functions: ", tmp);
 
-        // We want to update custom function blocks that are using 
-        // the custom function we are building! 
+        // We want to update custom function blocks that are using
+        // the custom function we are building!
         setFuncBlocks(funcBlocks => {
           for (const funcBlk of funcBlocks) {
             if (funcBlk.funcId == props.functionId) {
@@ -197,20 +201,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
   }, [currentUser])
 
-  useEffect(() => {
-    if (!mounted.current) {
-      // do componentDidMount logic
-      console.log("mounted");
-      mounted.current = true;
-    } else {
-      // do componentDidUpdate logic
-      console.log("this should only print after mounted");
-      reloadSavedCustomFunctions();
-      testLoadFunctions();
-    }
-    console.log("effect is running");
-    console.log(currentUser);
-  }, [currentUser]);
+    useEffect(() => {
+        if(!mounted.current) {
+            mounted.current = true;
+            return;
+        }
+
+        if(props.functionRawJson) {
+            loadBlocksFromJSON(props.functionRawJson);
+        }
+    }, []);
 
   function isBuiltinFunction(param: any): param is JSONBuiltinFunction {
     console.log(param.type);
@@ -227,67 +227,97 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     return param && param.type === "input";
   }
 
-  const testLoadFunctions = useCallback(() => {
-    if (currentUser) {
-      database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
-        let currFunc: CustomFunctionDBRecord;
-        let json: string = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
-        functionsFromDb.forEach(functionData => {
-          if (functionData.id == props.functionId) {
-            currFunc = functionData;
-            json = currFunc.rawJson;
-            if (json === "{}") {
-              json = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
-            }
+    const loadBlocksFromJSON = (rawJSON: string) => {
 
-            const data: JSONCustomFunction = (JSON.parse(json));
-            console.log("json", json);
-            const outputs: JSONOutput[] = data.outputs;
-            for (const output of outputs) {
-              // console.log("ids", addedOutputIds);              
-              if (!outputBlkIdxMap.has(output.outputIdx)) {
-                // setAddedOutputIds([...addedOutputIds, output.outputIdx]);
-                console.log(output.outputIdx);
-                const newOutputId = flushSync(() => {
-                  return addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc);
-                });
-
-                const params = output.params;
-
-                for (let [paramIdx, param] of params.entries()) {
-                  if (isBuiltinFunction(param)) {
-                    console.log(param);
-
-                    const newFuncId = addFuncBlock((param.functionId).toString(), param.type == "builtin_function" ? 1 : 0, param.funcBlkLoc);
-
-
-                    for (const [inputBlockIdx, input] of (param as JSONBuiltinFunction).params.entries()) {
-                      console.log(input.inputName);
-                      const newInputId = flushSync(() => {
-                        return addInputBlock(input.inputName, input.inputType, input.inputBlkLoc);
-                      })
-
-                        addArrow({start: newInputId + "o1", end: newFuncId + "i" + (inputBlockIdx)} as StartAndEnd)
-
-                    }
-
-                    addArrow({start: newFuncId + "o1", end: newOutputId + "i" + (paramIdx + 1)} as StartAndEnd)
-
-                  } else if (isCustomFunction(param)) {
-
-                  } else if (isInput(param)) {
-
-                  }
-
+        const loadParams = (parentBlockId: number, params: Array<JSONInput | JSONBuiltinFunction | JSONCustomFunction>) => {
+            for (let [paramIndex, param] of params.entries()) {
+                if (isBuiltinFunction(param)) {
+                    param = param as JSONBuiltinFunction;
+                    addFuncBlock((param.functionId).toString(), FuncType.builtin, param.funcBlkLoc, param.blockId);
+                    addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+                    loadParams(param.blockId, param.params);
+                } else if (isInput(param)) {
+                    param = param as JSONInput;
+                    addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
+                    addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
                 }
-              }
-
             }
-          }
-        })
-      });
+        }
+
+        if (rawJSON === "{}") {
+            rawJSON = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
+        }
+
+        const data: JSONCustomFunction = JSON.parse(rawJSON);
+
+        for (const output of data.outputs) {
+            if (!outputBlkIdxMap.has(output.outputIdx)) {
+                addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
+                loadParams(output.blockId, output.params);
+            }
+        }
+
     }
-  }, [currentUser, inputBlkIdxMap, outputBlkIdxMap])
+
+  // const testLoadFunctions = useCallback(() => {
+  //   if (currentUser) {
+  //     database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
+  //       let currFunc: CustomFunctionDBRecord;
+  //       let json: string = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
+  //       functionsFromDb.forEach(functionData => {
+  //         if (functionData.id == props.functionId) {
+  //           currFunc = functionData;
+  //           json = currFunc.rawJson;
+  //           if (json === "{}") {
+  //             json = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
+  //           }
+  //
+  //           const data: JSONCustomFunction = (JSON.parse(json));
+  //           console.log("json", json);
+  //           const outputs: JSONOutput[] = data.outputs;
+  //           for (const output of outputs) {
+  //             // console.log("ids", addedOutputIds);
+  //             if (!outputBlkIdxMap.has(output.outputIdx)) {
+  //               // setAddedOutputIds([...addedOutputIds, output.outputIdx]);
+  //               console.log("output blockidx",output.outputIdx);
+  //               addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
+  //
+  //               const params = output.params;
+  //
+  //               for (let [paramIdx, param] of params.entries()) {
+  //                 if (isBuiltinFunction(param)) {
+  //                   console.log(param);
+  //
+  //                   addFuncBlock((param.functionId).toString(), param.type == "builtin_function" ? 1 : 0, param.funcBlkLoc);
+  //
+  //                   for (const [inputBlockIdx, input] of (param as JSONBuiltinFunction).params.entries()) {
+  //                     console.log(input.inputName);
+  //
+  //                     flushSync(() => {
+  //                         addInputBlock(input.inputName, input.inputType, input.inputBlkLoc, input.blockId);
+  //                     })
+  //
+  //                     addArrow({start: input.blockId + "o1", end: param.blockId + "i" + (inputBlockIdx + 1)} as StartAndEnd)
+  //
+  //                   }
+  //
+  //                   addArrow({start: param.blockId + "o1", end: output.blockId + "i" + (paramIdx + 1)} as StartAndEnd)
+  //
+  //                 } else if (isCustomFunction(param)) {
+  //
+  //                 } else if (isInput(param)) {
+  //
+  //                 }
+  //
+  //               }
+  //             }
+  //
+  //           }
+  //         }
+  //       })
+  //     });
+  //   }
+  // }, [currentUser, inputBlkIdxMap, outputBlkIdxMap])
 
 
   const addArrow = useCallback((v: StartAndEnd) => {
@@ -416,6 +446,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         outputType: outputBlk.outputType,
         outputIdx: outputBlk.outputIdx,
         outputBlkLoc: outputBlk.blockLocation,
+        blockId: outputBlk.blockId,
         params: [
           tracePath(outputBlk.blockId.toString() + 'i1')
         ]
@@ -455,7 +486,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId])
   /**
    * Given the node id the head of an arrow is connected to, backtrace the path and return it
-   * @param arrowHead 
+   * @param arrowHead
    */
   const tracePath = function (arrowHead: string) {
     console.log('arrow head', arrowHead);
@@ -482,7 +513,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         inputName: tailBlk.inputName,
         inputType: tailBlk.inputType,
         inputIdx: tailBlk.inputIdx,
-        inputBlkLoc: tailBlk.blockLocation
+        inputBlkLoc: tailBlk.blockLocation,
+        blockId: tailBlk.blockId
       }
     } if ('funcType' in tailBlk) { //func block
       const params: any[] = [];
@@ -501,6 +533,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           outputNames: tailBlk.outputNames,
           outputTypes: tailBlk.outputTypes,
           funcBlkLoc: tailBlk.blockLocation,
+          blockId: tailBlk.blockId,
           params: params
         }
       } else { // custom
@@ -513,8 +546,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             useOutput: tailBlkOutputIdx,
             paramNames: tailBlk.paramNames,
             paramTypes: tailBlk.paramTypes,
-            params: params,
             blockLocation: tailBlk.blockLocation,
+            blockId: tailBlk.blockId,
+            params: params,
             body: (customFunctions.get(tailBlk.funcId) as CustomFunctionDBRecord).rawJson
           }
         }
@@ -527,9 +561,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   /**
    * Input block Logics
    */
-  const addInputBlock = useCallback((inputName: string, inputType: data_types, inputBlkLoc: [number, number]) => {
-    const newId = currInputBlockId + 1;
-    const newIdx = inputBlkIdxMap.size + 1;
+  const addInputBlock = useCallback((inputName: string, inputType: data_types, inputBlkLoc: [number, number], blockId?: number, blockIdx?: number) => {
+    const newId = blockId ? blockId : currInputBlockId + 1;
+    const newIdx = blockIdx ? blockIdx : inputBlkIdxMap.size + 1;
     console.log("index", inputBlkIdxMap);
     console.log("ID", currInputBlockId);
     setCurrInputBlockId(id => id + 1);
@@ -673,8 +707,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   /**
    * Output block logics
    */
-  const addOutputBlock = useCallback((outputName: string, outputType: data_types, outputBlkLoc: [number, number]) => {
-    const newId = currOutputBlockId + 1;
+  const addOutputBlock = useCallback((outputName: string, outputType: data_types, outputBlkLoc: [number, number], blockId?: number) => {
+    const newId = blockId ? blockId : currOutputBlockId + 1;
     const newIdx = outputBlkIdxMap.size + 1;
     setCurrOutputBlockId(id => id + 1);
 
@@ -807,8 +841,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
    * Function block logics
    */
   //right now this is hard-coded for built-in functions only
-  const addFuncBlock = useCallback((funcId: string, funcType: FuncType, funcBlkLoc: [number, number]) => {
-    const newId = currFunctionBlockId + 1;
+  const addFuncBlock = useCallback((funcId: string, funcType: FuncType, funcBlkLoc: [number, number], blockId?: number) => {
+    const newId = blockId ? blockId : currFunctionBlockId + 1;
     setCurrFunctionBlockId(id => id + 1);
 
     let f: builtin_function | CustomFunctionDBRecord | undefined = undefined;
@@ -911,7 +945,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       const customFuncBody: any = JSON.parse(f.rawJson);
       console.log(customFuncBody)
       if (customFuncBody.type == undefined) { // the function has not been constructed
-        // do nothing 
+        // do nothing
         blk.funcId = funcId;
         blk.funcType = FuncType.custom;
         blk.funcName = f.name;
@@ -1190,7 +1224,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //             xDomain={[0,5.5]}
   //             yDomain={[0,20]}>
   //             <HorizontalGridLines />
-  //             <VerticalBarSeries 
+  //             <VerticalBarSeries
   //               data={data}
   //               barWidth={0.2} />
   //             {/*Qingyuan needs to generate the data and place it in here as the comment has it

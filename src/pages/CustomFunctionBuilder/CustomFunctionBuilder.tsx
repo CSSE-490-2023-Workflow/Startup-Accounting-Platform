@@ -38,7 +38,7 @@ function CustomFunctionBuilder() {
                 <TextInput ref={functionNameRef}
                            defaultValue={functionData.name}
                            onChange={(event) => setFunctionNameInputText(event.currentTarget.value)}/>
-                <FuncBuilderMain functionId={id}/>
+                <FuncBuilderMain functionId={id} functionRawJson={functionData.rawJson} />
             </Toolbar>
             <Workspace>
                 {/*<h6>Function data: {functionData.rawJson}</h6>*/}
