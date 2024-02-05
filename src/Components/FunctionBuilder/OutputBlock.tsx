@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState} from 'react';
+import React, { useCallback, useEffect, useRef, useState} from 'react';
 import { data_types, data_type_enum_name_pairs} from "../../engine/datatype_def"
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, useCombobox, Combobox, InputBase } from '@mantine/core';
 import Draggable, { DraggableEvent } from 'react-draggable';
@@ -34,7 +34,7 @@ interface OutProps {
 }
 
 function OutputBlock(props: OutProps) {
-  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc, editCB, removeCB, addArrow, setArrows, removeArrow, updateLoc] = [
+  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc = [0,0], editCB, removeCB, addArrow, setArrows, removeArrow, updateLoc] = [
     props.blockId, 
     props.outputName, 
     props.outputType,
@@ -66,6 +66,10 @@ function OutputBlock(props: OutProps) {
 
   // controlls node name popover state
   const [ showNodeName, setShowNodeName ] = useState(false);
+
+  useEffect(() => {
+    setArrows(arrows => [...arrows]);
+  }, [paramNodeDir])
 
   // Is this even necessary?
   const changeParamNodeDir : any = useCallback((newDir: direction) => {
@@ -149,7 +153,11 @@ function OutputBlock(props: OutProps) {
                   addArrow(refs);
                   console.log("dropped!", refs);
                 }
-              }}>
+              
+              }}
+              onDragStart={e => {setShowNodeName(false); e.stopPropagation()}}
+              onDragEnd={e => {e.stopPropagation()}}
+            >
               <div className='connection-handle connection-handle-out' id={handleId}>
                 {faIcon}
               </div>
@@ -179,6 +187,8 @@ function OutputBlock(props: OutProps) {
                 setShowSideMenu(tmp);
                 setArrows(arrows => [...arrows]);
               }}
+              onDragStart={e => {e.stopPropagation()}}
+              onDragEnd={e => {e.stopPropagation()}}
               active
             />  
           </div>  
@@ -347,7 +357,7 @@ function OutputBlock(props: OutProps) {
 
   return (
     <>
-     <Draggable
+     {/* <Draggable
         ref={dragRef}
         onDrag = {(e: DraggableEvent, data) => {
           const x: number =  data.x; //dragRef.current.getBoundingClientRect();
@@ -362,7 +372,7 @@ function OutputBlock(props: OutProps) {
           // Additional logic related to block dragging
           setArrows((arrows) => [...arrows]);
         }}
-      > 
+      >  */}
     <div className='block-container'>
     <Card className="output-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder styles={{
       root: {
@@ -438,7 +448,7 @@ function OutputBlock(props: OutProps) {
     {paramNodes}
     {sideMenus}
     </div>
-    </Draggable>
+
     </>
   );
 }

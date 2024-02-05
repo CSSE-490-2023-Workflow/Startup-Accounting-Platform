@@ -15,6 +15,7 @@ import Models from "./pages/Models/Models";
 import Functions from "./pages/Functions/Functions";
 import ArrowExample from './Components/ArrowExample';
 import {FunctionBuilderTesting} from "./pages/FunctionBuilderTesting/FunctionBuilderTesting";
+import Workflows from "./pages/Workflow/Workflows";
 
 
 const tabs = [
@@ -76,6 +77,7 @@ export function Home() {
                 {activeTab === 'Models' && <Models/>}
                 {activeTab === 'Functions' && <Functions/>}
                 {activeTab === 'FunctionBuilderTesting' && <FunctionBuilderTesting/>}
+                {activeTab === 'Workflows' && <Workflows />}
                 {activeTab === 'Arrows' && <ArrowExample/>}
             </div>
         </div>
