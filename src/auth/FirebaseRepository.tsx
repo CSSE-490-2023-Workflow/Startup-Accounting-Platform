@@ -4,7 +4,7 @@ import firebase from "firebase/compat/app";
 import "firebase/compat/firestore";
 import Firestore = firebase.firestore.Firestore;
 import { ModelData } from "../pages/Models/Models";
-import { FunctionData } from "../pages/Functions/Functions";
+import { FunctionData, ShareTemplateMsg } from "../pages/Functions/Functions";
 import { FirestoreDataConverter, QueryDocumentSnapshot, SnapshotOptions, DocumentData } from "firebase/firestore";
 import {WorkflowData} from "../pages/Workflow/Workflows";
 
@@ -30,6 +30,7 @@ export class FirestoreRepository {
     private usersRef;
     private functionsRef;
     private workflowsRef;
+    private shareTemplateMsgRef;
 
     constructor(db: Firestore) {
         this.db = db;
@@ -37,6 +38,7 @@ export class FirestoreRepository {
         this.usersRef = collection(db, "Users");
         this.functionsRef = collection(db, "Functions");
         this.workflowsRef = collection(db, "Workflows");
+        this.shareTemplateMsgRef = collection(db, "ShareTemplateMessages")
     }
 
     async createUserIfNotExists(uid: string, email: string | null | undefined, photoUrl: string | null | undefined) {
@@ -78,10 +80,91 @@ export class FirestoreRepository {
             rawJson: "{}",
             id: "",
             name: "New Function",
+            type: "Custom Function",
+            fromTemplate: "",
             ownerUid: uid
         }
         const docRef = await addDoc(this.functionsRef, emptyFunctionData);
         return docRef.id;
+    }
+
+    async createFunction(funcData: FunctionData) {
+        const docRef = await addDoc(this.functionsRef, funcData);
+        return docRef.id;
+    }
+
+    async shareFunction(senderId: string, receiverId: string, functionId: string) {
+        //create a message
+        const msg : ShareTemplateMsg = {
+            senderId: senderId,
+            receiverId: receiverId,
+            functionId: functionId
+        }
+        const docRef = await addDoc(this.shareTemplateMsgRef, msg);
+        return docRef.id;
+    }
+
+    async createTemplateFromFunction(uid: string, functionId: string) {
+        interface FunctionData {
+            id: string;
+            ownerUid: string;
+            name: string;
+            type: string,
+            fromTemplate: string,
+            rawJson: string;
+        }
+
+        this.getFunction(functionId).then((res) => {
+            const funcData : FunctionData = res;
+            const templateData : FunctionData = {
+                id: "",
+                ownerUid: uid,
+                name: funcData.name,
+                type: "Template",
+                fromTemplate: functionId,
+                rawJson: funcData.rawJson
+            }
+
+            // We need to parse all custom functions used inside the template function
+            const templateBody: any = JSON.parse(templateData.rawJson)
+            const customFunctions : FunctionData[] = []
+            const getFunctionLocal = this.getFunction
+
+            async function recursivelyFindCustomFunctions(customFunctions: FunctionData[], body: any) {
+                if (body.type == 'custom_function_call') {
+                    const tmp : FunctionData = {
+                        id: "",
+                        ownerUid: uid,
+                        name: (await getFunctionLocal(body.functionId)).name,
+                        type: "Template Function",
+                        fromTemplate: functionId,
+                        rawJson: body.body
+                    }
+                    customFunctions.push(tmp)
+                    recursivelyFindCustomFunctions(customFunctions, JSON.parse(body.body))
+                } else if (body.type == 'input') {
+                    return 
+                } else if (body.type == 'output') {
+                    recursivelyFindCustomFunctions(customFunctions, body.params[0])
+                } else if (body.type == 'custom_function') {
+                    for (const output of body.outputs) {
+                        recursivelyFindCustomFunctions(customFunctions, output)
+                    }
+                } else if (body.type == 'builtin_function') {
+                    return
+                }
+            }
+
+            recursivelyFindCustomFunctions(customFunctions, templateBody)
+
+            for (const customFunction of customFunctions) {
+                this.createFunction(customFunction);
+            }
+
+        }).catch((error) => {
+
+        });
+
     }
 
     async getFunction(functionId: string) {

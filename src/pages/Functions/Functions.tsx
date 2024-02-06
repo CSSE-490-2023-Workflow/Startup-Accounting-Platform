@@ -12,7 +12,15 @@ export interface FunctionData {
     id: string;
     ownerUid: string;
     name: string;
+    type: string,
+    fromTemplate: string,
     rawJson: string;
+}
+
+export interface ShareTemplateMsg {
+    senderId: string,
+    receiverId: string,
+    functionId: string
 }
 
 function Functions() {
@@ -54,6 +62,19 @@ function Functions() {
 
     }
 
+    const shareFunction = () => {
+        if(!currentUser) {
+            return;
+        }
+
+        //receiver id
+        const receiverId : string = "123";
+        const functionId : string = "321";
+        database.shareFunction(currentUser.uid, receiverId, functionId).then(() => {
+
+        })
+    }
+
     const makeCards = useCallback((functionsData: FunctionData[]) => {
         return (
             functionsData.map((functionData) => {
@@ -64,10 +85,6 @@ function Functions() {
                             <Text fw={500}>{functionData.name}</Text>
                             <Text fw={500} c='dimmed'>{functionData.id}</Text>
                         </Group>
-
-                        <Text size="sm" c="dimmed">
-                            {functionData.rawJson}
-                        </Text>
 
                         <Group mt='xs'>
                         <Button radius="md" style={{flex: 1}} onClick={() => {
@@ -85,6 +102,11 @@ function Functions() {
                             <ActionIcon variant="default" radius="md" size={36} onClick={() => { setSelectedFunction(functionData); openDelete(); }}>
                                 <IconTrash className={classes.delete} stroke={1.5}/>
                             </ActionIcon>
+                        </Group>
+                        <Group mt='xs'>
+                        <Button radius="md" style={{flex: 1}} onClick={() => {}}>
+                                Share
+                        </Button>
                         </Group>
                     </Card>
                 )
