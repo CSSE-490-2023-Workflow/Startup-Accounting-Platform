@@ -7,6 +7,7 @@ import DynamicModal from "../../Components/Modal/DynamicModal";
 import {IconTrash} from "@tabler/icons-react";
 import classes from "../Models/ModelCard.module.css";
 import {useDisclosure} from "@mantine/hooks";
+import { reload } from 'firebase/auth';
 
 export interface FunctionData {
     id: string;
@@ -31,12 +32,21 @@ function Functions() {
     const {currentUser} = useContext(AuthContext);
 
     useEffect(() => {
+        // if(currentUser) {
+        //     database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
+        //         setFunctions(functionsFromDb);
+        //     });
+        // }
+        reloadFunctions()
+    }, [currentUser]);
+
+    const reloadFunctions = useCallback(() => {
         if(currentUser) {
             database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
                 setFunctions(functionsFromDb);
             });
         }
-    }, [currentUser]);
+    }, [currentUser])
 
     const openFunctionPage = (functionId: string) => {
         window.open(`/function/${functionId}`, '_blank');
@@ -124,6 +134,15 @@ function Functions() {
             database.deleteFunction(func.id);
     }
 
+    const testTemplate = useCallback(() => {
+        if (!currentUser) {
+            return 
+        }
+        console.log('testTemplate called');
+        database.createTemplateFromFunction(currentUser.uid, '0C6QeIK4lht5i2T7STFK')
+        reloadFunctions()
+    }, [currentUser])
+
     return (
         <>
             <CardPage cards={makeCards(functions)}/>
@@ -131,6 +150,7 @@ function Functions() {
                 <Box pos='relative'>
                     <LoadingOverlay visible={loading} loaderProps={{size: 28}}/>
                     <Button onClick={createNewFunction}>Create New Function</Button>
+                    <Button onClick={testTemplate}>Test Create Template</Button>
                 </Box>
             </Center>
             <DynamicModal isOpen={isDeleteOpen}

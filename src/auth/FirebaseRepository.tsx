@@ -114,56 +114,79 @@ export class FirestoreRepository {
             rawJson: string;
         }
 
-        this.getFunction(functionId).then((res) => {
-            const funcData : FunctionData = res;
-            const templateData : FunctionData = {
-                id: "",
-                ownerUid: uid,
-                name: funcData.name,
-                type: "Template",
-                fromTemplate: functionId,
-                rawJson: funcData.rawJson
-            }
+        let funcData: FunctionData = await this.getFunction(functionId)
 
-            // We need to parse all custom functions used inside the template function
-            const templateBody: any = JSON.parse(templateData.rawJson)
-            const customFunctions : FunctionData[] = []
-            const getFunctionLocal = this.getFunction
+        const templateData : FunctionData = {
+            id: "",
+            ownerUid: uid,
+            name: (funcData as FunctionData).name,
+            type: "Template",
+            fromTemplate: functionId,
+            rawJson: (funcData as FunctionData).rawJson
+        }
+        console.log(`promised returned. Template data`)
+        // console.log(templateData)
 
-            async function recursivelyFindCustomFunctions(customFunctions: FunctionData[], body: any) {
-                if (body.type == 'custom_function_call') {
-                    const tmp : FunctionData = {
-                        id: "",
-                        ownerUid: uid,
-                        name: (await getFunctionLocal(body.functionId)).name,
-                        type: "Template Function",
-                        fromTemplate: functionId,
-                        rawJson: body.body
-                    }
+        // We need to parse all custom functions used inside the template function
+        //const getFunctionLocal = this.getFunction
+        const templateBody: any = JSON.parse(templateData.rawJson)
+        const customFunctions : FunctionData[] = []
+        
+        const addedFunctions : Set<string> = new Set()
+        console.log(templateBody)
+
+        // const caller = async () => {
+        //     const customFunctions : FunctionData[] = []
+        //     await recursivelyFindCustomFunctions(customFunctions, templateBody)
+        //     return customFunctions
+        // }
+
+        const recursivelyFindCustomFunctions : any = async (customFunctions: FunctionData[], body: any) => {
+            if (body.type == 'custom_function_call') {
+                const res = await this.getFunction(body.functionId);
+                const tmp : FunctionData = {
+                    id: "",
+                    ownerUid: uid,
+                    name: res.name,
+                    type: "Template Function",
+                    fromTemplate: functionId,
+                    rawJson: body.body
+                }
+                // console.log('in custom function call.')
+                // console.log(tmp)
+                if (!addedFunctions.has(body.functionId)) {
                     customFunctions.push(tmp)
-                    recursivelyFindCustomFunctions(customFunctions, JSON.parse(body.body))
-                } else if (body.type == 'input') {
-                    return 
-                } else if (body.type == 'output') {
-                    recursivelyFindCustomFunctions(customFunctions, body.params[0])
-                } else if (body.type == 'custom_function') {
-                    for (const output of body.outputs) {
-                        recursivelyFindCustomFunctions(customFunctions, output)
-                    }
-                } else if (body.type == 'builtin_function') {
-                    return
+                    addedFunctions.add(body.functionId);
+                }
+                // search all inputs to the custom function
+                for (const param of body.params) {
+                    await recursivelyFindCustomFunctions(customFunctions, param)
+                }
+                //search the body of the custom function
+                await recursivelyFindCustomFunctions(customFunctions, JSON.parse(body.body))                
+            } else if (body.type == 'input') {
+                //
+            } else if (body.type == 'output') {
+                // console.log('in output')
+                // console.log(body)
+                await recursivelyFindCustomFunctions(customFunctions, body.params[0])
+            } else if (body.type == 'custom_function') {
+                for (const output of body.outputs) {
+                    await recursivelyFindCustomFunctions(customFunctions, output)
+                }
+            } else if (body.type == 'builtin_function') {
+                for (const param of body.params) {
+                    await recursivelyFindCustomFunctions(customFunctions, param);
                 }
             }
+        }
 
-            recursivelyFindCustomFunctions(customFunctions, templateBody)
+        await recursivelyFindCustomFunctions(customFunctions, templateBody);
+        console.log(customFunctions);
 
-            for (const customFunction of customFunctions) {
-                this.createFunction(customFunction);
-            }
-
-        }).catch((error) => {
-
-        });
+        for (const customFunction of customFunctions) {
+            this.createFunction(customFunction);
+        }
 
     }
 
