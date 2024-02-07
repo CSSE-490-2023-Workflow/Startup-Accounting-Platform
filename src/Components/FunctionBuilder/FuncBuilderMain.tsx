@@ -1186,10 +1186,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   )
 
   const changeInput = useCallback((inputId: number, newValue: allowed_stack_components) => {
-    console.log('in changeInput, blks are ', inputBlocks, newValue);
+    console.log('in changeInput, blks are ', inputBlocks, newValue, inputId);
     const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS, index: number) => {
       console.log('in changeInput', index, blk, newValue);
-      if (blk.blockId == inputId + 1000) {
+      if (blk.blockId == inputId) {
         blk.val = newValue;
       }
       console.log(blk.val);
