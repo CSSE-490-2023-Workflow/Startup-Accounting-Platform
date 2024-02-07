@@ -7,7 +7,7 @@ import DynamicModal from "../../Components/Modal/DynamicModal";
 import {IconTrash} from "@tabler/icons-react";
 import classes from "../Models/ModelCard.module.css";
 import {useDisclosure} from "@mantine/hooks";
-import { reload } from 'firebase/auth';
+import firebase from 'firebase/compat';
 
 export interface FunctionData {
     id: string;
@@ -21,7 +21,9 @@ export interface FunctionData {
 export interface ShareTemplateMsg {
     senderId: string,
     receiverId: string,
-    functionId: string
+    functionId: string,
+    time: firebase.firestore.Timestamp,
+    status: string
 }
 
 function Functions() {

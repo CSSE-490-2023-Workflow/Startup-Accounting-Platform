@@ -30,7 +30,7 @@ export class FirestoreRepository {
     private usersRef;
     private functionsRef;
     private workflowsRef;
-    private shareTemplateMsgRef;
+    private shareFunctionMsgRef;
 
     constructor(db: Firestore) {
         this.db = db;
@@ -38,7 +38,7 @@ export class FirestoreRepository {
         this.usersRef = collection(db, "Users");
         this.functionsRef = collection(db, "Functions");
         this.workflowsRef = collection(db, "Workflows");
-        this.shareTemplateMsgRef = collection(db, "ShareTemplateMessages")
+        this.shareFunctionMsgRef = collection(db, "ShareFunctionMessages")
     }
 
     async createUserIfNotExists(uid: string, email: string | null | undefined, photoUrl: string | null | undefined) {
@@ -98,13 +98,16 @@ export class FirestoreRepository {
         const msg : ShareTemplateMsg = {
             senderId: senderId,
             receiverId: receiverId,
-            functionId: functionId
+            functionId: functionId,
+            time: (firebase.firestore.FieldValue.serverTimestamp() as firebase.firestore.Timestamp),
+            status: "pending",
         }
-        const docRef = await addDoc(this.shareTemplateMsgRef, msg);
+        const docRef = await addDoc(this.shareFunctionMsgRef, msg);
         return docRef.id;
     }
 
     async createTemplateFromFunction(uid: string, functionId: string) {
+        
         interface FunctionData {
             id: string;
             ownerUid: string;
