@@ -34,21 +34,12 @@ function Functions() {
     const {currentUser} = useContext(AuthContext);
 
     useEffect(() => {
-        // if(currentUser) {
-        //     database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
-        //         setFunctions(functionsFromDb);
-        //     });
-        // }
-        reloadFunctions()
-    }, [currentUser]);
-
-    const reloadFunctions = useCallback(() => {
         if(currentUser) {
             database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
                 setFunctions(functionsFromDb);
             });
         }
-    }, [currentUser])
+    }, [currentUser]);
 
     const openFunctionPage = (functionId: string) => {
         window.open(`/function/${functionId}`, '_blank');
@@ -142,7 +133,6 @@ function Functions() {
         }
         console.log('testTemplate called');
         database.createTemplateFromFunction(currentUser.uid, '0C6QeIK4lht5i2T7STFK')
-        reloadFunctions()
     }, [currentUser])
 
     return (

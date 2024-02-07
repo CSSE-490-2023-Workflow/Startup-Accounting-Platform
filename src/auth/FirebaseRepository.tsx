@@ -70,11 +70,6 @@ export class FirestoreRepository {
         return updateDoc(doc(this.functionsRef, functionId), data);
     }
 
-    async getFunctions() {
-        const querySnapshot = await getDocs(this.functionsRef);
-        return querySnapshot.docs.map(doc => doc.data())
-    }
-
     async createEmptyFunction(uid: string) {
         const emptyFunctionData: FunctionData = {
             rawJson: "{}",
@@ -108,15 +103,6 @@ export class FirestoreRepository {
 
     async createTemplateFromFunction(uid: string, functionId: string) {
         
-        interface FunctionData {
-            id: string;
-            ownerUid: string;
-            name: string;
-            type: string,
-            fromTemplate: string,
-            rawJson: string;
-        }
-
         let funcData: FunctionData = await this.getFunction(functionId)
 
         const templateData : FunctionData = {
@@ -127,8 +113,6 @@ export class FirestoreRepository {
             fromTemplate: functionId,
             rawJson: (funcData as FunctionData).rawJson
         }
-        console.log(`promised returned. Template data`)
-        // console.log(templateData)
 
         // We need to parse all custom functions used inside the template function
         //const getFunctionLocal = this.getFunction
@@ -137,12 +121,6 @@ export class FirestoreRepository {
         
         const addedFunctions : Set<string> = new Set()
         console.log(templateBody)
-
-        // const caller = async () => {
-        //     const customFunctions : FunctionData[] = []
-        //     await recursivelyFindCustomFunctions(customFunctions, templateBody)
-        //     return customFunctions
-        // }
 
         const recursivelyFindCustomFunctions : any = async (customFunctions: FunctionData[], body: any) => {
             if (body.type == 'custom_function_call') {
