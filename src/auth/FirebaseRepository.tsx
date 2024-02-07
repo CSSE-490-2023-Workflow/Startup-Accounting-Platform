@@ -70,11 +70,6 @@ export class FirestoreRepository {
         return updateDoc(doc(this.functionsRef, functionId), data);
     }
 
-    async getFunctions() {
-        const querySnapshot = await getDocs(this.functionsRef);
-        return querySnapshot.docs.map(doc => doc.data())
-    }
-
     async createEmptyFunction(uid: string) {
         const emptyFunctionData: FunctionData = {
             rawJson: "{}",
@@ -82,6 +77,7 @@ export class FirestoreRepository {
             name: "New Function",
             type: "Custom Function",
             fromTemplate: "",
+            fromFunction: "",
             ownerUid: uid
         }
         const docRef = await addDoc(this.functionsRef, emptyFunctionData);
@@ -107,36 +103,15 @@ export class FirestoreRepository {
     }
 
     async createTemplateFromFunction(uid: string, functionId: string) {
-        
-        interface FunctionData {
-            id: string;
-            ownerUid: string;
-            name: string;
-            type: string,
-            fromTemplate: string,
-            rawJson: string;
-        }
 
         let funcData: FunctionData = await this.getFunction(functionId)
 
-        const templateData : FunctionData = {
-            id: "",
-            ownerUid: uid,
-            name: (funcData as FunctionData).name,
-            type: "Template",
-            fromTemplate: functionId,
-            rawJson: (funcData as FunctionData).rawJson
-        }
-        console.log(`promised returned. Template data`)
-        // console.log(templateData)
-
         // We need to parse all custom functions used inside the template function
         //const getFunctionLocal = this.getFunction
-        const templateBody: any = JSON.parse(templateData.rawJson)
-        const customFunctions : FunctionData[] = []
+        let templateBody: any = JSON.parse(funcData.rawJson)
         
         const addedFunctions : Set<string> = new Set()
-        console.log(templateBody)
+        // console.log(templateBody)
 
         // const caller = async () => {
         //     const customFunctions : FunctionData[] = []
@@ -144,58 +119,81 @@ export class FirestoreRepository {
         //     return customFunctions
         // }
 
-        const recursivelyFindCustomFunctions : any = async (customFunctions: FunctionData[], body: any) => {
+        const recursivelyCreateTemplateFunctions : any = async (body: any) => {
             if (body.type == 'custom_function_call') {
                 const res = await this.getFunction(body.functionId);
+                const srcFunction: string = body.functionId;
                 const tmp : FunctionData = {
                     id: "",
                     ownerUid: uid,
                     name: res.name,
                     type: "Template Function",
                     fromTemplate: functionId,
+                    fromFunction: srcFunction,
                     rawJson: body.body
                 }
+                const docRefId : any = await this.createFunction(tmp);
+                body.functionId = docRefId;
                 // console.log('in custom function call.')
                 // console.log(tmp)
-                if (!addedFunctions.has(body.functionId)) {
-                    customFunctions.push(tmp)
-                    addedFunctions.add(body.functionId);
+                if (!addedFunctions.has(srcFunction)) {
+                    //customFunctions.push(tmp)
+                    addedFunctions.add(srcFunction);
                 }
                 // search all inputs to the custom function
                 for (const param of body.params) {
-                    await recursivelyFindCustomFunctions(customFunctions, param)
+                    await recursivelyCreateTemplateFunctions(param)
                 }
                 //search the body of the custom function
-                await recursivelyFindCustomFunctions(customFunctions, JSON.parse(body.body))                
+                await recursivelyCreateTemplateFunctions(JSON.parse(body.body))                
+                return body
             } else if (body.type == 'input') {
-                //
+                return body
             } else if (body.type == 'output') {
                 // console.log('in output')
                 // console.log(body)
-                await recursivelyFindCustomFunctions(customFunctions, body.params[0])
+                await recursivelyCreateTemplateFunctions(body.params[0])
+                return body
             } else if (body.type == 'custom_function') {
                 for (const output of body.outputs) {
-                    await recursivelyFindCustomFunctions(customFunctions, output)
+                    await recursivelyCreateTemplateFunctions(output)
+                    return body
                 }
             } else if (body.type == 'builtin_function') {
                 for (const param of body.params) {
-                    await recursivelyFindCustomFunctions(customFunctions, param);
+                    await recursivelyCreateTemplateFunctions(param);
+                    return body
                 }
+            } else {
+                return body
             }
         }
 
-        await recursivelyFindCustomFunctions(customFunctions, templateBody);
-        console.log(customFunctions);
+        templateBody = await recursivelyCreateTemplateFunctions(templateBody);
+        console.log(templateBody);
 
-        for (const customFunction of customFunctions) {
-            this.createFunction(customFunction);
+        const templateData : FunctionData = {
+            id: "",
+            ownerUid: uid,
+            name: (funcData as FunctionData).name,
+            type: "Template",
+            fromTemplate: functionId,
+            fromFunction: "",
+            rawJson: JSON.stringify(templateBody)
         }
+
+        this.createFunction(templateData);
 
     }
 
     async getFunction(functionId: string) {
         const func = await getDoc(doc(this.functionsRef, functionId));
         return func.data() as FunctionData
+    }
+
+    async getFunctions() {
+        const querySnapshot = await getDocs(this.functionsRef);
+        return querySnapshot.docs.map(doc => doc.data())
     }
 
     subscribeToFunction(functionId: string, callback: (funcData: FunctionData) => void) {
@@ -206,11 +204,19 @@ export class FirestoreRepository {
 
     subscribeToFunctionsForUser(userId: string, callback: (functions: FunctionData[]) => void) {
         const q = query(this.functionsRef, where('ownerUid', '==', userId));
-        return onSnapshot(q, (snapshot) => {
+        onSnapshot(q, (snapshot) => {
             callback(snapshot.docs.map(doc => {
                 return {...doc.data(), id: doc.id} as FunctionData
             }))
         });
+    }
+
+    async getFunctionsForUser(userId: string) {
+        const q = query(this.functionsRef, where('ownerUid', '==', userId));
+        const qResult = await getDocs(q)
+        return qResult.docs.map(e => 
+            ({...e.data(), id: e.id} as FunctionData)
+        )
     }
 
     async deleteFunction(id: string) {

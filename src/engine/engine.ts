@@ -152,6 +152,7 @@ export function func_interpreter_new_caller(func_str : string, args: Map<number,
  * @returns Map<number, ioObj> if custom function, allowed_stack_components[] if builtin function, an allowed_stack_component otherwise
  */
 const func_interpreter_new : any = function(func_str: string, args: Map<number, ioObj>) {
+    console.log(func_str)
     const func_content = JSON.parse(func_str);
     if (func_content.type == 'custom_function') {
         //console.log("in function, return");
@@ -241,7 +242,7 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         }
     } else {
         console.log(func_content)
-        throw new Error(`Unrecognized function component type : ${func_content}`);
+        throw new Error(`Unrecognized function component type. See last log msg.`);
     } 
 
 }
