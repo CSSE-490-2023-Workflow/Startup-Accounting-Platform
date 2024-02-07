@@ -16,15 +16,15 @@ function CustomTemplateBuilder() {
 
     useEffect(() => {
         if(id) {
-            database.subscribeToFunction(id, (functionDataFromDB: TemplateData) => {
-               setTemplateData(functionDataFromDB);
+            database.subscribeToTemplate(id, (templateDataFromDB: TemplateData) => {
+               setTemplateData(templateDataFromDB);
             });
         }
     }, [id]);
 
     useEffect(() => {
         if(!templateNameInputFocused && templateNameInputText && templateData) {
-            database.updateFunction(templateData.id, { name: templateNameInputText });
+            database.updateTemplate(templateData.id, { name: templateNameInputText });
         }
     }, [templateNameInputFocused]);
 

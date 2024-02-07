@@ -270,6 +270,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             mounted.current = true;
             return;
         }
+        console.log("gets called", props.functionRawJson);
         if(props.functionRawJson) {
             loadBlocksFromJSON(props.functionRawJson);
         }
@@ -325,6 +326,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
 
         const data: JSONCustomFunction = JSON.parse(rawJSON);
+        console.log(data);
 
         for (const output of data.outputs) {
             if (!outputBlkIdxMap.has(output.outputIdx)) {
@@ -589,7 +591,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       outputTypes: outputBlksSorted.map(oBlk => oBlk.outputType),
       outputs: tmp
     };
-
 
     var blob = new Blob([JSON.stringify(res)], { type: "application/json; charset=utf-8" });
     saveAs(blob, "hello world.json");

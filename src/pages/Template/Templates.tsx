@@ -1,5 +1,5 @@
 import React, {useCallback, useContext, useEffect, useState} from 'react';
-import FuncBuilderMain from '../../Components/FunctionBuilder/FuncBuilderMain';
+// import FuncBuilderMain from '../../Components/FunctionBuilder/FuncBuilderMain';
 import {ActionIcon, Box, Button, Card, Center, Group, LoadingOverlay, Space, Text} from "@mantine/core";
 import {AuthContext, database} from "../../auth/firebase";
 import CardPage from "../CardPage/CardPage";
@@ -71,7 +71,7 @@ function Templates() {
 
                         <Group mt='xs'>
                         <Button radius="md" style={{flex: 1}} onClick={() => {
-                                console.log("the function being edited is ", database.getTemplate(templateData.id).then((result) => {
+                                console.log("the template being edited is ", database.getTemplate(templateData.id).then((result) => {
                                     // Handle the resolved value (result) here
                                     editTemplatePage(templateData.id, result.rawJson);
                                   
@@ -99,7 +99,7 @@ function Templates() {
 
     const handleDeleteTemplate = (func: TemplateData | null) => {
         if(func)
-            database.deleteFunction(func.id);
+            database.deleteTemplate(func.id);
     }
 
     return (
@@ -108,13 +108,13 @@ function Templates() {
             <Center>
                 <Box pos='relative'>
                     <LoadingOverlay visible={loading} loaderProps={{size: 28}}/>
-                    <Button onClick={createNewTemplate}>Create New Function</Button>
+                    <Button onClick={createNewTemplate}>Create New Template</Button>
                 </Box>
             </Center>
             <DynamicModal isOpen={isDeleteOpen}
                           close={handleClose}
                           submit={ () => { handleDeleteTemplate(selectedTemplates) }}
-                          title={"Are you sure you want to delete this function?"}
+                          title={"Are you sure you want to delete this template?"}
                           elements={[]}
                           values={null}
                           buttonProps={ { color: "red", text: "Delete" }} />
