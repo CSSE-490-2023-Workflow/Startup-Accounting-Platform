@@ -572,7 +572,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       blk1.outputIdx - blk2.outputIdx
     )
     const res: any = props.template ? {
-      type: 'custom_template',
+      type: 'custom_function',
       useOutput: 'all',
       paramNames: inputBlksSorted.map(iBlk => iBlk.inputName),
       paramTypes: inputBlksSorted.map(iBlk => iBlk.inputType),
@@ -596,7 +596,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setSavedFunction(res);
     console.log('saved func', res);
 
-    database.updateTemplate(props.functionId, { rawJson: JSON.stringify(res) });
+    if(props.template) {
+      database.updateTemplate(props.functionId, { rawJson: JSON.stringify(res) });
+    } else {
+      database.updateFunction(props.functionId, { rawJson: JSON.stringify(res) });
+    }
     reloadSavedCustomFunctions();
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId])
   /**
