@@ -19,6 +19,7 @@ import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Fu
 import SeriesInput from '../SeriesInput';
 import { MyDraggable } from './MyDraggable';
 import {flushSync} from "react-dom";
+import { IconTexture } from '@tabler/icons-react';
 
 interface InputBlockDS {
   blockId: number
@@ -215,6 +216,22 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
         reloadSavedCustomFunctions()
     }, [currentUser]);
+  
+  // re-render arrows
+  const refreshArrows = useCallback(() => {
+    setArrows(arrows => arrows.filter(arrow => {
+      const start : string = arrow.start
+      const end : string = arrow.end
+      console.log('rerender arrow')
+      console.log(arrow)
+      if (document.getElementById(start) == null || 
+        document.getElementById(end) == null){
+        console.log('is null')
+        return false
+      }
+      return true
+    }))
+  }, [blkMap])
   
 
   function isBuiltinFunction(param: any): param is JSONBuiltinFunction {
@@ -1002,11 +1019,35 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
       }
 
-      setArrows(arrows => [...arrows]);
+      //setArrows(arrows => [...arrows]);
       return blk;
     })
 
-    setFuncBlocks(tmp);
+    setFuncBlocks(funcBlocks => 
+      funcBlocks.map((blk: FuncBlockDS) => {
+        if (blk.blockId == blkId) {
+          if (funcType == null && funcId != null) { // change to another function of the same type
+            setFuncBlockFunction(blk, funcId);
+          } else if (funcType != null && funcId == null) { //change function type
+            if (funcType == FuncType.builtin) {
+              setFuncBlockFunction(blk, '101'); //default to 101 (add)
+            } else if (funcType == FuncType.custom) {
+              console.log(customFunctions);
+              const f: CustomFunctionDBRecord = customFunctions.values().next().value;
+              setFuncBlockFunction(blk, f.id);
+            }
+          }
+  
+          for (const arrow of arrows) {
+            if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
+              updateOutputBlkType(arrow);
+            }
+          }
+        }
+        removeArrowsAttachedToBlk(blk.blockId)
+        return blk;
+      })
+    )
 
   }, [funcBlocks, arrows])
 

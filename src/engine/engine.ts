@@ -11,8 +11,6 @@ import {data_types, declared_type_verifier, is_integer, is_number} from './datat
 import type {func_pt, func_pt_series, series, allowed_stack_components, custom_function, builtin_function} from './datatype_def'
 import { id_to_builtin_func } from './builtin_func_def';
 import { FuncArgError } from './error_def';
-import { exec } from 'child_process';
-import { log } from 'console';
 
 let func_2 : custom_function = {
     func_name : 'test_func2',
