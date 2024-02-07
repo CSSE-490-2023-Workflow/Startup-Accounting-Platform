@@ -302,6 +302,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }
 
     const loadBlocksFromJSON = (rawJSON: string) => {
+      const unique = new Set<string>();
         const loadParams = (parentBlockId: number, params: Array<JSONInput | JSONBuiltinFunction | JSONCustomFunction>) => {
             for (let [paramIndex, param] of params.entries()) {
                 if (isBuiltinFunction(param)) {
@@ -310,12 +311,17 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
                     addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
                     loadParams(param.blockId, param.params);
                 } else if (isInput(param)) {
+
                     param = param as JSONInput;
+                    console.log(param.inputName);
                     let val = null
                     if(param.inputVal) {
                       val = param.inputVal
                     }
-                    addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, val, param.blockId, param.inputIdx);
+                    if(!unique.has(param.inputName)) {
+                      unique.add(param.inputName);
+                      addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, val, param.blockId, param.inputIdx);
+                    }
                     addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
                 }
             }
@@ -327,9 +333,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
         const data: JSONCustomFunction = JSON.parse(rawJSON);
         console.log(data);
-
+        const uniqueOutputs = new Set<string>();
         for (const output of data.outputs) {
-            if (!outputBlkIdxMap.has(output.outputIdx)) {
+            // if (!outputBlkIdxMap.has(output.outputIdx)) {
+            if(!uniqueOutputs.has(output.outputName)) {
+                uniqueOutputs.add(output.outputName);
                 addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
                 loadParams(output.blockId, output.params);
             }
@@ -1426,30 +1434,40 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
 
   console.log(arrows);
-  return (<>
-    <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
-      defaultAttr={["new input", data_types.dt_number, [200,200]]} />
-    <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101', FuncType.builtin, [200,200]]} />
-    <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined, [200,200]]} />
-    <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
-    {props.template && <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>}
-    <h3>Function Builder</h3>
+  return (
+  <>
+    <>
+      <h3>Function Builder</h3>
+      <br></br>
+      <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
+        defaultAttr={["new input", data_types.dt_number, [200,200]]} />
+      <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101', FuncType.builtin, [200,200]]} />
+      <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined, [200,200]]} />
+      <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
+      {props.template && <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>}
+      {inputBlocksList}
+      {funcBlocksList}
+      {outputBlocksList}
+      {arrows.map(ar => (
+        <Xarrow
+          start={ar.start}
+          end={ar.end}
+          key={ar.start + "-." + ar.start}
+        />
+      ))}
+   </>
+   <div style={{position: "absolute", marginTop: "80%"}}>
     {props.template && 
       <div style={{ display: "flex" }}>
         {fullInputBlocks}
       </div>
     }
-    {inputBlocksList}
-    {funcBlocksList}
-    {outputBlocksList}
-    {arrows.map(ar => (
-      <Xarrow
-        start={ar.start}
-        end={ar.end}
-        key={ar.start + "-." + ar.start}
-      />
-    ))}
-    {props.template && outputList}
+    <br />
+    {props.template  && 
+    <div style={{ display: "flex" }}>
+      {outputList}
+    </div>}
+   </div>
   </>
   );
 }
