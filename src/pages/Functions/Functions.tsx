@@ -7,12 +7,21 @@ import DynamicModal from "../../Components/Modal/DynamicModal";
 import {IconTrash} from "@tabler/icons-react";
 import classes from "../Models/ModelCard.module.css";
 import {useDisclosure} from "@mantine/hooks";
+import { reload } from 'firebase/auth';
 
 export interface FunctionData {
     id: string;
     ownerUid: string;
     name: string;
+    type: string,
+    fromTemplate: string,
     rawJson: string;
+}
+
+export interface ShareTemplateMsg {
+    senderId: string,
+    receiverId: string,
+    functionId: string
 }
 
 function Functions() {
@@ -23,12 +32,21 @@ function Functions() {
     const {currentUser} = useContext(AuthContext);
 
     useEffect(() => {
+        // if(currentUser) {
+        //     database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
+        //         setFunctions(functionsFromDb);
+        //     });
+        // }
+        reloadFunctions()
+    }, [currentUser]);
+
+    const reloadFunctions = useCallback(() => {
         if(currentUser) {
             database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
                 setFunctions(functionsFromDb);
             });
         }
-    }, [currentUser]);
+    }, [currentUser])
 
     const openFunctionPage = (functionId: string) => {
         window.open(`/function/${functionId}`, '_blank');
@@ -54,6 +72,19 @@ function Functions() {
 
     }
 
+    const shareFunction = () => {
+        if(!currentUser) {
+            return;
+        }
+
+        //receiver id
+        const receiverId : string = "123";
+        const functionId : string = "321";
+        database.shareFunction(currentUser.uid, receiverId, functionId).then(() => {
+
+        })
+    }
+
     const makeCards = useCallback((functionsData: FunctionData[]) => {
         return (
             functionsData.map((functionData) => {
@@ -64,10 +95,6 @@ function Functions() {
                             <Text fw={500}>{functionData.name}</Text>
                             <Text fw={500} c='dimmed'>{functionData.id}</Text>
                         </Group>
-
-                        <Text size="sm" c="dimmed">
-                            {functionData.rawJson}
-                        </Text>
 
                         <Group mt='xs'>
                         <Button radius="md" style={{flex: 1}} onClick={() => {
@@ -86,6 +113,11 @@ function Functions() {
                                 <IconTrash className={classes.delete} stroke={1.5}/>
                             </ActionIcon>
                         </Group>
+                        <Group mt='xs'>
+                        <Button radius="md" style={{flex: 1}} onClick={() => {}}>
+                                Share
+                        </Button>
+                        </Group>
                     </Card>
                 )
             })
@@ -102,6 +134,15 @@ function Functions() {
             database.deleteFunction(func.id);
     }
 
+    const testTemplate = useCallback(() => {
+        if (!currentUser) {
+            return 
+        }
+        console.log('testTemplate called');
+        database.createTemplateFromFunction(currentUser.uid, '0C6QeIK4lht5i2T7STFK')
+        reloadFunctions()
+    }, [currentUser])
+
     return (
         <>
             <CardPage cards={makeCards(functions)}/>
@@ -109,6 +150,7 @@ function Functions() {
                 <Box pos='relative'>
                     <LoadingOverlay visible={loading} loaderProps={{size: 28}}/>
                     <Button onClick={createNewFunction}>Create New Function</Button>
+                    <Button onClick={testTemplate}>Test Create Template</Button>
                 </Box>
             </Center>
             <DynamicModal isOpen={isDeleteOpen}

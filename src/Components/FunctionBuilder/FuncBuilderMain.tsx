@@ -19,6 +19,7 @@ import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Fu
 import SeriesInput from '../SeriesInput';
 import { MyDraggable } from './MyDraggable';
 import {flushSync} from "react-dom";
+import { IconTexture } from '@tabler/icons-react';
 
 interface InputBlockDS {
   blockId: number
@@ -180,7 +181,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     if (currentUser) {
       database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
         const tmp: Map<string, CustomFunctionDBRecord> = new Map();
+        console.log(functionsFromDb)
         functionsFromDb.forEach(functionData => {
+          console.log('functiondata.id', functionData)
           tmp.set(functionData.id, functionData)
         })
         setCustomFunctions(tmp);
@@ -210,7 +213,26 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         if(props.functionRawJson) {
             loadBlocksFromJSON(props.functionRawJson);
         }
-    }, []);
+
+        reloadSavedCustomFunctions()
+    }, [currentUser]);
+  
+  // re-render arrows
+  const refreshArrows = useCallback(() => {
+    setArrows(arrows => arrows.filter(arrow => {
+      const start : string = arrow.start
+      const end : string = arrow.end
+      console.log('rerender arrow')
+      console.log(arrow)
+      if (document.getElementById(start) == null || 
+        document.getElementById(end) == null){
+        console.log('is null')
+        return false
+      }
+      return true
+    }))
+  }, [blkMap])
+  
 
   function isBuiltinFunction(param: any): param is JSONBuiltinFunction {
     console.log(param.type);
@@ -984,6 +1006,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           if (funcType == FuncType.builtin) {
             setFuncBlockFunction(blk, '101'); //default to 101 (add)
           } else if (funcType == FuncType.custom) {
+            console.log(customFunctions);
             const f: CustomFunctionDBRecord = customFunctions.values().next().value;
             setFuncBlockFunction(blk, f.id);
           }
@@ -996,11 +1019,35 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
       }
 
-      setArrows(arrows => [...arrows]);
+      //setArrows(arrows => [...arrows]);
       return blk;
     })
 
-    setFuncBlocks(tmp);
+    setFuncBlocks(funcBlocks => 
+      funcBlocks.map((blk: FuncBlockDS) => {
+        if (blk.blockId == blkId) {
+          if (funcType == null && funcId != null) { // change to another function of the same type
+            setFuncBlockFunction(blk, funcId);
+          } else if (funcType != null && funcId == null) { //change function type
+            if (funcType == FuncType.builtin) {
+              setFuncBlockFunction(blk, '101'); //default to 101 (add)
+            } else if (funcType == FuncType.custom) {
+              console.log(customFunctions);
+              const f: CustomFunctionDBRecord = customFunctions.values().next().value;
+              setFuncBlockFunction(blk, f.id);
+            }
+          }
+  
+          for (const arrow of arrows) {
+            if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
+              updateOutputBlkType(arrow);
+            }
+          }
+        }
+        removeArrowsAttachedToBlk(blk.blockId)
+        return blk;
+      })
+    )
 
   }, [funcBlocks, arrows])
 
@@ -1305,30 +1352,30 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   })
 
 
-  console.log(arrows);
-  return (<>
-    <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
-      defaultAttr={["new input", data_types.dt_number, [200,200]]} />
-    <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101', FuncType.builtin, [200,200]]} />
-    <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined, [200,200]]} />
-    <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
-    <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
-    <h3>Function Builder</h3>
-    <div style={{ display: "flex" }}>
-      {fullInputBlocks}
-    </div>
-    {inputBlocksList}
-    {funcBlocksList}
-    {outputBlocksList}
-    {arrows.map(ar => (
-      <Xarrow
-        start={ar.start}
-        end={ar.end}
-        key={ar.start + "-." + ar.start}
-      />
-    ))}
-    {outputList}
-  </>
+  return (
+    <>
+      <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
+        defaultAttr={["new input", data_types.dt_number, [200,200]]} />
+      <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101', FuncType.builtin, [200,200]]} />
+      <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined, [200,200]]} />
+      <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
+      <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
+      <h3>Function Builder</h3>
+      <div style={{ display: "flex" }}>
+        {fullInputBlocks}
+      </div>
+      {inputBlocksList}
+      {funcBlocksList}
+      {outputBlocksList}
+      {arrows.map(ar => (
+        <Xarrow
+          start={ar.start}
+          end={ar.end}
+          key={ar.start + "-." + ar.start}
+        />
+      ))}
+      {outputList}
+    </>
   );
 }
 
