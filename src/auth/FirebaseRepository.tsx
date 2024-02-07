@@ -7,6 +7,7 @@ import { ModelData } from "../pages/Models/Models";
 import { FunctionData } from "../pages/Functions/Functions";
 import { FirestoreDataConverter, QueryDocumentSnapshot, SnapshotOptions, DocumentData } from "firebase/firestore";
 import {WorkflowData} from "../pages/Workflow/Workflows";
+import { TemplateData } from "../pages/Template/Templates";
 
 const modelConverter: FirestoreDataConverter<ModelData> = {
     toFirestore(model: ModelData): DocumentData {
@@ -30,11 +31,13 @@ export class FirestoreRepository {
     private usersRef;
     private functionsRef;
     private workflowsRef;
+    private templatesRef;
 
     constructor(db: Firestore) {
         this.db = db;
         this.modelsRef = collection(db, "Models").withConverter(modelConverter);
         this.usersRef = collection(db, "Users");
+        this.templatesRef = collection(db, "Templates")
         this.functionsRef = collection(db, "Functions");
         this.workflowsRef = collection(db, "Workflows");
     }
@@ -68,8 +71,17 @@ export class FirestoreRepository {
         return updateDoc(doc(this.functionsRef, functionId), data);
     }
 
+    async updateTemplate(templateId: string, data: object) {
+        return updateDoc(doc(this.templatesRef, templateId), data);
+    }
+
     async getFunctions() {
         const querySnapshot = await getDocs(this.functionsRef);
+        return querySnapshot.docs.map(doc => doc.data())
+    }
+
+    async getTemplates() {
+        const querySnapshot = await getDocs(this.templatesRef);
         return querySnapshot.docs.map(doc => doc.data())
     }
 
@@ -84,14 +96,36 @@ export class FirestoreRepository {
         return docRef.id;
     }
 
+    async createEmptyTemplate(uid: string) {
+        const emptyTemplateData: TemplateData = {
+            rawJson: "{}",
+            id: "",
+            name: "New Function",
+            ownerUid: uid
+        }
+        const docRef = await addDoc(this.templatesRef, emptyTemplateData);
+        return docRef.id;
+    }
+
     async getFunction(functionId: string) {
         const func = await getDoc(doc(this.functionsRef, functionId));
         return func.data() as FunctionData
     }
 
+    async getTemplate(templateId: string) {
+        const func = await getDoc(doc(this.templatesRef, templateId));
+        return func.data() as TemplateData
+    }
+
     subscribeToFunction(functionId: string, callback: (funcData: FunctionData) => void) {
         return onSnapshot(doc(this.functionsRef, functionId), (doc) => {
             callback({...doc.data(), id: doc.id} as FunctionData);
+        });
+    }
+
+    subscribeToTemplate(templateId: string, callback: (tempData: TemplateData) => void) {
+        return onSnapshot(doc(this.templatesRef, templateId), (doc) => {
+            callback({...doc.data(), id: doc.id} as TemplateData);
         });
     }
 
@@ -104,8 +138,21 @@ export class FirestoreRepository {
         });
     }
 
+    subscribeToTemplatesForUser(userId: string, callback: (templates: TemplateData[]) => void) {
+        const q = query(this.templatesRef, where('ownerUid', '==', userId));
+        return onSnapshot(q, (snapshot) => {
+            callback(snapshot.docs.map(doc => {
+                return {...doc.data(), id: doc.id} as TemplateData
+            }))
+        });
+    }
+
     async deleteFunction(id: string) {
         return deleteDoc(doc(this.functionsRef, id));
+    }
+
+    async deleteTemplate(id: string) {
+        return deleteDoc(doc(this.templatesRef, id));
     }
 
     subscribeToWorkflowsForUser(userId: string, callback: (workflows: WorkflowData[]) => void) {

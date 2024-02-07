@@ -8,38 +8,38 @@ import {IconTrash} from "@tabler/icons-react";
 import classes from "../Models/ModelCard.module.css";
 import {useDisclosure} from "@mantine/hooks";
 
-export interface FunctionData {
+export interface TemplateData {
     id: string;
     ownerUid: string;
     name: string;
     rawJson: string;
 }
 
-function Functions() {
+function Templates() {
     const [loading, setLoading] = useState(false);
-    const [functions, setFunctions] = useState<FunctionData[]>([]);
-    const [selectedFunction, setSelectedFunction] = useState<FunctionData | null>(null);
+    const [templates, setTemplates] = useState<TemplateData[]>([]);
+    const [selectedTemplates, setSelectedTemplate] = useState<TemplateData | null>(null);
     const [isDeleteOpen, {open: openDelete, close: closeDelete}] = useDisclosure(false);
     const {currentUser} = useContext(AuthContext);
 
     useEffect(() => {
         if(currentUser) {
-            database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
-                setFunctions(functionsFromDb);
+            database.subscribeToTemplatesForUser(currentUser.uid, templatesFromDb => {
+                setTemplates(templatesFromDb);
             });
         }
     }, [currentUser]);
 
-    const openFunctionPage = (functionId: string) => {
-        window.open(`/function/${functionId}`, '_blank');
+    const openTemplatePage = (templateId: string) => {
+        window.open(`/template/${templateId}`, '_blank');
     }
 
-    const editFunctionPage = (functionId: string, json: string) => {
-        window.open(`/function/${functionId}`, '_blank');
+    const editTemplatePage = (templateId: string, json: string) => {
+        window.open(`/template/${templateId}`, '_blank');
         console.log(json);
     }
 
-    const createNewFunction = () => {
+    const createNewTemplate = () => {
 
         if(!currentUser) {
             return;
@@ -47,33 +47,33 @@ function Functions() {
 
         setLoading(true);
 
-        database.createEmptyFunction(currentUser.uid).then((functionId: string) => {
-            openFunctionPage(functionId);
+        database.createEmptyTemplate(currentUser.uid).then((templateId: string) => {
+            openTemplatePage(templateId);
             setLoading(false);
         });
 
     }
 
-    const makeCards = useCallback((functionsData: FunctionData[]) => {
+    const makeCards = useCallback((templatesData: TemplateData[]) => {
         return (
-            functionsData.map((functionData) => {
+            templatesData.map((templateData) => {
                 return (
                     <Card padding="lg" radius="md" withBorder>
 
                         <Group justify="space-between" mb="xs">
-                            <Text fw={500}>{functionData.name}</Text>
-                            <Text fw={500} c='dimmed'>{functionData.id}</Text>
+                            <Text fw={500}>{templateData.name}</Text>
+                            <Text fw={500} c='dimmed'>{templateData.id}</Text>
                         </Group>
 
                         <Text size="sm" c="dimmed">
-                            {functionData.rawJson}
+                            {templateData.rawJson}
                         </Text>
 
                         <Group mt='xs'>
                         <Button radius="md" style={{flex: 1}} onClick={() => {
-                                console.log("the function being edited is ", database.getFunction(functionData.id).then((result) => {
+                                console.log("the function being edited is ", database.getTemplate(templateData.id).then((result) => {
                                     // Handle the resolved value (result) here
-                                    editFunctionPage(functionData.id, result.rawJson);
+                                    editTemplatePage(templateData.id, result.rawJson);
                                   
                                   }).catch((error) => {
                                     // Handle any errors that occur during the promise
@@ -82,7 +82,7 @@ function Functions() {
                                 }}>
                                 Edit
                             </Button>
-                            <ActionIcon variant="default" radius="md" size={36} onClick={() => { setSelectedFunction(functionData); openDelete(); }}>
+                            <ActionIcon variant="default" radius="md" size={36} onClick={() => { setSelectedTemplate(templateData); openDelete(); }}>
                                 <IconTrash className={classes.delete} stroke={1.5}/>
                             </ActionIcon>
                         </Group>
@@ -90,30 +90,30 @@ function Functions() {
                 )
             })
         )
-    }, [functions]);
+    }, [templates]);
 
     const handleClose = () => {
         closeDelete();
-        setSelectedFunction(null);
+        setSelectedTemplate(null);
     }
 
-    const handleDeleteFunction = (func: FunctionData | null) => {
+    const handleDeleteTemplate = (func: TemplateData | null) => {
         if(func)
             database.deleteFunction(func.id);
     }
 
     return (
         <>
-            <CardPage cards={makeCards(functions)}/>
+            <CardPage cards={makeCards(templates)}/>
             <Center>
                 <Box pos='relative'>
                     <LoadingOverlay visible={loading} loaderProps={{size: 28}}/>
-                    <Button onClick={createNewFunction}>Create New Function</Button>
+                    <Button onClick={createNewTemplate}>Create New Function</Button>
                 </Box>
             </Center>
             <DynamicModal isOpen={isDeleteOpen}
                           close={handleClose}
-                          submit={ () => { handleDeleteFunction(selectedFunction) }}
+                          submit={ () => { handleDeleteTemplate(selectedTemplates) }}
                           title={"Are you sure you want to delete this function?"}
                           elements={[]}
                           values={null}
@@ -122,4 +122,4 @@ function Functions() {
     );
 }
 
-export default Functions;
+export default Templates;

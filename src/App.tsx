@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom'
 import WorkflowBuilder from "./pages/WorkflowBuilder/WorkflowBuilder";
 import CustomFunctionBuilder from "./pages/CustomFunctionBuilder/CustomFunctionBuilder";
+import CustomTemplateBuilder from './pages/CustomFunctionBuilder/CustomTemplateBuilder';
 
 function App() {
     return (
@@ -16,6 +17,7 @@ function App() {
                     <Route path='/' element={<Home/>}/>
                     <Route path='workflow/:id' element={<WorkflowBuilder/>}/>
                     <Route path='function/:id' element={<CustomFunctionBuilder/>}/>
+                    <Route path='template/:id' element={<CustomTemplateBuilder/>}/>
                 </Route>
                 <Route path="/login" element={<LoginPage/>}/>
             </Routes>

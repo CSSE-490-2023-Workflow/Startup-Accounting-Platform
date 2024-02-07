@@ -6,7 +6,7 @@ export const FunctionBuilderTesting = () => {
     return (
         <div className="Demo">
             <header className="App-header">
-                <FuncBuilderMain functionId={"test_function"}/>
+                <FuncBuilderMain template={false} functionId={"test_function"}/>
             </header>
         </div>
     )

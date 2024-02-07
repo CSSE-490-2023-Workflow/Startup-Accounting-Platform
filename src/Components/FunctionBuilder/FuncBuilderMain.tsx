@@ -16,6 +16,7 @@ import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 're
 import { AuthContext, database } from "../../auth/firebase";
 import { Button } from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Functions'
+import { TemplateData as CustomTemplateDBRecord } from '../../pages/Template/Templates'
 import SeriesInput from '../SeriesInput';
 import { MyDraggable } from './MyDraggable';
 import {flushSync} from "react-dom";
@@ -91,6 +92,7 @@ export interface Arrow {
 interface FuncBuilderMainProps {
   functionId: string;
   functionRawJson?: string;
+  template: boolean;
 }
 
 type blk = FuncBlockDS | OutputBlockDS | InputBlockDS;
@@ -106,9 +108,26 @@ interface JSONInput {
   inputName: string;
   inputType: number;
   inputIdx: number;
+  inputVal?: allowed_stack_components;
   inputBlkLoc: [number, number];
   blockId: number;
 }
+
+/*interface JSONBuiltinTemplate {
+  type: string;
+  useOutput: number;
+  functionName: string;
+  functionId: number;
+  paramVals: allowed_stack_components[];
+  paramNames: string[];
+  paramTypes: number[];
+  outputNames: string[];
+  outputTypes: number[];
+  funcBlkLoc: [number, number];
+  blockId: number;
+  params: JSONInput[];
+}*/
+
 
 interface JSONBuiltinFunction {
   type: string;
@@ -134,6 +153,16 @@ interface JSONOutput {
   params: JSONInput[] | JSONBuiltinFunction[] | JSONCustomFunction[];
 }
 
+/*interface JSONTemplateOutput {
+  type: string;
+  outputName: string;
+  outputType: number;
+  outputIdx: number;
+  outputBlkLoc: [number, number];
+  blockId: number;
+  params: JSONInput[] | JSONBuiltinTemplate[] | JSONCustomTemplate[];
+}*/
+
 interface JSONCustomFunction {
   functionId: number;
   type: string;
@@ -143,6 +172,17 @@ interface JSONCustomFunction {
   outputTypes: number[];
   outputs: JSONOutput[];
 }
+
+/*interface JSONCustomTemplate {
+  functionId: number;
+  type: string;
+  paramVals: allowed_stack_components[];
+  paramNames: string[];
+  paramTypes: number[];
+  outputNames: string[];
+  outputTypes: number[];
+  outputs: JSONTemplateOutput[];
+}*/
 
 function FuncBuilderMain(props: FuncBuilderMainProps) {
 
@@ -178,26 +218,50 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const reloadSavedCustomFunctions = useCallback(() => {
     if (currentUser) {
-      database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
-        const tmp: Map<string, CustomFunctionDBRecord> = new Map();
-        functionsFromDb.forEach(functionData => {
-          tmp.set(functionData.id, functionData)
-        })
-        setCustomFunctions(tmp);
-        console.log("custom functions: ", tmp);
-
-        // We want to update custom function blocks that are using
-        // the custom function we are building!
-        setFuncBlocks(funcBlocks => {
-          for (const funcBlk of funcBlocks) {
-            if (funcBlk.funcId == props.functionId) {
-              console.log(funcBlk, props.functionId);
-              setFuncBlockFunction(funcBlk, props.functionId);
+      if(props.template) {
+        database.subscribeToTemplatesForUser(currentUser.uid, templatesFromDb => {
+          const tmp: Map<string, CustomTemplateDBRecord> = new Map();
+          templatesFromDb.forEach(templateData => {
+            tmp.set(templateData.id, templateData)
+          })
+          setCustomFunctions(tmp);
+          console.log("custom functions: ", tmp);
+  
+          // We want to update custom function blocks that are using
+          // the custom function we are building!
+          setFuncBlocks(funcBlocks => {
+            for (const funcBlk of funcBlocks) {
+              if (funcBlk.funcId == props.functionId) {
+                console.log(funcBlk, props.functionId);
+                setFuncBlockFunction(funcBlk, props.functionId);
+              }
             }
-          }
-          return [...funcBlocks];
-        })
-      });
+            return [...funcBlocks];
+          })
+        });
+      } else {
+        database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
+          const tmp: Map<string, CustomFunctionDBRecord> = new Map();
+          functionsFromDb.forEach(functionData => {
+            tmp.set(functionData.id, functionData)
+          })
+          setCustomFunctions(tmp);
+          console.log("custom functions: ", tmp);
+  
+          // We want to update custom function blocks that are using
+          // the custom function we are building!
+          setFuncBlocks(funcBlocks => {
+            for (const funcBlk of funcBlocks) {
+              if (funcBlk.funcId == props.functionId) {
+                console.log(funcBlk, props.functionId);
+                setFuncBlockFunction(funcBlk, props.functionId);
+              }
+            }
+            return [...funcBlocks];
+          })
+        });
+      }
+      
     }
   }, [currentUser])
 
@@ -206,7 +270,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             mounted.current = true;
             return;
         }
-
         if(props.functionRawJson) {
             loadBlocksFromJSON(props.functionRawJson);
         }
@@ -217,10 +280,20 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     return param && param.type === "builtin_function";
   }
 
+  // function isBuiltinTemplate(param: any): param is JSONBuiltinTemplate {
+  //   console.log(param.type);
+  //   return param && param.type === "builtin_template";
+  // }
+
   function isCustomFunction(param: any): param is JSONCustomFunction {
     console.log(param.type);
     return param && param.type === "custom_function";
   }
+
+  // function isCustomTemplate(param: any): param is JSONCustomTemplate {
+  //   console.log(param.type);
+  //   return param && param.type === "custom_template";
+  // }
 
   function isInput(param: any): param is JSONInput {
     console.log(param.type);
@@ -228,7 +301,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }
 
     const loadBlocksFromJSON = (rawJSON: string) => {
-
         const loadParams = (parentBlockId: number, params: Array<JSONInput | JSONBuiltinFunction | JSONCustomFunction>) => {
             for (let [paramIndex, param] of params.entries()) {
                 if (isBuiltinFunction(param)) {
@@ -238,7 +310,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
                     loadParams(param.blockId, param.params);
                 } else if (isInput(param)) {
                     param = param as JSONInput;
-                    addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
+                    let val = null
+                    if(param.inputVal) {
+                      val = param.inputVal
+                    }
+                    addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, val, param.blockId, param.inputIdx);
                     addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
                 }
             }
@@ -258,6 +334,37 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
 
     }
+  //   const loadTemplateBlocksFromJSON = (rawJSON: string) => {
+  //     const newFullInputBlocks = []
+  //     const loadParams = (parentBlockId: number, params: Array<JSONInput | JSONBuiltinTemplate | JSONCustomTemplate>) => {
+  //         for (let [paramIndex, param] of params.entries()) {
+  //             if (isBuiltinTemplate(param)) {
+  //                 param = param as JSONBuiltinTemplate;
+  //                 addFuncBlock((param.functionId).toString(), FuncType.builtin, param.funcBlkLoc, param.blockId);
+  //                 addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+  //                 loadParams(param.blockId, param.params);
+  //             } else if (isInput(param)) {
+  //                 param = param as JSONInput;
+  //                 addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
+  //                 addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+  //             }
+  //         }
+  //     }
+
+  //     if (rawJSON === "{}") {
+  //         rawJSON = '{"type":"custom_template","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
+  //     }
+
+  //     const data: JSONCustomTemplate = JSON.parse(rawJSON);
+
+  //     for (const output of data.outputs) {
+  //         if (!outputBlkIdxMap.has(output.outputIdx)) {
+  //             addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
+  //             loadParams(output.blockId, output.params);
+  //         }
+  //     }
+
+  // }
 
   // const testLoadFunctions = useCallback(() => {
   //   if (currentUser) {
@@ -464,8 +571,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     const outputBlksSorted: OutputBlockDS[] = outputBlocks.sort((blk1, blk2) =>
       blk1.outputIdx - blk2.outputIdx
     )
-
-    const res: any = {
+    const res: any = props.template ? {
+      type: 'custom_template',
+      useOutput: 'all',
+      paramNames: inputBlksSorted.map(iBlk => iBlk.inputName),
+      paramTypes: inputBlksSorted.map(iBlk => iBlk.inputType),
+      paramVals: inputBlksSorted.map(iBlk => iBlk.val),
+      outputNames: outputBlksSorted.map(oBlk => oBlk.outputName),
+      outputTypes: outputBlksSorted.map(oBlk => oBlk.outputType),
+      outputs: tmp
+    } : {
       type: 'custom_function',
       useOutput: 'all',
       paramNames: inputBlksSorted.map(iBlk => iBlk.inputName),
@@ -473,7 +588,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       outputNames: outputBlksSorted.map(oBlk => oBlk.outputName),
       outputTypes: outputBlksSorted.map(oBlk => oBlk.outputType),
       outputs: tmp
-    }
+    };
 
 
     var blob = new Blob([JSON.stringify(res)], { type: "application/json; charset=utf-8" });
@@ -481,7 +596,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setSavedFunction(res);
     console.log('saved func', res);
 
-    database.updateFunction(props.functionId, { rawJson: JSON.stringify(res) });
+    database.updateTemplate(props.functionId, { rawJson: JSON.stringify(res) });
     reloadSavedCustomFunctions();
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId])
   /**
@@ -561,7 +676,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   /**
    * Input block Logics
    */
-  const addInputBlock = useCallback((inputName: string, inputType: data_types, inputBlkLoc: [number, number], blockId?: number, blockIdx?: number) => {
+  const addInputBlock = useCallback((inputName: string, inputType: data_types, inputBlkLoc: [number, number], val: allowed_stack_components | null, blockId?: number, blockIdx?: number, ) => {
     const newId = blockId ? blockId : currInputBlockId + 1;
     const newIdx = blockIdx ? blockIdx : inputBlkIdxMap.size + 1;
     console.log("index", inputBlkIdxMap);
@@ -572,7 +687,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       inputName: inputName,
       inputType: inputType,
       inputIdx: newIdx,
-      val: 0,
+      val: val ?? 0,
       blockLocation: inputBlkLoc
     }
 
@@ -1312,11 +1427,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101', FuncType.builtin, [200,200]]} />
     <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined, [200,200]]} />
     <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
-    <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
+    {props.template && <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>}
     <h3>Function Builder</h3>
-    <div style={{ display: "flex" }}>
-      {fullInputBlocks}
-    </div>
+    {props.template && 
+      <div style={{ display: "flex" }}>
+        {fullInputBlocks}
+      </div>
+    }
     {inputBlocksList}
     {funcBlocksList}
     {outputBlocksList}
@@ -1327,7 +1444,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         key={ar.start + "-." + ar.start}
       />
     ))}
-    {outputList}
+    {props.template && outputList}
   </>
   );
 }
