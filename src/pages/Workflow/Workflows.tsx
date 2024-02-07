@@ -5,13 +5,8 @@ import CardPage from "../CardPage/CardPage";
 import DynamicModal from "../../Components/Modal/DynamicModal";
 import {IconTrash} from "@tabler/icons-react";
 import classes from "../Models/ModelCard.module.css";
-import {useDisclosure} from "@mantine/hooks";
-
-export interface WorkflowData {
-    id: string;
-    ownerUid: string;
-    name: string;
-}
+import {useDisclosure} from "@mantine/hooks"
+import {WorkflowData} from "../../auth/FirebaseRepository";
 
 const Workflows = () => {
     const [loading, setLoading] = useState(false);

@@ -3,26 +3,44 @@ import {getFirestore} from 'firebase/firestore';
 import firebase from "firebase/compat/app";
 import "firebase/compat/firestore";
 import Firestore = firebase.firestore.Firestore;
-import { ModelData } from "../pages/Models/Models";
-import { FunctionData, ShareTemplateMsg } from "../pages/Functions/Functions";
-import { FirestoreDataConverter, QueryDocumentSnapshot, SnapshotOptions, DocumentData } from "firebase/firestore";
-import {WorkflowData} from "../pages/Workflow/Workflows";
 
-const modelConverter: FirestoreDataConverter<ModelData> = {
-    toFirestore(model: ModelData): DocumentData {
-        return model;
-    },
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ModelData {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            name: data.name,
-            description: data.description,
-            inputs: data.inputs,
-            displayStyle: data.displayStyle
-        };
-    }
-};
+export interface UserData {
+    uid: string
+    email: string | null
+    photoUrl: string | null
+    fullName: string | null
+}
+
+export interface FunctionData {
+    id: string;
+    ownerUid: string;
+    name: string;
+    type: string,
+    fromTemplate: string,
+    rawJson: string;
+}
+
+export interface ShareTemplateMsg {
+    senderId: string,
+    receiverId: string,
+    functionId: string,
+    time: firebase.firestore.Timestamp,
+    status: string
+}
+
+export interface ModelData {
+    id: string;
+    name: string;
+    description: string;
+    inputs: string[];
+    displayStyle: string;
+}
+
+export interface WorkflowData {
+    id: string;
+    ownerUid: string;
+    name: string;
+}
 
 export class FirestoreRepository {
     private readonly db: Firestore;
@@ -34,22 +52,24 @@ export class FirestoreRepository {
 
     constructor(db: Firestore) {
         this.db = db;
-        this.modelsRef = collection(db, "Models").withConverter(modelConverter);
+        this.modelsRef = collection(db, "Models")
         this.usersRef = collection(db, "Users");
         this.functionsRef = collection(db, "Functions");
         this.workflowsRef = collection(db, "Workflows");
         this.shareFunctionMsgRef = collection(db, "ShareFunctionMessages")
     }
 
-    async createUserIfNotExists(uid: string, email: string | null | undefined, photoUrl: string | null | undefined) {
-        // @ts-ignore
+    async createUserIfNotExists(uid: string, email: string | null, photoUrl: string | null, fullName: string | null) {
         const docSnapshot = await getDoc(doc(this.usersRef, uid));
+        const userData: UserData = {
+            uid: uid,
+            email: email,
+            photoUrl: photoUrl,
+            fullName: fullName
+        }
+
         if (!docSnapshot.exists()) {
-            return setDoc(doc(this.usersRef, uid), {
-                uid: uid,
-                email: email,
-                photoUrl: photoUrl
-            });
+            return setDoc(doc(this.usersRef, uid), userData);
         }
     }
 
@@ -226,5 +246,19 @@ export class FirestoreRepository {
 
     async updateWorkflow(workflowId: string, data: object) {
         return updateDoc(doc(this.workflowsRef, workflowId), data);
+    }
+
+    async getUserForEmail(email: string): Promise<UserData> {
+        const q = query(this.usersRef, where('email', '==', email));
+        const response = await getDocs(q);
+
+        const users = response.docs.map(userDocument => {
+            return userDocument.data() as UserData
+        });
+
+        if(users.length)
+            return users[0];
+
+        throw new Error(`No user found for email ${email}`)
     }
 }

@@ -1,36 +1,21 @@
-import React, {useCallback, useContext, useEffect, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import FuncBuilderMain from '../../Components/FunctionBuilder/FuncBuilderMain';
 import {ActionIcon, Box, Button, Card, Center, Group, LoadingOverlay, Space, Text} from "@mantine/core";
 import {AuthContext, database} from "../../auth/firebase";
 import CardPage from "../CardPage/CardPage";
 import DynamicModal from "../../Components/Modal/DynamicModal";
-import {IconTrash} from "@tabler/icons-react";
+import {IconShare, IconTrash} from "@tabler/icons-react";
 import classes from "../Models/ModelCard.module.css";
 import {useDisclosure} from "@mantine/hooks";
-import firebase from 'firebase/compat';
-
-export interface FunctionData {
-    id: string;
-    ownerUid: string;
-    name: string;
-    type: string,
-    fromTemplate: string,
-    rawJson: string;
-}
-
-export interface ShareTemplateMsg {
-    senderId: string,
-    receiverId: string,
-    functionId: string,
-    time: firebase.firestore.Timestamp,
-    status: string
-}
+import ShareModal from "../../Components/Modal/ShareModal";
+import {FunctionData} from "../../auth/FirebaseRepository";
 
 function Functions() {
     const [loading, setLoading] = useState(false);
     const [functions, setFunctions] = useState<FunctionData[]>([]);
-    const [selectedFunction, setSelectedFunction] = useState<FunctionData | null>(null);
+    const selectedFunction = useRef<FunctionData | null>(null);
     const [isDeleteOpen, {open: openDelete, close: closeDelete}] = useDisclosure(false);
+    const [isShareModalOpen, {open: openShareModal, close: closeShareModal}] = useDisclosure(false);
     const {currentUser} = useContext(AuthContext);
 
     useEffect(() => {
@@ -43,11 +28,6 @@ function Functions() {
 
     const openFunctionPage = (functionId: string) => {
         window.open(`/function/${functionId}`, '_blank');
-    }
-
-    const editFunctionPage = (functionId: string, json: string) => {
-        window.open(`/function/${functionId}`, '_blank');
-        console.log(json);
     }
 
     const createNewFunction = () => {
@@ -65,18 +45,14 @@ function Functions() {
 
     }
 
-    const shareFunction = () => {
-        if(!currentUser) {
+    const handleShareFunction = (recipientUserId: string) => {
+
+        if(!currentUser || !selectedFunction.current)
             return;
-        }
 
-        //receiver id
-        const receiverId : string = "123";
-        const functionId : string = "321";
-        database.shareFunction(currentUser.uid, receiverId, functionId).then(() => {
+        database.shareFunction(currentUser.uid, recipientUserId, selectedFunction.current.id);
 
-        })
-    }
+    };
 
     const makeCards = useCallback((functionsData: FunctionData[]) => {
         return (
@@ -90,26 +66,15 @@ function Functions() {
                         </Group>
 
                         <Group mt='xs'>
-                        <Button radius="md" style={{flex: 1}} onClick={() => {
-                                console.log("the function being edited is ", database.getFunction(functionData.id).then((result) => {
-                                    // Handle the resolved value (result) here
-                                    editFunctionPage(functionData.id, result.rawJson);
-                                  
-                                  }).catch((error) => {
-                                    // Handle any errors that occur during the promise
-                                    console.error("Error:", error);
-                                  }));
-                                }}>
-                                Edit
+                            <Button radius="md" style={{flex: 1}} onClick={() => { openFunctionPage(functionData.id) }}>
+                                    Edit
                             </Button>
-                            <ActionIcon variant="default" radius="md" size={36} onClick={() => { setSelectedFunction(functionData); openDelete(); }}>
+                            <ActionIcon variant="default" radius="md" size={36} onClick={() => { selectedFunction.current = functionData; openShareModal(); }}>
+                                <IconShare stroke={1.5}/>
+                            </ActionIcon>
+                            <ActionIcon variant="default" radius="md" size={36} onClick={() => { selectedFunction.current = functionData; openDelete(); }}>
                                 <IconTrash className={classes.delete} stroke={1.5}/>
                             </ActionIcon>
-                        </Group>
-                        <Group mt='xs'>
-                        <Button radius="md" style={{flex: 1}} onClick={() => {}}>
-                                Share
-                        </Button>
                         </Group>
                     </Card>
                 )
@@ -119,7 +84,6 @@ function Functions() {
 
     const handleClose = () => {
         closeDelete();
-        setSelectedFunction(null);
     }
 
     const handleDeleteFunction = (func: FunctionData | null) => {
@@ -145,9 +109,14 @@ function Functions() {
                     <Button onClick={testTemplate}>Test Create Template</Button>
                 </Box>
             </Center>
+
+            <ShareModal opened={isShareModalOpen} onClose={() => { closeShareModal(); }}
+                        onSubmit={handleShareFunction}
+                        title={"Share this function with someone"} />
+
             <DynamicModal isOpen={isDeleteOpen}
                           close={handleClose}
-                          submit={ () => { handleDeleteFunction(selectedFunction) }}
+                          submit={ () => { handleDeleteFunction(selectedFunction.current) }}
                           title={"Are you sure you want to delete this function?"}
                           elements={[]}
                           values={null}

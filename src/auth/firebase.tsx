@@ -116,7 +116,7 @@ export const AuthProvider = ({ children }) => {
         const auth = getAuth();
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if(user?.uid) {
-                database.createUserIfNotExists(user.uid, user?.email, user?.photoURL);
+                database.createUserIfNotExists(user.uid, user?.email, user?.photoURL, user?.displayName);
             }
             setCurrentUser(user);
             setLoading(false);
