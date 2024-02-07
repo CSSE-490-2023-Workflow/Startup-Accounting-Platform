@@ -3,12 +3,13 @@ import {useDisclosure} from "@mantine/hooks";
 import React, {useCallback, useContext, useState} from "react";
 import { useForm } from '@mantine/form';
 import {AuthContext, database} from "../../auth/firebase";
+import {UserData} from "../../auth/FirebaseRepository";
 
 interface ShareModalProps {
     title: string;
     opened: boolean;
     onClose: () => void;
-    onSubmit: (userId: string) => void;
+    onSubmit: (user: UserData) => void;
 }
 
 const ShareModal = (props: ShareModalProps) => {
@@ -29,7 +30,7 @@ const ShareModal = (props: ShareModalProps) => {
 
         database.getUserForEmail(email).then((user) => {
 
-            props.onSubmit(user.uid);
+            props.onSubmit(user);
             props.onClose();
             setLoading(false);
 

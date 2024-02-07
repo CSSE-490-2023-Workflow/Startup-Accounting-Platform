@@ -1,14 +1,14 @@
 import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import FuncBuilderMain from '../../Components/FunctionBuilder/FuncBuilderMain';
-import {ActionIcon, Box, Button, Card, Center, Group, LoadingOverlay, Space, Text} from "@mantine/core";
+import {ActionIcon, Box, Button, Card, Center, Dialog, Group, LoadingOverlay, Space, Text} from "@mantine/core";
 import {AuthContext, database} from "../../auth/firebase";
 import CardPage from "../CardPage/CardPage";
 import DynamicModal from "../../Components/Modal/DynamicModal";
-import {IconShare, IconTrash} from "@tabler/icons-react";
+import {IconCheck, IconShare, IconTrash} from "@tabler/icons-react";
 import classes from "../Models/ModelCard.module.css";
 import {useDisclosure} from "@mantine/hooks";
 import ShareModal from "../../Components/Modal/ShareModal";
-import {FunctionData} from "../../auth/FirebaseRepository";
+import {FunctionData, UserData} from "../../auth/FirebaseRepository";
 
 function Functions() {
     const [loading, setLoading] = useState(false);
@@ -16,6 +16,8 @@ function Functions() {
     const selectedFunction = useRef<FunctionData | null>(null);
     const [isDeleteOpen, {open: openDelete, close: closeDelete}] = useDisclosure(false);
     const [isShareModalOpen, {open: openShareModal, close: closeShareModal}] = useDisclosure(false);
+    const [isShareSuccessDialogOpen, { open: openShareSuccessDialog, close: closeShareSuccessDialog }] = useDisclosure(false);
+    const [shareSuccessDialogText, setShareSuccessDialogText] = useState("Success");
     const {currentUser} = useContext(AuthContext);
 
     useEffect(() => {
@@ -45,12 +47,16 @@ function Functions() {
 
     }
 
-    const handleShareFunction = (recipientUserId: string) => {
+    const handleShareFunction = (recipient: UserData) => {
 
         if(!currentUser || !selectedFunction.current)
             return;
 
-        database.shareFunction(currentUser.uid, recipientUserId, selectedFunction.current.id);
+        database.shareFunction(currentUser.uid, recipient.uid, selectedFunction.current.id).then(() => {
+            setShareSuccessDialogText(`You shared this function with ${recipient.fullName}`)
+            openShareSuccessDialog();
+            setTimeout(closeShareSuccessDialog, 2000);
+        });
 
     };
 
@@ -121,6 +127,15 @@ function Functions() {
                           elements={[]}
                           values={null}
                           buttonProps={ { color: "red", text: "Delete" }} />
+
+            <Dialog opened={isShareSuccessDialogOpen} withCloseButton onClose={closeShareSuccessDialog} size="lg" radius="md" transitionProps={{ transition: 'slide-left', duration: 100 }} withBorder>
+                <Group>
+                    <IconCheck/>
+                    <Text size="sm" fw={500}>
+                        { shareSuccessDialogText }
+                    </Text>
+                </Group>
+            </Dialog>
         </>
     );
 }
