@@ -262,6 +262,15 @@ export class FirestoreRepository {
         });
     }
 
+    subscribeToONLYFunctionsForUser(userId: string, callback: (functions: FunctionData[]) => void) {
+        const q = query(this.functionsRef, where('ownerUid', '==', userId), where('type', '==', 'Custom Function'));
+        onSnapshot(q, (snapshot) => {
+            callback(snapshot.docs.map(doc => {
+                return {...doc.data(), id: doc.id} as FunctionData
+            }))
+        });
+    }
+
     subscribeToTemplatesForUser(userId: string, callback: (functions: FunctionData[]) => void) {
         const q = query(this.functionsRef, where('ownerUid', '==', userId), where('type', '==', 'Template'));
         onSnapshot(q, (snapshot) => {

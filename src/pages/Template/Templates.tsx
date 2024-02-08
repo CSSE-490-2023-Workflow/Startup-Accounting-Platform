@@ -25,7 +25,7 @@ function Templates() {
 
     useEffect(() => {
         if(currentUser) {
-            database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
+            database.subscribeToTemplatesForUser(currentUser.uid, functionsFromDb => {
                 setFunctions(functionsFromDb);
             });
         }

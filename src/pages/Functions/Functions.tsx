@@ -25,7 +25,7 @@ function Functions() {
 
     useEffect(() => {
         if(currentUser) {
-            database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
+            database.subscribeToONLYFunctionsForUser(currentUser.uid, functionsFromDb => {
                 setFunctions(functionsFromDb);
             });
         }
@@ -78,9 +78,9 @@ function Functions() {
                             <Button radius="md" style={{flex: 1}} onClick={() => { openFunctionPage(functionData.id) }}>
                                     Edit
                             </Button>
-                            <ActionIcon variant="default" radius="md" size={36} onClick={() => { selectedFunction.current = functionData; openShareModal(); }}>
+                            {/* <ActionIcon variant="default" radius="md" size={36} onClick={() => { selectedFunction.current = functionData; openShareModal(); }}>
                                 <IconShare stroke={1.5}/>
-                            </ActionIcon>
+                            </ActionIcon> */}
                             <ActionIcon variant="default" radius="md" size={36} onClick={() => { selectedFunction.current = functionData; openDelete(); }}>
                                 <IconTrash className={classes.delete} stroke={1.5}/>
                             </ActionIcon>
@@ -132,7 +132,7 @@ function Functions() {
                 <Box pos='relative'>
                     <LoadingOverlay visible={loading} loaderProps={{size: 28}}/>
                     <Button onClick={createNewFunction}>Create New Function</Button>
-                    <Button onClick={() => {
+                    {/* <Button onClick={() => {
                         //testTemplate();
                         openSelectionModal();
                         if (currentUser) {
@@ -142,13 +142,13 @@ function Functions() {
                             })
                         }
                         
-                    }}>Create Template from Function</Button>
+                    }}>Create Template from Function</Button> */}
                 </Box>
             </Center>
 
-            <ShareModal opened={isShareModalOpen} onClose={() => { closeShareModal(); }}
+            {/* <ShareModal opened={isShareModalOpen} onClose={() => { closeShareModal(); }}
                         onSubmit={handleShareFunction}
-                        title={"Share this function with someone"} />
+                        title={"Share this function with someone"} /> */}
 
             <SelectionModal opened={isSelectionModalOpen} onClose={() => {closeSelectionModal(); }}
                         onSubmit={handleTemplateFromFunction}
