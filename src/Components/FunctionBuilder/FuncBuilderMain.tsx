@@ -15,7 +15,7 @@ import NumberInput from '../NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
 import { Button } from "@mantine/core";
-import { FunctionData as CustomFunctionDBRecord } from '../../pages/Functions/Functions'
+import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
 import SeriesInput from '../SeriesInput';
 import { MyDraggable } from './MyDraggable';
 import {flushSync} from "react-dom";

@@ -3,7 +3,7 @@ import {Box, Button, Checkbox, Group, Modal, Select, TextInput} from "@mantine/c
 import {useDisclosure} from "@mantine/hooks";
 
 import { useState, useEffect } from 'react';
-import {ModelData} from "../../pages/Models/Models";
+import {ModelData} from "../../auth/FirebaseRepository";
 
 export enum ModalElementType {
     Text,
@@ -35,6 +35,7 @@ const DynamicModal: React.FC<DynamicModalProps> = ({isOpen, close, submit, title
 
     // Update formValues whenever a form element's value changes
     const handleValueChange = (key: string, newValue: string) => {
+        // @ts-ignore
         setFormValues(prevFormValues => ({
             ...prevFormValues,
             [key]: newValue,

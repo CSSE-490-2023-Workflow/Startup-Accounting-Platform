@@ -5,7 +5,7 @@ import FuncBuilderMain from "../../Components/FunctionBuilder/FuncBuilderMain";
 import {LoadingOverlay, TextInput} from "@mantine/core";
 import {useEffect, useState} from "react";
 import {database} from "../../auth/firebase";
-import {FunctionData} from "../Functions/Functions";
+import {FunctionData} from "../../auth/FirebaseRepository";
 import {useFocusWithin} from "@mantine/hooks";
 
 function CustomFunctionBuilder() {

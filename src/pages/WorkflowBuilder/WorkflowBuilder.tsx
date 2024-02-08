@@ -6,7 +6,7 @@ import React, {useEffect, useState} from "react";
 import {database} from "../../auth/firebase";
 import {useFocusWithin} from "@mantine/hooks";
 import Workspace from "../../Components/Workspace/Workspace";
-import {WorkflowData} from "../Workflow/Workflows";
+import {WorkflowData} from "../../auth/FirebaseRepository";
 
 const WorkflowBuilder = () => {
     const { id } = useParams();
@@ -36,7 +36,6 @@ const WorkflowBuilder = () => {
         <>
             <Toolbar>
                 <Button leftSection={<IconChevronLeft/>}>Save & Exit</Button>
-                { /* @ts-ignore */ }
                 <TextInput ref={workflowNameRef} defaultValue={workflowData.name}
                     onChange={(event) => setWorkflowNameInputText(event.currentTarget.value)}/>
                 <Tooltip label="Add function">

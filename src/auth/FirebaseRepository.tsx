@@ -1,28 +1,50 @@
 import {updateDoc, query, where, collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, onSnapshot} from "firebase/firestore";
 import {getFirestore} from 'firebase/firestore';
 import firebase from "firebase/compat/app";
-import "firebase/compat/firestore";
 import Firestore = firebase.firestore.Firestore;
-import { ModelData } from "../pages/Models/Models";
-import { FunctionData, ShareTemplateMsg } from "../pages/Functions/Functions";
-import { FirestoreDataConverter, QueryDocumentSnapshot, SnapshotOptions, DocumentData } from "firebase/firestore";
-import {WorkflowData} from "../pages/Workflow/Workflows";
 
-const modelConverter: FirestoreDataConverter<ModelData> = {
-    toFirestore(model: ModelData): DocumentData {
-        return model;
-    },
-    fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ModelData {
-        const data = snapshot.data(options)!;
-        return {
-            id: snapshot.id,
-            name: data.name,
-            description: data.description,
-            inputs: data.inputs,
-            displayStyle: data.displayStyle
-        };
-    }
-};
+import * as firestore from 'firebase/firestore';
+import Timestamp = firestore.Timestamp;
+
+export interface UserData {
+    uid: string
+    email: string | null
+    photoUrl: string | null
+    fullName: string | null
+}
+
+export interface FunctionData {
+    id: string;
+    ownerUid: string;
+    name: string;
+    type: string,
+    fromTemplate: string,
+    fromFunction: string,
+    rawJson: string;
+}
+
+export interface ShareTemplateMsg {
+    id: string,
+    senderId: string,
+    receiverId: string,
+    functionId: string,
+    time: Timestamp,
+    status: string
+}
+
+export interface ModelData {
+    id: string;
+    name: string;
+    description: string;
+    inputs: string[];
+    displayStyle: string;
+}
+
+export interface WorkflowData {
+    id: string;
+    ownerUid: string;
+    name: string;
+}
 
 export class FirestoreRepository {
     private readonly db: Firestore;
@@ -34,22 +56,24 @@ export class FirestoreRepository {
 
     constructor(db: Firestore) {
         this.db = db;
-        this.modelsRef = collection(db, "Models").withConverter(modelConverter);
+        this.modelsRef = collection(db, "Models")
         this.usersRef = collection(db, "Users");
         this.functionsRef = collection(db, "Functions");
         this.workflowsRef = collection(db, "Workflows");
         this.shareFunctionMsgRef = collection(db, "ShareFunctionMessages")
     }
 
-    async createUserIfNotExists(uid: string, email: string | null | undefined, photoUrl: string | null | undefined) {
-        // @ts-ignore
+    async createUserIfNotExists(uid: string, email: string | null, photoUrl: string | null, fullName: string | null) {
         const docSnapshot = await getDoc(doc(this.usersRef, uid));
+        const userData: UserData = {
+            uid: uid,
+            email: email,
+            photoUrl: photoUrl,
+            fullName: fullName
+        }
+
         if (!docSnapshot.exists()) {
-            return setDoc(doc(this.usersRef, uid), {
-                uid: uid,
-                email: email,
-                photoUrl: photoUrl
-            });
+            return setDoc(doc(this.usersRef, uid), userData);
         }
     }
 
@@ -92,14 +116,24 @@ export class FirestoreRepository {
     async shareFunction(senderId: string, receiverId: string, functionId: string) {
         //create a message
         const msg : ShareTemplateMsg = {
+            id: "",
             senderId: senderId,
             receiverId: receiverId,
             functionId: functionId,
-            time: (firebase.firestore.FieldValue.serverTimestamp() as firebase.firestore.Timestamp),
+            time: Timestamp.now(),
             status: "pending",
         }
         const docRef = await addDoc(this.shareFunctionMsgRef, msg);
         return docRef.id;
+    }
+
+    async subscribeToSharedFunctionsForReceiver(receiverId: string, callback: (sharedFunctions: ShareTemplateMsg[]) => void) {
+        const q = query(this.shareFunctionMsgRef, where('receiverId', '==', receiverId));
+        return onSnapshot(q, (snapshot) => {
+            callback(snapshot.docs.map(doc => {
+                return {...doc.data(), id: doc.id} as ShareTemplateMsg
+            }))
+        })
     }
 
     async createTemplateFromFunction(uid: string, functionId: string) {
@@ -145,7 +179,7 @@ export class FirestoreRepository {
                     await recursivelyCreateTemplateFunctions(param)
                 }
                 //search the body of the custom function
-                await recursivelyCreateTemplateFunctions(JSON.parse(body.body))                
+                await recursivelyCreateTemplateFunctions(JSON.parse(body.body))
                 return body
             } else if (body.type == 'input') {
                 return body
@@ -214,7 +248,7 @@ export class FirestoreRepository {
     async getFunctionsForUser(userId: string) {
         const q = query(this.functionsRef, where('ownerUid', '==', userId));
         const qResult = await getDocs(q)
-        return qResult.docs.map(e => 
+        return qResult.docs.map(e =>
             ({...e.data(), id: e.id} as FunctionData)
         )
     }
@@ -254,5 +288,28 @@ export class FirestoreRepository {
 
     async updateWorkflow(workflowId: string, data: object) {
         return updateDoc(doc(this.workflowsRef, workflowId), data);
+    }
+
+    async getUserForEmail(email: string): Promise<UserData> {
+        const q = query(this.usersRef, where('email', '==', email));
+        const response = await getDocs(q);
+
+        const users = response.docs.map(userDocument => {
+            return userDocument.data() as UserData
+        });
+
+        if(users.length)
+            return users[0];
+
+        throw new Error(`No user found for email ${email}`)
+    }
+
+    async getUser(uid: string) {
+        const user = await getDoc(doc(this.usersRef, uid));
+        return user.data() as UserData
+    }
+
+    async deleteSharedFunctionMsg(id: string) {
+        return deleteDoc(doc(this.shareFunctionMsgRef, id));
     }
 }

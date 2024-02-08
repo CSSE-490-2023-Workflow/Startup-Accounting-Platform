@@ -6,15 +6,7 @@ import DynamicModal, {ModalElement, ModalElementType} from "../../Components/Mod
 import {useDisclosure} from "@mantine/hooks";
 import React, {useEffect, useState} from "react";
 import {database} from "../../auth/firebase";
-
-
-export interface ModelData {
-    id: string;
-    name: string;
-    description: string;
-    inputs: string[];
-    displayStyle: string;
-}
+import {ModelData} from "../../auth/FirebaseRepository";
 
 let elements: ModalElement[] = [
     {
