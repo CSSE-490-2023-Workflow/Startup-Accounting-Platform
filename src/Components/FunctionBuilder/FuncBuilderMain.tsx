@@ -101,53 +101,56 @@ interface ioObj {
   value: allowed_stack_components
 }
 
-///////
-interface JSONInput {
-  type: string;
-  inputName: string;
-  inputType: number;
-  inputIdx: number;
-  inputBlkLoc: [number, number];
-  blockId: number;
-}
+// interface JSONInput {
+//   type: string;
+//   inputName: string;
+//   inputType: number;
+//   inputIdx: number;
+//   inputBlkLoc: [number, number];
+//   blockId: number;
+// }
 
-interface JSONBuiltinFunction {
-  type: string;
-  useOutput: number;
-  functionName: string;
-  functionId: number;
-  paramNames: string[];
-  paramTypes: number[];
-  outputNames: string[];
-  outputTypes: number[];
-  funcBlkLoc: [number, number];
-  blockId: number;
-  params: JSONInput[];
-}
+// interface JSONBuiltinFunction {
+//   type: string;
+//   useOutput: number;
+//   functionName: string;
+//   functionId: number;
+//   paramNames: string[];
+//   paramTypes: number[];
+//   outputNames: string[];
+//   outputTypes: number[];
+//   funcBlkLoc: [number, number];
+//   blockId: number;
+//   params: JSONInput[];
+// }
 
-interface JSONOutput {
-  type: string;
-  outputName: string;
-  outputType: number;
-  outputIdx: number;
-  outputBlkLoc: [number, number];
-  blockId: number;
-  params: JSONInput[] | JSONBuiltinFunction[] | JSONCustomFunction[];
-}
+// interface JSONOutput {
+//   type: string;
+//   outputName: string;
+//   outputType: number;
+//   outputIdx: number;
+//   outputBlkLoc: [number, number];
+//   blockId: number;
+//   params: JSONInput[] | JSONBuiltinFunction[] | JSONCustomFunction[];
+// }
 
-interface JSONCustomFunction {
-  functionId: number;
-  type: string;
-  paramNames: string[];
-  paramTypes: number[];
-  outputNames: string[];
-  outputTypes: number[];
-  outputs: JSONOutput[];
-}
+// interface JSONCustomFunction {
+//   functionId: number;
+//   type: string;
+//   paramNames: string[];
+//   paramTypes: number[];
+//   outputNames: string[];
+//   outputTypes: number[];
+//   outputs: JSONOutput[];
+// }
+
+
 
 function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const mounted = useRef<boolean>(false);
+  const allowRenderBlocks = useRef<boolean>(false);
+  const hasRenderedBlocks = useRef<boolean>(false);
 
   //const [inputs, setInputs] = useState([0,0])
   //const [result, setResult] = useState(0)
@@ -179,43 +182,40 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const reloadSavedCustomFunctions = useCallback(() => {
     if (currentUser) {
-      database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
+        database.getFunctionsForUser(currentUser.uid).then(functionsFromDb => {
         const tmp: Map<string, CustomFunctionDBRecord> = new Map();
-        console.log(functionsFromDb)
         functionsFromDb.forEach(functionData => {
-          console.log('functiondata.id', functionData)
+          //console.log('functiondata.id', functionData)
           tmp.set(functionData.id, functionData)
         })
         setCustomFunctions(tmp);
-        console.log("custom functions: ", tmp);
-
-        // We want to update custom function blocks that are using
-        // the custom function we are building!
-        setFuncBlocks(funcBlocks => {
-          for (const funcBlk of funcBlocks) {
-            if (funcBlk.funcId == props.functionId) {
-              console.log(funcBlk, props.functionId);
-              setFuncBlockFunction(funcBlk, props.functionId);
-            }
+        allowRenderBlocks.current = true;
+      })
+      setFuncBlocks(funcBlocks => {
+        for (const funcBlk of funcBlocks) {
+          if (funcBlk.funcId == props.functionId) {
+            console.log(funcBlk, props.functionId);
+            setFuncBlockFunction(funcBlk, props.functionId);
           }
-          return [...funcBlocks];
-        })
-      });
+        }
+        return [...funcBlocks];
+      })
     }
   }, [currentUser])
 
-    useEffect(() => {
-        if(!mounted.current) {
-            mounted.current = true;
-            return;
-        }
+  useEffect(() => {
+    if (allowRenderBlocks.current && allowRenderBlocks && !hasRenderedBlocks.current) {
+      hasRenderedBlocks.current = true
+      console.log('custom function triggered')
+      if (props.functionRawJson) {
+        loadBlocksFromJSON(props.functionRawJson)
+      }
+    }
+  }, [customFunctions])
 
-        if(props.functionRawJson) {
-            loadBlocksFromJSON(props.functionRawJson);
-        }
-
-        reloadSavedCustomFunctions()
-    }, [currentUser]);
+  useEffect(() => {
+    reloadSavedCustomFunctions()
+  }, [currentUser])
   
   // re-render arrows
   const refreshArrows = useCallback(() => {
@@ -234,34 +234,54 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [blkMap])
   
 
-  function isBuiltinFunction(param: any): param is JSONBuiltinFunction {
-    console.log(param.type);
+  // function isBuiltinFunction(param: any): param is JSONBuiltinFunction {
+  //   return param && param.type === "builtin_function";
+  // }
+
+  // function isCustomFunction(param: any): param is JSONCustomFunction {
+  //   return param && param.type === "custom_function";
+  // }
+
+  // function isCustomFunctionCall(param: any) {
+  //   return param && param.type === 'custom_function_call';
+  // }
+
+  // function isInput(param: any): param is JSONInput {
+  //   return param && param.type === "input";
+  // }
+  function isBuiltinFunction(param: any) {
     return param && param.type === "builtin_function";
   }
 
-  function isCustomFunction(param: any): param is JSONCustomFunction {
-    console.log(param.type);
+  function isCustomFunction(param: any) {
     return param && param.type === "custom_function";
   }
 
-  function isInput(param: any): param is JSONInput {
-    console.log(param.type);
+  function isCustomFunctionCall(param: any) {
+    return param && param.type === 'custom_function_call';
+  }
+
+  function isInput(param: any) {
     return param && param.type === "input";
   }
 
     const loadBlocksFromJSON = (rawJSON: string) => {
 
-        const loadParams = (parentBlockId: number, params: Array<JSONInput | JSONBuiltinFunction | JSONCustomFunction>) => {
+        const loadParams = (parentBlockId: number, params: any) => {
             for (let [paramIndex, param] of params.entries()) {
                 if (isBuiltinFunction(param)) {
-                    param = param as JSONBuiltinFunction;
-                    addFuncBlock((param.functionId).toString(), FuncType.builtin, param.funcBlkLoc, param.blockId);
-                    addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+                    //param = param as JSONBuiltinFunction;
+                    addFuncBlock(param.functionId, FuncType.builtin, param.funcBlkLoc, param.blockId);
+                    addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
                     loadParams(param.blockId, param.params);
                 } else if (isInput(param)) {
-                    param = param as JSONInput;
+                    //param = param as JSONInput;
                     addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
                     addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+                } else if (isCustomFunctionCall(param)) {
+                  addFuncBlock(param.functionId, FuncType.custom, param.blockLocation, param.blockId);
+                  addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+                  loadParams(param.blockId, param.params)
                 }
             }
         }
@@ -270,14 +290,19 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             rawJSON = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
         }
 
-        const data: JSONCustomFunction = JSON.parse(rawJSON);
+        //const data: JSONCustomFunction = JSON.parse(rawJSON);
+        const data: any = JSON.parse(rawJSON)
 
         for (const output of data.outputs) {
-            if (!outputBlkIdxMap.has(output.outputIdx)) {
-                addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
-                loadParams(output.blockId, output.params);
-            }
+            // if (!outputBlkIdxMap.has(output.outputIdx)) {
+            //     addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
+            //     loadParams(output.blockId, output.params);
+            // }
+            addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
+            loadParams(output.blockId, output.params);
         }
+
+        setSavedFunction(data)
 
     }
 
@@ -355,10 +380,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
 
   const removeArrowsAttachedToBlk = useCallback((blkId: number) => {
-    const tmp = arrows.filter((a: StartAndEnd) => {
+    setArrows(arrows => arrows.filter((a: StartAndEnd) => {
       return Number(a.start.split('o')[0]) != blkId && Number(a.end.split('i')[0]) != blkId
-    })
-    setArrows(tmp);
+    }));
   }, [arrows])
 
   const removeArrow = useCallback((v: string[]) => {
@@ -611,7 +635,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
 
     return newId;
-  }, [inputBlkIdxMap, currInputBlockId, blkMap])
+  }, [inputBlkIdxMap, currInputBlockId])
 
   const removeInputBlock = useCallback((blkId: number) => {
     console.log('removing', blkId)
@@ -620,23 +644,26 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       return inputBlocks.filter((blk) => blk.blockId != blkId)
     });
 
-    setBlkMap(blkMap => { blkMap.delete(blkId); return new Map(blkMap) });
+    setBlkMap(blkMap => { blkMap.delete(blkId); return new Map(blkMap)});
     //console.log('blkmap after removal input block', blkMap);
 
     // Make all blks with larger indices than the removed blk index--
-    let flag: boolean = false;
-    for (const [blkIdx, blk] of inputBlkIdxMap) {
-      if (flag) {
-        //console.log('setting', blkIdx - 1, blk);
-        inputBlkIdxMap.set(blkIdx - 1, blk);
-        blk.inputIdx = blk.inputIdx - 1;
-      }
-      if (blk.blockId == blkId) {
-        flag = true;
-      }
-    }
+    
     inputBlkIdxMap.delete(inputBlkIdxMap.size);
-    setInputBlkIdxMap(new Map(inputBlkIdxMap));
+    setInputBlkIdxMap(inputBlkIdxMap => {
+      let flag: boolean = false;
+      for (const [blkIdx, blk] of inputBlkIdxMap) {
+        if (flag) {
+          //console.log('setting', blkIdx - 1, blk);
+          inputBlkIdxMap.set(blkIdx - 1, blk);
+          blk.inputIdx = blk.inputIdx - 1;
+        }
+        if (blk.blockId == blkId) {
+          flag = true;
+        }
+      }
+      return new Map(inputBlkIdxMap)
+    });
 
     removeArrowsAttachedToBlk(blkId);
 
@@ -646,7 +673,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log('remove intput block. inputBlkIdxMap', inputBlkIdxMap);
     }
 
-  }, [arrows, inputBlkIdxMap])
+  }, [inputBlkIdxMap])
 
   // Updates the information of the block with the given id
   // params that are passed in null will NOT be updated
@@ -662,49 +689,50 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         console.log("current input blocks in parents", inputBlocks);
       }
 
-      const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS) => {
-        if (blk.blockId == blkId) {
-          if (inputName != null) {
-            blk.inputName = inputName;
-          }
-          if (inputType != null) {
-            blk.inputType = inputType;
-            if (inputType == data_types.dt_series) {
-              const temp = [];
-              for (let i = 0; i < INVALUECAP; i++) {
-                temp.push(0)
+      setInputBlocks(inputBlocks => {
+        return inputBlocks.map((blk: InputBlockDS) => {
+          if (blk.blockId == blkId) {
+            if (inputName != null) {
+              blk.inputName = inputName;
+            }
+            if (inputType != null) {
+              blk.inputType = inputType;
+              if (inputType == data_types.dt_series) {
+                const temp = [];
+                for (let i = 0; i < INVALUECAP; i++) {
+                  temp.push(0)
+                }
+                blk.val = temp;
               }
-              blk.val = temp;
-            }
-            // we need to update all outputs connected to the block
-            for (const arrow of arrows) {
-              if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
-                updateOutputBlkType(arrow);
+              // we need to update all outputs connected to the block
+              for (const arrow of arrows) {
+                if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
+                  updateOutputBlkType(arrow);
+                }
               }
             }
-          }
-          if (idx != null) {
-            const oldIdx: number = blk.inputIdx;
-            blk.inputIdx = idx;
-            const blkToSwap: InputBlockDS | undefined = inputBlkIdxMap.get(idx);
-            if (blkToSwap != undefined) {
-              blkToSwap.inputIdx = oldIdx;
-              inputBlkIdxMap.set(oldIdx, blkToSwap);
+            if (idx != null) {
+              const oldIdx: number = blk.inputIdx;
+              blk.inputIdx = idx;
+              const blkToSwap: InputBlockDS | undefined = inputBlkIdxMap.get(idx);
+              if (blkToSwap != undefined) {
+                blkToSwap.inputIdx = oldIdx;
+                inputBlkIdxMap.set(oldIdx, blkToSwap);
+              }
+              inputBlkIdxMap.set(idx, blk);
             }
-            inputBlkIdxMap.set(idx, blk);
           }
-        }
-        return blk;
+          return blk;
+        })
       })
-      setInputBlocks(tmp)
 
-      setInputBlkIdxMap(new Map(inputBlkIdxMap));
+      setInputBlkIdxMap(inputBlkIdxMap => new Map(inputBlkIdxMap));
 
       if (config.debug_mode_FuncBuilder == 1) {
         console.log('edit input block. Input blk idx map', inputBlkIdxMap);
       }
 
-    }, [inputBlocks, inputBlkIdxMap, arrows])
+    }, [inputBlkIdxMap])
 
   const updateInputBlkLoc = useCallback(
     (blkId: number, newLocation: [number, number]) => {
@@ -758,33 +786,26 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const removeOutputBlock = useCallback((blkId: number) => {
 
-    const arrowNames: string[] = [];
-    for (let i = 0; i < arrows.length; i++) {
-      if (arrows[i].end.indexOf(blkId.toString() + "i1") == 0)
-        arrowNames.push(arrows[i].end);
-    }
-    console.log(arrowNames);
-    //removeArrow(arrowNames);
-
     setOutputBlocks(outputBlks => outputBlks.filter((blk) => {
       return blk.blockId != blkId
     }));
 
     setBlkMap(blkMap => { blkMap.delete(blkId); return new Map<number, blk>(blkMap) });
     // Make all blks with larger indices than the removed blk index--
-    let flag: boolean = false;
-    for (const [blkIdx, blk] of outputBlkIdxMap) {
-      if (flag) {
-        outputBlkIdxMap.set(blkIdx - 1, blk);
-        blk.outputIdx = blk.outputIdx - 1;
+    setOutputBlkIdxMap(outputBlkIdxMap => {
+      let flag: boolean = false;
+      for (const [blkIdx, blk] of outputBlkIdxMap) {
+        if (flag) {
+          outputBlkIdxMap.set(blkIdx - 1, blk);
+          blk.outputIdx = blk.outputIdx - 1;
+        }
+        if (blk.blockId == blkId) {
+          flag = true;
+        }
       }
-      if (blk.blockId == blkId) {
-        flag = true;
-      }
-    }
-    outputBlkIdxMap.delete(outputBlkIdxMap.size);
-
-    setOutputBlkIdxMap(new Map(outputBlkIdxMap));
+      outputBlkIdxMap.delete(outputBlkIdxMap.size);
+      return new Map(outputBlkIdxMap)
+    });
 
     removeArrowsAttachedToBlk(blkId);
 
@@ -792,7 +813,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log('remove output block. Output blk idx map', outputBlkIdxMap);
     }
 
-  }, [arrows, outputBlkIdxMap])
+  }, [outputBlkIdxMap])
 
   // Updates the information of the block with the given id
   // params that are null will NOT be updated
@@ -803,40 +824,42 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       outputType: data_types | null,
       idx: number | null
     ) => {
-      console.log("pain");
       if (config.debug_mode_FuncBuilder == 1) {
         console.log('edit callback', blkId, outputName, outputType);
         console.log("current output blocks in parents", outputBlocks);
       }
-      const tmp: OutputBlockDS[] = outputBlocks.map((blk: OutputBlockDS) => {
-        if (blk.blockId == blkId) {
-          if (outputName != null) {
-            blk.outputName = outputName;
-          }
-          if (outputType != null) {
-            blk.outputType = outputType;
-          }
-          if (idx != null) {
-            const oldIdx: number = blk.outputIdx;
-            blk.outputIdx = idx;
-            const blkToSwap: OutputBlockDS | undefined = outputBlkIdxMap.get(idx);
-            if (blkToSwap != undefined) {
-              blkToSwap.outputIdx = oldIdx;
-              outputBlkIdxMap.set(oldIdx, blkToSwap);
+
+      setOutputBlocks(outputBlocks => {
+        return outputBlocks.map((blk: OutputBlockDS) => {
+          if (blk.blockId == blkId) {
+            if (outputName != null) {
+              blk.outputName = outputName;
             }
-            outputBlkIdxMap.set(idx, blk);
+            if (outputType != null) {
+              blk.outputType = outputType;
+            }
+            if (idx != null) {
+              const oldIdx: number = blk.outputIdx;
+              blk.outputIdx = idx;
+              const blkToSwap: OutputBlockDS | undefined = outputBlkIdxMap.get(idx);
+              if (blkToSwap != undefined) {
+                blkToSwap.outputIdx = oldIdx;
+                outputBlkIdxMap.set(oldIdx, blkToSwap);
+              }
+              outputBlkIdxMap.set(idx, blk);
+            }
           }
-        }
-        return blk;
+          return blk;
+        })
       })
 
-      setOutputBlocks(tmp)
+      setOutputBlkIdxMap(outputBlkIdxMap => new Map(outputBlkIdxMap));
 
-      setOutputBlkIdxMap(new Map(outputBlkIdxMap));
       if (config.debug_mode_FuncBuilder == 1) {
         console.log('edit output block. Output blk idx map', outputBlkIdxMap);
       }
-    }, [outputBlocks, outputBlkIdxMap])
+
+    }, [outputBlkIdxMap])
 
   const updateOutputBlkLoc = useCallback(
     (blkId: number, newLocation: [number, number]) => {
@@ -870,7 +893,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     let f: builtin_function | CustomFunctionDBRecord | undefined = undefined;
     let customFuncBody: any = undefined;
     if (funcType == FuncType.builtin) {
-      console.log("typr", funcType, "id", funcId);
       f = id_to_builtin_func[funcId];
     } else if (funcType == FuncType.custom) {
       f = customFunctions.get(funcId);
@@ -900,41 +922,21 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     return newId;
 
-  }, [currFunctionBlockId])
+  }, [currFunctionBlockId, customFunctions])
 
   const removeFuncBlock = useCallback((blkId: number) => {
-    // console.log(arrows[0].start);
-    // console.log(arrows[0].start.indexOf(blkId.toString() + "i"));
-    // console.log(arrows[0].end);
-    // console.log(arrows[0].end.indexOf(blkId.toString() + "i"));
-    // console.log(arrows[1].start);
-    // console.log(arrows[1].end);
-    // console.log(arrows[2].start);
-    // console.log(arrows[2].end);
-    // console.log(blkId.toString() + "i");
 
-    //     const arrowNames: string[] = [];
-    //     for(let i = 0; i < arrows.length; i++) {
-    //       if(arrows[i].end.indexOf(blkId.toString() + "i") == 0)
-    //         arrowNames.push(arrows[i].end);
-    //       if(arrows[i].start.indexOf(blkId.toString() + "o") == 0)
-    //         arrowNames.push(arrows[i].end);
-    //     }
-    //     console.log(arrowNames);
-    //     const values = arrows.forEach((arrow) => {return arrow.start + " " + arrow.end});
-    //     console.log(blkId + " " + values);
-    //     removeArrow(arrowNames);
+    setFuncBlocks(funcBlocks => 
+      funcBlocks.filter((blk: FuncBlockDS) => {
+        return blk.blockId != blkId;
+      })
+    );
 
-    setFuncBlocks(funcBlocks.filter((blk: FuncBlockDS) => {
-      return blk.blockId != blkId;
-    }));
-
-    blkMap.delete(blkId);
-    setBlkMap(new Map<number, blk>(blkMap));
+    setBlkMap(blkMap => { blkMap.delete(blkId); return new Map<number, blk>(blkMap)});
 
     removeArrowsAttachedToBlk(blkId);
 
-  }, [funcBlocks, setFuncBlocks])
+  }, [removeArrowsAttachedToBlk])
 
 
   enum FuncType {
@@ -1049,7 +1051,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       })
     )
 
-  }, [funcBlocks, arrows])
+  }, [funcBlocks, arrows, customFunctions])
 
   const updateFuncBlkLoc = useCallback(
     (blkId: number, newLocation: [number, number]) => {
@@ -1100,7 +1102,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
         setOutputBlocks(blks => [...blks])
       }
-    }, [inputBlocks, funcBlocks, outputBlocks])
+    }, [inputBlocks, funcBlocks, outputBlocks]
+  )
 
   const builtinFuncOptions: funcInfo[] = Object.entries(id_to_builtin_func).map(
     ([funcId, funcBody]: [string, builtin_function]) => {
@@ -1200,6 +1203,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       )
     )
   }
+
   // const outputList = Object.entries(evalResult).map(([outputIdx, outputObj]) => {
   //   console.log(outputIdx, outputObj)
   //   outputListCount += 1
