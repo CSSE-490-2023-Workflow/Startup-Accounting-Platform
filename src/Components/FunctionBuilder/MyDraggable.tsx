@@ -16,6 +16,7 @@ function MyDraggable (props: any) {
     const updateLocation = props.updateLocationCB;
     const id = props.id;
     const setArrows = props.setArrows;
+    const disabled = props.disabled;
 
     useEffect(() => {
       setArrows((arrows : any) => [...arrows])
@@ -39,12 +40,17 @@ function MyDraggable (props: any) {
       updateLocation(id, left, top)
     }, [diffPos])
 
+    let disabledAttr = {}
+    if (disabled) {
+      disabledAttr = { pointerEvents : "none"}
+    } 
+
     return (
         <div
-            style={{ ...styles, position: "absolute" }}
+            style={{ ...styles, position: "absolute", ...disabledAttr}}
             onDragStart={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => dragStart(e)}
             onDragEnd={(e: React.MouseEvent<HTMLDivElement, MouseEvent>) => dragEnd(e)}
-            draggable={true}
+            draggable={!disabled}
             id={props.dId}
         >
           {props.children}

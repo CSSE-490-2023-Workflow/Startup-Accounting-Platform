@@ -225,9 +225,26 @@ export class FirestoreRepository {
         return func.data() as FunctionData
     }
 
+    /**
+     * For security reasons, we need to verify that the function is in the template
+     * before returning it back to the user
+     * @param templateId 
+     * @param functionId 
+     */
+    async getFunctionInTemplate(templateId: string, functionId: string) {
+        //TODO: add verification
+        const func = await getDoc(doc(this.functionsRef, functionId));
+        return func.data() as FunctionData
+    }
+
     async getFunctions() {
         const querySnapshot = await getDocs(this.functionsRef);
         return querySnapshot.docs.map(doc => doc.data())
+    }
+
+    async getShareFunctionMsg(msgId: string) {
+        const queryResult = await getDoc(doc(this.shareFunctionMsgRef, msgId));
+        return queryResult.data()
     }
 
     subscribeToFunction(functionId: string, callback: (funcData: FunctionData) => void) {
