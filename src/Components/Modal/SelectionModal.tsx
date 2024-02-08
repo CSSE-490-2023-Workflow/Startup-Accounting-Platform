@@ -38,7 +38,7 @@ const SelectionModal = (props: SelectionModalProps) => {
                             console.log(selectedOption);
                         }}
                     >
-                        <option value="">Select an option...</option>
+                        <option value="">Select a function...</option>
                         {props.options.map((option, index) => (
                             <option key={index} value={option}>
                                 {option}

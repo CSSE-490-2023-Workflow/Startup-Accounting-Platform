@@ -209,7 +209,7 @@ export class FirestoreRepository {
         const templateData : FunctionData = {
             id: "",
             ownerUid: uid,
-            name: (funcData as FunctionData).name,
+            name: (funcData as FunctionData).name + " template",
             type: "Template",
             fromTemplate: functionId,
             fromFunction: "",
