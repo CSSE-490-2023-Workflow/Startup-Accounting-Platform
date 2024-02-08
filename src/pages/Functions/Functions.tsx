@@ -15,6 +15,7 @@ export interface FunctionData {
     name: string;
     type: string,
     fromTemplate: string,
+    fromFunction: string,
     rawJson: string;
 }
 
