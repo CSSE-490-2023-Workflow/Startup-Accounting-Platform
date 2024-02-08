@@ -9,6 +9,7 @@ import classes from "../Models/ModelCard.module.css";
 import {useDisclosure} from "@mantine/hooks";
 import ShareModal from "../../Components/Modal/ShareModal";
 import {FunctionData, UserData} from "../../auth/FirebaseRepository";
+import SelectionModal from '../../Components/Modal/SelectionModal';
 
 function Functions() {
     const [loading, setLoading] = useState(false);
@@ -18,6 +19,8 @@ function Functions() {
     const [isShareModalOpen, {open: openShareModal, close: closeShareModal}] = useDisclosure(false);
     const [isShareSuccessDialogOpen, { open: openShareSuccessDialog, close: closeShareSuccessDialog }] = useDisclosure(false);
     const [shareSuccessDialogText, setShareSuccessDialogText] = useState("Success");
+    const [isSelectionModalOpen, {open: openSelectionModal, close: closeSelectionModal}] = useDisclosure(false);
+    const [options, setOptions] = useState<string[]>([]);
     const {currentUser} = useContext(AuthContext);
 
     useEffect(() => {
@@ -101,9 +104,21 @@ function Functions() {
         if (!currentUser) {
             return 
         }
-        console.log('testTemplate called');
-        database.createTemplateFromFunction(currentUser.uid, '0C6QeIK4lht5i2T7STFK')
+        //console.log("functions", database.getFunctionsForUser(currentUser.uid));
+        //database.createTemplateFromFunction(currentUser.uid, 'DOBxnUeWfdJiRB6Z7wC2')
     }, [currentUser])
+
+    const handleTemplateFromFunction = (option: string) => {
+        console.log("reached");
+        console.log(option);
+        const words = option.split(' ');
+        const funcId = words[words.length - 1];
+        if (currentUser) {
+            database.createTemplateFromFunction(currentUser.uid, funcId);
+        }
+        
+    }
+
 
     return (
         <>
@@ -112,13 +127,28 @@ function Functions() {
                 <Box pos='relative'>
                     <LoadingOverlay visible={loading} loaderProps={{size: 28}}/>
                     <Button onClick={createNewFunction}>Create New Function</Button>
-                    <Button onClick={testTemplate}>Test Create Template</Button>
+                    <Button onClick={() => {
+                        testTemplate();
+                        openSelectionModal();
+                        if (currentUser) {
+                            database.getFunctionsForUser(currentUser.uid).then((functionData: FunctionData[]) => {
+                                const funcNames = functionData.map(option => option.name + " " + option.id);
+                                setOptions(funcNames);
+                            })
+                        }
+                        
+                    }}>Create Template from Function</Button>
                 </Box>
             </Center>
 
             <ShareModal opened={isShareModalOpen} onClose={() => { closeShareModal(); }}
                         onSubmit={handleShareFunction}
                         title={"Share this function with someone"} />
+
+            <SelectionModal opened={isSelectionModalOpen} onClose={() => {closeSelectionModal(); }}
+                        onSubmit={handleTemplateFromFunction}
+                        title={"Select a function for template creation"}
+                        options={options} />
 
             <DynamicModal isOpen={isDeleteOpen}
                           close={handleClose}
