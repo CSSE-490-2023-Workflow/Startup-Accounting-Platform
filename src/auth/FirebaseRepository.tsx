@@ -1,8 +1,10 @@
 import {updateDoc, query, where, collection, doc, getDoc, getDocs, setDoc, deleteDoc, addDoc, onSnapshot} from "firebase/firestore";
 import {getFirestore} from 'firebase/firestore';
 import firebase from "firebase/compat/app";
-import "firebase/compat/firestore";
 import Firestore = firebase.firestore.Firestore;
+
+import * as firestore from 'firebase/firestore';
+import Timestamp = firestore.Timestamp;
 
 export interface UserData {
     uid: string
@@ -21,10 +23,11 @@ export interface FunctionData {
 }
 
 export interface ShareTemplateMsg {
+    id: string,
     senderId: string,
     receiverId: string,
     functionId: string,
-    time: firebase.firestore.Timestamp,
+    time: Timestamp,
     status: string
 }
 
@@ -111,18 +114,30 @@ export class FirestoreRepository {
     async shareFunction(senderId: string, receiverId: string, functionId: string) {
         //create a message
         const msg : ShareTemplateMsg = {
+            id: "",
             senderId: senderId,
             receiverId: receiverId,
             functionId: functionId,
-            time: (firebase.firestore.FieldValue.serverTimestamp() as firebase.firestore.Timestamp),
+            time: Timestamp.now(),
             status: "pending",
         }
         const docRef = await addDoc(this.shareFunctionMsgRef, msg);
         return docRef.id;
     }
 
+    async subscribeToSharedFunctionsForReceiver(receiverId: string, callback: (sharedFunctions: ShareTemplateMsg[]) => void) {
+        const q = query(this.shareFunctionMsgRef, where('receiverId', '==', receiverId));
+        return onSnapshot(q, (snapshot) => {
+            callback(snapshot.docs.map(doc => {
+                return {...doc.data(), id: doc.id} as ShareTemplateMsg
+            }))
+        })
+    }
+
     async createTemplateFromFunction(uid: string, functionId: string) {
-        
+
+        debugger;
+
         let funcData: FunctionData = await this.getFunction(functionId)
 
         const templateData : FunctionData = {
@@ -260,5 +275,14 @@ export class FirestoreRepository {
             return users[0];
 
         throw new Error(`No user found for email ${email}`)
+    }
+
+    async getUser(uid: string) {
+        const user = await getDoc(doc(this.usersRef, uid));
+        return user.data() as UserData
+    }
+
+    async deleteSharedFunctionMsg(id: string) {
+        return deleteDoc(doc(this.shareFunctionMsgRef, id));
     }
 }

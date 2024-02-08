@@ -48,6 +48,7 @@ const ShareModal = (props: ShareModalProps) => {
             <Box maw={340} mx="auto">
                 <form onSubmit={form.onSubmit((values, event) => { handleSubmit(values.email) })}>
                     <TextInput
+                        data-autofocus
                         label="Email"
                         placeholder="user@email.com"
                         {...form.getInputProps('email')}

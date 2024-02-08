@@ -16,7 +16,7 @@ import Functions from "./pages/Functions/Functions";
 import ArrowExample from './Components/ArrowExample';
 import {FunctionBuilderTesting} from "./pages/FunctionBuilderTesting/FunctionBuilderTesting";
 import Workflows from "./pages/Workflow/Workflows";
-import NotificationBell from "./Components/Notifications/NotificationBell";
+import NotificationMenu from "./Components/NotificationMenu/NotificationMenu";
 
 
 const tabs = [
@@ -55,7 +55,7 @@ export function Home() {
                         <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm"/>
 
                         <Group>
-                            <NotificationBell />
+                            <NotificationMenu />
                             <UserMenu />
                         </Group>
                     </Group>
