@@ -227,7 +227,7 @@ export class FirestoreRepository {
 
     /**
      * For security reasons, we need to verify that the function is in the template
-     * before returning it back to the user
+     * before giving it back to the user
      * @param templateId 
      * @param functionId 
      */
