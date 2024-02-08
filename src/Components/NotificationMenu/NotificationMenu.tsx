@@ -32,6 +32,10 @@ const NotificationMenu = () => {
     const [notificationMenuOpened, setNotificationMenuOpened] = useState(false);
     const { currentUser } = useContext(AuthContext);
 
+    const navigate = useCallback((pHref: string) => {
+        window.open(pHref)
+    }, [currentUser])
+
     useEffect(() => {
 
         if(!currentUser)
@@ -42,12 +46,13 @@ const NotificationMenu = () => {
             const notifs = await Promise.all(sharedFunctions.map(async (sharedFunction) => {
                 const fromUser = await database.getUser(sharedFunction.senderId);
                 const func = await database.getFunction(sharedFunction.functionId);
+                const previewHref = `/functionPreview/${sharedFunction.id}/${sharedFunction.functionId}`
                 return {
                     timestamp: sharedFunction.time,
                     element: (
                         <Paper withBorder p="sm" className={classes.notif_element}>
                             <Group>
-                                <Text size={"sm"}>{fromUser.fullName} sent you a function "{func.name}"</Text>
+                                <text>{fromUser.fullName} sent you a function <a href='' onClick={() => navigate(previewHref)}>{func.name}</a></text>
                                 <Group ml={"auto"}>
                                     <Button leftSection={<IconCheck size={16}/>} size={"xs"} onClick={() => {
                                         database.createTemplateFromFunction(currentUser.uid, sharedFunction.functionId);

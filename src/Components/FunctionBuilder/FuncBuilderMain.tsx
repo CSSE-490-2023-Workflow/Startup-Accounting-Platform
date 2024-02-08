@@ -1248,6 +1248,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         left={blk.blockLocation[0]}
         top={blk.blockLocation[1]}
         children={element}
+        disabled={false}
         updateLocationCB={updateBlockLocation}
         id={blk.blockId}
         setArrows={setArrows}
@@ -1317,6 +1318,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         left={blk.blockLocation[0]}
         top={blk.blockLocation[1]}
         children={element}
+        disabled={false}
         updateLocationCB={updateBlockLocation}
         id={blk.blockId}
         setArrows={setArrows}
@@ -1348,6 +1350,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         left={blk.blockLocation[0]}
         top={blk.blockLocation[1]}
         children={element}
+        disabled={false}
         updateLocationCB={updateBlockLocation}
         id={blk.blockId}
         setArrows={setArrows}
