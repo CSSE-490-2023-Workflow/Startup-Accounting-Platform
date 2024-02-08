@@ -262,6 +262,15 @@ export class FirestoreRepository {
         });
     }
 
+    subscribeToTemplatesForUser(userId: string, callback: (functions: FunctionData[]) => void) {
+        const q = query(this.functionsRef, where('ownerUid', '==', userId), where('type', '==', 'Template'));
+        onSnapshot(q, (snapshot) => {
+            callback(snapshot.docs.map(doc => {
+                return {...doc.data(), id: doc.id} as FunctionData
+            }))
+        });
+    }
+
     async getFunctionsForUser(userId: string) {
         const q = query(this.functionsRef, where('ownerUid', '==', userId));
         const qResult = await getDocs(q)
