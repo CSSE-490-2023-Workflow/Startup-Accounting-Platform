@@ -109,9 +109,14 @@ function Functions() {
     }, [currentUser])
 
     const handleTemplateFromFunction = (option: string) => {
-        console.log("reached");
-        console.log(option);
+        //console.log("reached");
+        //console.log(option);
+        console.log(option.length);
+        if (option.length==0) {
+            return
+        }
         const words = option.split(' ');
+        
         const funcId = words[words.length - 1];
         if (currentUser) {
             database.createTemplateFromFunction(currentUser.uid, funcId);
@@ -128,7 +133,7 @@ function Functions() {
                     <LoadingOverlay visible={loading} loaderProps={{size: 28}}/>
                     <Button onClick={createNewFunction}>Create New Function</Button>
                     <Button onClick={() => {
-                        testTemplate();
+                        //testTemplate();
                         openSelectionModal();
                         if (currentUser) {
                             database.getFunctionsForUser(currentUser.uid).then((functionData: FunctionData[]) => {
