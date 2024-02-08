@@ -17,15 +17,15 @@ import ArrowExample from './Components/ArrowExample';
 import {FunctionBuilderTesting} from "./pages/FunctionBuilderTesting/FunctionBuilderTesting";
 import Workflows from "./pages/Workflow/Workflows";
 import NotificationMenu from "./Components/NotificationMenu/NotificationMenu";
+import Templates from './pages/Template/Templates';
 
 
 const tabs = [
     'Demo',
     'Models',
     'Functions',
-    'FunctionBuilderTesting',
+    'Templates',
     'Workflows',
-    'Arrows',
 ];
 
 export function Home() {
@@ -80,9 +80,10 @@ export function Home() {
                 {activeTab === 'Demo' && <Demo/>}
                 {activeTab === 'Models' && <Models/>}
                 {activeTab === 'Functions' && <Functions/>}
-                {activeTab === 'FunctionBuilderTesting' && <FunctionBuilderTesting/>}
+                {activeTab === 'Templates' && <Templates/>}
+                {/* {activeTab === 'FunctionBuilderTesting' && <FunctionBuilderTesting/>} */}
                 {activeTab === 'Workflows' && <Workflows />}
-                {activeTab === 'Arrows' && <ArrowExample/>}
+                {/* {activeTab === 'Arrows' && <ArrowExample/>} */}
             </div>
         </div>
 )
