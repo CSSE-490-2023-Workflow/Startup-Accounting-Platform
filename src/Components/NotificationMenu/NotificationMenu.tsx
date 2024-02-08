@@ -102,7 +102,7 @@ const NotificationMenu = () => {
             </Menu.Target>
 
             <Menu.Dropdown>
-                <ScrollArea style={{maxHeight: 600}}>
+                <ScrollArea h={600}>
                     { makeNotifications(unsortedNotifications) }
                 </ScrollArea>
             </Menu.Dropdown>
