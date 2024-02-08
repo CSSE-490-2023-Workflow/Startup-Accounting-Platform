@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
-import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series } from '../../engine/datatype_def'
+import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series, func_pt_series } from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
@@ -453,6 +453,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     const tmp = arrows.filter((a: StartAndEnd) => {
       return Number(a.start.split('o')[0]) != blkId && Number(a.end.split('i')[0]) != blkId
     })
+    console.log(tmp);
     setArrows(tmp);
   }, [arrows])
 
@@ -700,7 +701,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       inputName: inputName,
       inputType: inputType,
       inputIdx: newIdx,
-      val: val ?? 0,
+      val: inputType == data_types.dt_series ? [0, 0, 0, 0, 0] : val ?? 0,
       blockLocation: inputBlkLoc
     }
 
@@ -1122,6 +1123,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             updateOutputBlkType(arrow);
           }
         }
+        removeArrowsAttachedToBlk(blk.blockId);
       }
 
       setArrows(arrows => [...arrows]);
@@ -1198,7 +1200,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('in changeInput, blks are ', inputBlocks, newValue, inputId);
     const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS, index: number) => {
       console.log('in changeInput', index, blk, newValue);
-      if (blk.blockId == inputId) {
+      if (blk.blockId == inputId || blk.blockId == inputId + 1000) {
         blk.val = newValue;
       }
       console.log(blk.val);
@@ -1254,10 +1256,18 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       x: 0,
       y: outputObj.value as number
     }]
+    console.log(outputObj);
     if ((typeof outputObj.value) !== "number") {
-      data = []
-      for (let i = 0; i < (outputObj.value as series).length; i++) {
-        data.push({ x: i, y: (outputObj.value as series)[i] as number })
+      if((typeof (outputObj.value as series)[0]) !== "number") {
+        data = []
+        for (let i = 0; i < (outputObj.value as func_pt_series).length; i++) {
+          data.push({ x: i, y: (outputObj.value as func_pt_series)[i][1]})
+        }
+      } else {
+        data = []
+        for (let i = 0; i < (outputObj.value as series).length; i++) {
+          data.push({ x: i, y: (outputObj.value as series)[i]})
+        }
       }
     }
     console.log(data)

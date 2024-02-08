@@ -109,6 +109,7 @@ function SeriesInput(props: IProps) {
     useEffect(() => {
         setDisabledInc(numberOfInputs >= inputValueCap);
         setDisabledDec(numberOfInputs <= 0);
+        console.log(curValues);
         setInputs(curValues.map((val: number, index: number) => {
             return <NumberInput handleStateChange={changeInput} ind={index} inValue={val} inputId = {index} />
         }));
