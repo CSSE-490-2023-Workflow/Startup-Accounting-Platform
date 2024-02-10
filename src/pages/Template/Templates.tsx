@@ -1,17 +1,17 @@
-import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
-import FuncBuilderMain from '../../Components/FunctionBuilder/FuncBuilderMain';
-import {ActionIcon, Box, Button, Card, Center, Dialog, Group, LoadingOverlay, Space, Text} from "@mantine/core";
+import React, {useCallback, useContext, useEffect, useState, useRef} from 'react';
+// import FuncBuilderMain from '../../Components/FunctionBuilder/FuncBuilderMain';
+import {ActionIcon, Box, Button, Card, Center, Group, LoadingOverlay, Space, Text, Dialog} from "@mantine/core";
 import {AuthContext, database} from "../../auth/firebase";
 import CardPage from "../CardPage/CardPage";
 import DynamicModal from "../../Components/Modal/DynamicModal";
 import {IconCheck, IconShare, IconTrash} from "@tabler/icons-react";
 import classes from "../Models/ModelCard.module.css";
 import {useDisclosure} from "@mantine/hooks";
-import ShareModal from "../../Components/Modal/ShareModal";
 import {FunctionData, UserData} from "../../auth/FirebaseRepository";
+import ShareModal from "../../Components/Modal/ShareModal";
 import SelectionModal from '../../Components/Modal/SelectionModal';
 
-function Functions() {
+function Templates() {
     const [loading, setLoading] = useState(false);
     const [functions, setFunctions] = useState<FunctionData[]>([]);
     const selectedFunction = useRef<FunctionData | null>(null);
@@ -25,7 +25,7 @@ function Functions() {
 
     useEffect(() => {
         if(currentUser) {
-            database.subscribeToONLYFunctionsForUser(currentUser.uid, functionsFromDb => {
+            database.subscribeToTemplatesForUser(currentUser.uid, functionsFromDb => {
                 setFunctions(functionsFromDb);
             });
         }
@@ -78,9 +78,9 @@ function Functions() {
                             <Button radius="md" style={{flex: 1}} onClick={() => { openFunctionPage(functionData.id) }}>
                                     Edit
                             </Button>
-                            {/* <ActionIcon variant="default" radius="md" size={36} onClick={() => { selectedFunction.current = functionData; openShareModal(); }}>
+                            <ActionIcon variant="default" radius="md" size={36} onClick={() => { selectedFunction.current = functionData; openShareModal(); }}>
                                 <IconShare stroke={1.5}/>
-                            </ActionIcon> */}
+                            </ActionIcon>
                             <ActionIcon variant="default" radius="md" size={36} onClick={() => { selectedFunction.current = functionData; openDelete(); }}>
                                 <IconTrash className={classes.delete} stroke={1.5}/>
                             </ActionIcon>
@@ -104,8 +104,8 @@ function Functions() {
         if (!currentUser) {
             return 
         }
-        //console.log("functions", database.getFunctionsForUser(currentUser.uid));
-        //database.createTemplateFromFunction(currentUser.uid, 'DOBxnUeWfdJiRB6Z7wC2')
+        console.log('testTemplate called');
+        database.createTemplateFromFunction(currentUser.uid, '0C6QeIK4lht5i2T7STFK')
     }, [currentUser])
 
     const handleTemplateFromFunction = (option: string) => {
@@ -131,8 +131,7 @@ function Functions() {
             <Center>
                 <Box pos='relative'>
                     <LoadingOverlay visible={loading} loaderProps={{size: 28}}/>
-                    <Button onClick={createNewFunction}>Create New Function</Button>
-                    {/* <Button onClick={() => {
+                    <Button onClick={() => {
                         //testTemplate();
                         openSelectionModal();
                         if (currentUser) {
@@ -142,13 +141,13 @@ function Functions() {
                             })
                         }
                         
-                    }}>Create Template from Function</Button> */}
+                    }}>Create Template from Function</Button>
                 </Box>
             </Center>
 
-            {/* <ShareModal opened={isShareModalOpen} onClose={() => { closeShareModal(); }}
+            <ShareModal opened={isShareModalOpen} onClose={() => { closeShareModal(); }}
                         onSubmit={handleShareFunction}
-                        title={"Share this function with someone"} /> */}
+                        title={"Share this function with someone"} />
 
             <SelectionModal opened={isSelectionModalOpen} onClose={() => {closeSelectionModal(); }}
                         onSubmit={handleTemplateFromFunction}
@@ -175,4 +174,5 @@ function Functions() {
     );
 }
 
-export default Functions;
+
+export default Templates;

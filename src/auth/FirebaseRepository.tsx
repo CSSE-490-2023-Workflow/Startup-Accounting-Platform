@@ -209,7 +209,7 @@ export class FirestoreRepository {
         const templateData : FunctionData = {
             id: "",
             ownerUid: uid,
-            name: (funcData as FunctionData).name,
+            name: (funcData as FunctionData).name + " template",
             type: "Template",
             fromTemplate: functionId,
             fromFunction: "",
@@ -255,6 +255,24 @@ export class FirestoreRepository {
 
     subscribeToFunctionsForUser(userId: string, callback: (functions: FunctionData[]) => void) {
         const q = query(this.functionsRef, where('ownerUid', '==', userId));
+        onSnapshot(q, (snapshot) => {
+            callback(snapshot.docs.map(doc => {
+                return {...doc.data(), id: doc.id} as FunctionData
+            }))
+        });
+    }
+
+    subscribeToONLYFunctionsForUser(userId: string, callback: (functions: FunctionData[]) => void) {
+        const q = query(this.functionsRef, where('ownerUid', '==', userId), where('type', '==', 'Custom Function'));
+        onSnapshot(q, (snapshot) => {
+            callback(snapshot.docs.map(doc => {
+                return {...doc.data(), id: doc.id} as FunctionData
+            }))
+        });
+    }
+
+    subscribeToTemplatesForUser(userId: string, callback: (functions: FunctionData[]) => void) {
+        const q = query(this.functionsRef, where('ownerUid', '==', userId), where('type', '==', 'Template'));
         onSnapshot(q, (snapshot) => {
             callback(snapshot.docs.map(doc => {
                 return {...doc.data(), id: doc.id} as FunctionData

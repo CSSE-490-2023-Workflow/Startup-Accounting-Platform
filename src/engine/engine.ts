@@ -152,7 +152,7 @@ export function func_interpreter_new_caller(func_str : string, args: Map<number,
  * @returns Map<number, ioObj> if custom function, allowed_stack_components[] if builtin function, an allowed_stack_component otherwise
  */
 const func_interpreter_new : any = function(func_str: string, args: Map<number, ioObj>) {
-    console.log(func_str)
+    //console.log(func_str)
     const func_content = JSON.parse(func_str);
     if (func_content.type == 'custom_function') {
         //console.log("in function, return");
@@ -163,7 +163,7 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         for (const func_param of func_content['outputs']) {
             // This should return null
             const eval_res : any = func_interpreter_new(JSON.stringify(func_param), args);
-            console.log(`evalution of output no.${counter} finished. Got ${eval_res}`);
+            //console.log(`evalution of output no.${counter} finished. Got ${eval_res}`);
             outputDict.set(counter, { name : func_content.outputNames[counter - 1], value : eval_res})
             counter++;
         }
@@ -202,7 +202,7 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         }
     } else if (func_content['type'] == 'output') {
         const outputEvalRes : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), args);
-        console.log('evaluated output', outputEvalRes);
+        //console.log('evaluated output', outputEvalRes);
         //ret.set(func_content['outputIdx'], { name: func_content['outputName'], value: outputEvalRes });
         return outputEvalRes;
     } else if (func_content['type'] == 'builtin_function') {
@@ -210,18 +210,18 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         for (const func_param of func_content['params']) {
         
             const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), args);
-            console.log('evaluting', func_content['functionName'], ', param is:', func_param, ', evaluated param is:', func_param_eval_res);    
+            //console.log('evaluting', func_content['functionName'], ', param is:', func_param, ', evaluated param is:', func_param_eval_res);    
             param_arr.push(func_param_eval_res);
         }
         const func_eval_res : allowed_stack_components[] = id_to_builtin_func[func_content['functionId']].func(...param_arr);
         //console.log(name_to_builtin_func[func_content['functionName']].func)
-        console.log('evaluated', func_content['functionName'], ' with params ', param_arr, '. Got result ', new Array(func_eval_res));
+        //console.log('evaluated', func_content['functionName'], ' with params ', param_arr, '. Got result ', new Array(func_eval_res));
         //return func_eval_res;
         if (Number.isInteger(func_content['useOutput'])) {
             if (func_content['useOutput'] > func_eval_res.length) {
                 throw new Error(`Function interpreter: output index ${func_content['useOutput']} out of range for ${func_eval_res.length} outputs`);
             } else {
-                console.log('using output no.', func_content['useOutput'], ' of ', func_content['functionName'], '. It\'s evaluated to be: ', func_eval_res[func_content['useOutput']])
+                //console.log('using output no.', func_content['useOutput'], ' of ', func_content['functionName'], '. It\'s evaluated to be: ', func_eval_res[func_content['useOutput']])
                 return func_eval_res[func_content['useOutput'] - 1]
             }
         } else if (func_content['useOutput'] = 'all') {
@@ -237,11 +237,11 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         if (arg == undefined) {
             throw new Error(`User input no.${func_content['inputIdx']} not found in given argument dictionary.`);
         } else {
-            console.log('Evaluated user input no.', func_content['inputIdx'], args)
+            //console.log('Evaluated user input no.', func_content['inputIdx'], args)
             return arg['value'];
         }
     } else {
-        console.log(func_content)
+        //console.log(func_content)
         throw new Error(`Unrecognized function component type. See last log msg.`);
     } 
 
