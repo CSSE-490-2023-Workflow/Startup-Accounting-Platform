@@ -1,0 +1,32 @@
+<script type="module">
+  import { func_interpreter_new } from '../engine/engine'
+  import * as add from './json/hello world (20).json'
+  var assert = require('assert')
+
+  /**
+   * JSON representations are generated using function builder
+   */
+  export function testAdd() {
+    
+    const runs = 10
+    let run = 0
+    while (run < runs) {
+      const p1 =  Math.random() * 100
+      const p2 =  Math.random() * 100
+      const params = {
+        1 : {
+          name : "param1",
+          value : p1
+        },
+        2: {
+          name : "param2",
+          value : p2
+        }
+      }
+      const res = func_interpreter_new(JSON.stringify(add), params)
+      console.log(res)
+    }
+  }
+
+  testAdd()
+</script>
