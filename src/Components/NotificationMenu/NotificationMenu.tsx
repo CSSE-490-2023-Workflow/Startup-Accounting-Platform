@@ -22,7 +22,7 @@ import {AuthContext, database} from "../../auth/firebase"
 import * as firestore from 'firebase/firestore';
 import Timestamp = firestore.Timestamp;
 import classes from "./NotificationMenu.module.css"
-import { Alert } from "../Alert/Alert"
+import { ToastContainer, toast } from "react-toastify";
 
 interface Notification {
     timestamp: Timestamp;
@@ -108,6 +108,8 @@ const NotificationMenu = (props: any) => {
 
     return (
         <>
+            <button onClick={() => toast("wow")}>button</button>
+            <ToastContainer />
             <Menu width={400}
               transitionProps={{transition: 'scale-y'}}
               withinPortal

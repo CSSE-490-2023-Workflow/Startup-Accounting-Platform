@@ -1017,30 +1017,30 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log("current function blocks in parents", funcBlocks);
     }
 
-    const tmp: FuncBlockDS[] = funcBlocks.map((blk: FuncBlockDS) => {
-      if (blk.blockId == blkId) {
-        if (funcType == null && funcId != null) { // change to another function of the same type
-          setFuncBlockFunction(blk, funcId);
-        } else if (funcType != null && funcId == null) { //change function type
-          if (funcType == FuncType.builtin) {
-            setFuncBlockFunction(blk, '101'); //default to 101 (add)
-          } else if (funcType == FuncType.custom) {
-            console.log(customFunctions);
-            const f: CustomFunctionDBRecord = customFunctions.values().next().value;
-            setFuncBlockFunction(blk, f.id);
-          }
-        }
+    // const tmp: FuncBlockDS[] = funcBlocks.map((blk: FuncBlockDS) => {
+    //   if (blk.blockId == blkId) {
+    //     if (funcType == null && funcId != null) { // change to another function of the same type
+    //       setFuncBlockFunction(blk, funcId);
+    //     } else if (funcType != null && funcId == null) { //change function type
+    //       if (funcType == FuncType.builtin) {
+    //         setFuncBlockFunction(blk, '101'); //default to 101 (add)
+    //       } else if (funcType == FuncType.custom) {
+    //         console.log(customFunctions);
+    //         const f: CustomFunctionDBRecord = customFunctions.values().next().value;
+    //         setFuncBlockFunction(blk, f.id);
+    //       }
+    //     }
 
-        for (const arrow of arrows) {
-          if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
-            updateOutputBlkType(arrow);
-          }
-        }
-      }
+    //     for (const arrow of arrows) {
+    //       if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
+    //         updateOutputBlkType(arrow);
+    //       }
+    //     }
+    //   }
 
-      //setArrows(arrows => [...arrows]);
-      return blk;
-    })
+    //   //setArrows(arrows => [...arrows]);
+    //   return blk;
+    // })
 
     setFuncBlocks(funcBlocks => 
       funcBlocks.map((blk: FuncBlockDS) => {
