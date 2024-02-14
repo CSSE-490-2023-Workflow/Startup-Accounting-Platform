@@ -149,8 +149,12 @@ interface ioObj {
 function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const mounted = useRef<boolean>(false);
+  // tracks if block rendering can be started
   const allowRenderBlocks = useRef<boolean>(false);
+  // tracks if blocks have been rendered
   const hasRenderedBlocks = useRef<boolean>(false);
+  // When a new arrow is added, it's stored here so that we can update all blocks attached to it
+  const newArrow = useRef<StartAndEnd | null>(null)
 
   //const [inputs, setInputs] = useState([0,0])
   //const [result, setResult] = useState(0)
@@ -178,6 +182,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [customFunctions, setCustomFunctions] = useState<Map<string, CustomFunctionDBRecord>>(new Map());
   const { currentUser } = useContext(AuthContext);
 
+  
+
   // const [addedOutputIds, setAddedOutputIds] = useState<number[]>([]);
 
   const reloadSavedCustomFunctions = useCallback(() => {
@@ -204,7 +210,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [currentUser])
 
   useEffect(() => {
-    if (allowRenderBlocks.current && allowRenderBlocks && !hasRenderedBlocks.current) {
+    if (allowRenderBlocks.current && !hasRenderedBlocks.current) {
       hasRenderedBlocks.current = true
       console.log('custom function triggered')
       if (props.functionRawJson) {
@@ -216,6 +222,17 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   useEffect(() => {
     reloadSavedCustomFunctions()
   }, [currentUser])
+
+  /**
+   * Handles all the change incurred by an arrow creation
+   */
+  useEffect(() => {
+    if (newArrow.current != null) {
+      // If the arrow goes to an output block, we need to set the type of it
+      updateOutputBlkType(newArrow.current as StartAndEnd)
+      newArrow.current = null
+    }
+  }, [newArrow.current])
   
   // re-render arrows
   const refreshArrows = useCallback(() => {
@@ -375,7 +392,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
      */
 
     // If the arrow goes to an output block, we need to set to type of it
-    updateOutputBlkType(v);
+    newArrow.current = v
   }, [arrows, blkMap]);
 
 
@@ -1363,8 +1380,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     <>
       <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
         defaultAttr={["new input", data_types.dt_number, [200,200]]} />
-      <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101', FuncType.builtin, [200,200]]} />
-      <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined, [200,200]]} />
+      <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" 
+        defaultAttr={['101', FuncType.builtin, [200,200]]} />
+      <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" 
+        defaultAttr={["new output", undefined, [200,200]]} />
       <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
       <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
       <h3>Function Builder</h3>

@@ -33,6 +33,7 @@
     "react-draggable": "^4.4.6",
     "react-router-dom": "^6.21.0",
     "react-scripts": "^5.0.1",
+    "react-toastify": "^10.0.4",
     "react-vis": "^1.12.1",
     "react-xarrows": "^2.0.2",
     "reactflow": "^11.10.1",

@@ -7,7 +7,8 @@ import {
     Paper,
     ScrollArea,
     Text,
-    UnstyledButton
+    UnstyledButton,
+    Notification
 } from "@mantine/core"
 import {
     IconBell,
@@ -15,22 +16,25 @@ import {
     IconX
 } from "@tabler/icons-react";
 import cx from "clsx";
-import headerClasses from "../../HeaderTabs.module.css";
+import headerClasses from "../HomeHeader/HeaderTabs.module.css";
 import React, {ReactElement, useCallback, useContext, useEffect, useState} from "react";
 import {AuthContext, database} from "../../auth/firebase"
 import * as firestore from 'firebase/firestore';
 import Timestamp = firestore.Timestamp;
 import classes from "./NotificationMenu.module.css"
+import { Alert } from "../Alert/Alert"
 
 interface Notification {
     timestamp: Timestamp;
     element: ReactElement;
 }
 
-const NotificationMenu = () => {
+const NotificationMenu = (props: any) => {
     const [sharedFunctionsNotifications, setSharedFunctionsNotifications] = useState<Notification[]>([]);
     const [notificationMenuOpened, setNotificationMenuOpened] = useState(false);
     const { currentUser } = useContext(AuthContext);
+    const [showAlert, setShowAlert] = useState(false)
+    const [alertContent, setAlertContent] = useState('alert')
 
     const navigate = useCallback((pHref: string) => {
         window.open(pHref)
@@ -46,13 +50,25 @@ const NotificationMenu = () => {
             const notifs = await Promise.all(sharedFunctions.map(async (sharedFunction) => {
                 const fromUser = await database.getUser(sharedFunction.senderId);
                 const func = await database.getFunction(sharedFunction.functionId);
-                const previewHref = `/functionPreview/${sharedFunction.id}/${sharedFunction.functionId}`
+                let previewCallback : () => void;
+                let funcName = ""
+                if (func == undefined) { //function has been removed
+                    funcName = "deleted function"
+                    previewCallback = () => {
+                        props.setAlertCB("This function has been deleted by its owner")
+                    }
+                } else {
+                    funcName = func.name
+                    previewCallback = () => {
+                        navigate(`/functionPreview/${sharedFunction.id}/${sharedFunction.functionId}`)
+                    }
+                }
                 return {
                     timestamp: sharedFunction.time,
                     element: (
                         <Paper withBorder p="sm" className={classes.notif_element}>
                             <Group>
-                                <text>{fromUser.fullName} sent you a function <a href='' onClick={() => navigate(previewHref)}>{func.name}</a></text>
+                                <text>{fromUser == undefined ? "cancalled user" : fromUser.fullName} sent you a function <a href='' onClick={previewCallback}>{funcName}</a></text>
                                 <Group ml={"auto"}>
                                     <Button leftSection={<IconCheck size={16}/>} size={"xs"} onClick={() => {
                                         database.createTemplateFromFunction(currentUser.uid, sharedFunction.functionId);
@@ -91,7 +107,8 @@ const NotificationMenu = () => {
     const unsortedNotifications = sharedFunctionsNotifications;
 
     return (
-        <Menu width={400}
+        <>
+            <Menu width={400}
               transitionProps={{transition: 'scale-y'}}
               withinPortal
               onClose={() => setNotificationMenuOpened(false)}
@@ -112,6 +129,8 @@ const NotificationMenu = () => {
                 </ScrollArea>
             </Menu.Dropdown>
         </Menu>
+        </>
+        
     )
 }
 
