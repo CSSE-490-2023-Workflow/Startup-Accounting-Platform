@@ -58,8 +58,7 @@ const HomeHeader = memo((props: any) => {
                   <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm"/>
 
                   <Group>
-                      <NotificationMenu setAlertCB={props.setAlertCB}/>
-                      {/* <NotificationMenu /> */}
+                      <NotificationMenu />
                       <UserMenu />
                   </Group>
               </Group>

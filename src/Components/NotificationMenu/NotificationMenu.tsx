@@ -7,9 +7,10 @@ import {
     Paper,
     ScrollArea,
     Text,
-    UnstyledButton,
-    Notification
+    UnstyledButton
 } from "@mantine/core"
+import {Notifications, notifications} from '@mantine/notifications'
+import '@mantine/notifications/styles.css';
 import {
     IconBell,
     IconCheck,
@@ -49,33 +50,38 @@ const NotificationMenu = (props: any) => {
 
             const notifs = await Promise.all(sharedFunctions.map(async (sharedFunction) => {
                 const fromUser = await database.getUser(sharedFunction.senderId);
-                const func = await database.getFunction(sharedFunction.functionId);
+                let func = null;
+                func = await database.getFunction(sharedFunction.functionId);
                 let previewCallback : () => void;
                 let funcName = ""
+                let styles = {}
                 if (func == undefined) { //function has been removed
                     funcName = "deleted function"
-                    previewCallback = () => {
-                        props.setAlertCB("This function has been deleted by its owner")
-                    }
+                    styles = {'pointer-events': 'none'}
+                    console.log(styles)
+                    previewCallback = () => {}
                 } else {
                     funcName = func.name
                     previewCallback = () => {
                         navigate(`/functionPreview/${sharedFunction.id}/${sharedFunction.functionId}`)
                     }
                 }
+                console.log(styles)
                 return {
                     timestamp: sharedFunction.time,
                     element: (
                         <Paper withBorder p="sm" className={classes.notif_element}>
                             <Group>
-                                <text>{fromUser == undefined ? "cancalled user" : fromUser.fullName} sent you a function <a href='' onClick={previewCallback}>{funcName}</a></text>
+                                <text>{fromUser == undefined ? "cancalled user" : fromUser.fullName} sent you a function <a href='' onClick={previewCallback} style={styles}>{funcName}</a></text>
                                 <Group ml={"auto"}>
-                                    <Button leftSection={<IconCheck size={16}/>} size={"xs"} onClick={() => {
-                                        database.createTemplateFromFunction(currentUser.uid, sharedFunction.functionId);
-                                        database.deleteSharedFunctionMsg(sharedFunction.id);
-                                    }}>
-                                        Accept
-                                    </Button>
+                                    {func == undefined ? <></> :
+                                        <Button leftSection={<IconCheck size={16}/>} size={"xs"} onClick={() => {
+                                            database.createTemplateFromFunction(currentUser.uid, sharedFunction.functionId);
+                                            database.deleteSharedFunctionMsg(sharedFunction.id);
+                                        }}>
+                                            Accept
+                                        </Button>
+                                    }
                                     <ActionIcon variant={"default"} onClick={() => database.deleteSharedFunctionMsg(sharedFunction.id)}>
                                         <IconX size={20}/>
                                     </ActionIcon>
@@ -108,8 +114,7 @@ const NotificationMenu = (props: any) => {
 
     return (
         <>
-            <button onClick={() => toast("wow")}>button</button>
-            <ToastContainer />
+            {/* <Notifications position="top-left" autoClose={3000}/> */}
             <Menu width={400}
               transitionProps={{transition: 'scale-y'}}
               withinPortal
