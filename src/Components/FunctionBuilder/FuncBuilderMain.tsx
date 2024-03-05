@@ -111,6 +111,14 @@ interface TypeErrMsg {
   msg: string
 }
 
+/**
+ * Isn't this the same as TypeErrMsg?
+ */
+interface DisconnErrMsg {
+  blkId: number,
+  msg: string
+}
+
 // interface JSONInput {
 //   type: string;
 //   inputName: string;
@@ -193,6 +201,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const { currentUser } = useContext(AuthContext);
 
   const [ typeErrMsgs, setTypeErrMsgs ] = useState<TypeErrMsg[]>([])
+  const [ disconnErrMsgs, setDisconnErrMsgs ] = useState<DisconnErrMsg[]>([])
   const [isTypeCheckDialogOpen, {open: openTypeCheckDialog, close: closeTypeCheckDialog}] = useDisclosure(false);
 
   // const [addedOutputIds, setAddedOutputIds] = useState<number[]>([]);
@@ -504,6 +513,31 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [blkMap])
 
   const runTypeCheck = useCallback(() => {
+    //check for disconnections
+    const localDisconnErrMsgs: DisconnErrMsg[] = []
+    console.log()
+
+    //back trace each output block
+    for (const outputBlk of outputBlocks) {
+      console.log("loc: ", outputBlk.blockLocation);
+      let path: any = {
+        type: 'output',
+        outputName: outputBlk.outputName,
+        outputType: outputBlk.outputType,
+        outputIdx: outputBlk.outputIdx,
+        outputBlkLoc: outputBlk.blockLocation,
+        blockId: outputBlk.blockId,
+        params: [
+          tracePath(outputBlk.blockId.toString() + 'i1', localDisconnErrMsgs)
+        ]
+      };
+    }
+    setDisconnErrMsgs(msgs => localDisconnErrMsgs)
+    
+    if (localDisconnErrMsgs.length != 0) {
+      return //return if there is disconnection
+    }
+
     //reset the types of all func and output blocks
     for (const funcBlock of funcBlocks) {
       if (funcBlock.funcType == FuncType.custom) {
@@ -650,7 +684,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         } else if (isFuncBlock(startBlkId)) {
           // check if the func block has its output type defined
           const startBlk: FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS
-          if (startBlk.currentOutputTypes[0] != undefined) { //output types have been defined
+          console.log(startBlk)
+          if (startBlk.currentOutputTypes[0] != undefined) { //function output types have been defined
             const arrowStartType: data_types = startBlk.currentOutputTypes[startNodeIdx - 1]
             updateArrowEndType(arrowStartType, endBlkId, endNodeIdx)
             localArrows.delete(arrow)
@@ -698,6 +733,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const saveFunction = useCallback(() => {
     console.log('saving')
     const tmp: any[] = [];
+    const localDisconnErrMsgs: DisconnErrMsg[] = []
 
     //back trace each output block
     for (const outputBlk of outputBlocks) {
@@ -710,11 +746,20 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         outputBlkLoc: outputBlk.blockLocation,
         blockId: outputBlk.blockId,
         params: [
-          tracePath(outputBlk.blockId.toString() + 'i1')
+          tracePath(outputBlk.blockId.toString() + 'i1', localDisconnErrMsgs)
         ]
       };
       //console.log('trace res', path);
       tmp.push(path);
+    }
+
+    console.log(localDisconnErrMsgs)
+
+    setDisconnErrMsgs(msgs => localDisconnErrMsgs)
+
+    // don't continue if there is disconnection
+    if (localDisconnErrMsgs.length != 0) {
+      return 
     }
 
     //sort input / output blocks by indices
@@ -745,20 +790,33 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     database.updateFunction(props.functionId, { rawJson: JSON.stringify(res) });
     reloadSavedCustomFunctions();
-  }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId])
+  }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId, disconnErrMsgs])
   /**
    * Given the node id the head of an arrow is connected to, backtrace the path and return it
    * @param arrowHead
    */
-  const tracePath = function (arrowHead: string) {
+  const tracePath = function (arrowHead: string, disconnErrMsgs: DisconnErrMsg[]) {
     console.log('arrow head', arrowHead);
     //console.log(arrows);
-    let arrow: StartAndEnd = arrows.filter((sae: StartAndEnd) => {
+    
+    let arrow: StartAndEnd | undefined = undefined
+    let tmp: StartAndEnd[] = arrows.filter((sae: StartAndEnd) => {
       return sae.end == arrowHead
-    })[0]
+    })
+    if (tmp.length == 0) {
+      console.log('in')
+      let newMsg: DisconnErrMsg = {
+        blkId: Number(arrowHead.split('i')[0]),
+        msg: "Disconnected node"
+      }
+      disconnErrMsgs.push(newMsg)
+      return 
+    } else {
+      arrow = tmp[0]
+    }
+    arrow = arrow as StartAndEnd
     const tailBlkId: number = Number(arrow.start.split('o')[0]);
     const tailBlk: blk | undefined = blkMap.get(tailBlkId);
-    console.log('blkMap', blkMap);
 
     /**
      * tail block  ------>   head block
@@ -781,7 +839,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     } if ('funcType' in tailBlk) { //func block
       const params: any[] = [];
       for (const i of [...Array(tailBlk.paramNames.length).keys()].map(e => e + 1)) { //for i in [1, 2, ..., # of params]
-        params.push(tracePath(tailBlk.blockId.toString() + 'i' + i.toString()))
+        params.push(tracePath(tailBlk.blockId.toString() + 'i' + i.toString(), disconnErrMsgs))
       }
       //console.log('params', params);
       if (tailBlk.funcType == FuncType.builtin) {
@@ -1570,12 +1628,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   
   const icon = <IconInfoCircle />;
   
-  const errMsgsDisplay = typeErrMsgs.map((msg: TypeErrMsg) => {
+  let errMsgsDisplay = typeErrMsgs.map((msg: TypeErrMsg) => {
     const errMsgStyle : any = {
       'max-width' : '400px',
       'position': 'absolute',
       'left': blkMap.get(msg.blkId)?.blockLocation[0],
-      'top': blkMap.get(msg.blkId)?.blockLocation[1] as number - 100
+      'top': blkMap.get(msg.blkId)?.blockLocation[1] as number - 50
 
     }
     return (
@@ -1591,6 +1649,28 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     )
   })
 
+  const errMsgsDisplay2 = disconnErrMsgs.map((msg: DisconnErrMsg) => {
+    const errMsgStyle : any = {
+      'max-width' : '400px',
+      'position': 'absolute',
+      'left': blkMap.get(msg.blkId)?.blockLocation[0],
+      'top': blkMap.get(msg.blkId)?.blockLocation[1] as number - 50
+
+    }
+    return (
+      <Alert variant="filled" color="red" title={msg.msg} icon={icon} withCloseButton={true}
+        onClose={() => {
+          setDisconnErrMsgs(errMsgs => errMsgs.filter((m) => m.blkId != msg.blkId))
+        }}
+        styles={{
+          root: errMsgStyle
+        }}>
+      
+      </Alert>
+    )
+  })
+
+  errMsgsDisplay = errMsgsDisplay.concat(errMsgsDisplay2)
 
   return (
     <>
