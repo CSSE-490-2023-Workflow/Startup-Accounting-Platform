@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
-import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series } from '../../engine/datatype_def'
+import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series, func_pt_series } from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
@@ -304,25 +304,28 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }
 
     const loadBlocksFromJSON = (rawJSON: string) => {
-
-        const loadParams = (parentBlockId: number, params: any) => {
-            for (let [paramIndex, param] of params.entries()) {
-                if (isBuiltinFunction(param)) {
-                    //param = param as JSONBuiltinFunction;
-                    addFuncBlock(param.functionId, FuncType.builtin, param.funcBlkLoc, param.blockId);
-                    addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
-                    loadParams(param.blockId, param.params);
-                } else if (isInput(param)) {
-                    //param = param as JSONInput;
-                    addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
-                    addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
-                } else if (isCustomFunctionCall(param)) {
-                  addFuncBlock(param.functionId, FuncType.custom, param.blockLocation, param.blockId);
+      const unique = new Set<string>();
+      const loadParams = (parentBlockId: number, params: any) => {
+          for (let [paramIndex, param] of params.entries()) {
+              if (isBuiltinFunction(param)) {
+                  //param = param as JSONBuiltinFunction;
+                  addFuncBlock(param.functionId, FuncType.builtin, param.funcBlkLoc, param.blockId);
                   addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
-                  loadParams(param.blockId, param.params)
-                }
-            }
-        }
+                  loadParams(param.blockId, param.params);
+              } else if (isInput(param)) {
+                  //param = param as JSONInput;
+                  if(!unique.has(param.inputName)) {
+                    unique.add(param.inputName);
+                    addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
+                  }
+                  addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+              } else if (isCustomFunctionCall(param)) {
+                addFuncBlock(param.functionId, FuncType.custom, param.blockLocation, param.blockId);
+                addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+                loadParams(param.blockId, param.params)
+              }
+          }
+      }
 
         if (rawJSON === "{}") {
             rawJSON = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
@@ -887,7 +890,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log("index", inputBlkIdxMap);
     console.log("ID", currInputBlockId);
     setCurrInputBlockId(id => id + 1);
-    const newBlock: InputBlockDS = {
+    let newBlock: InputBlockDS = {
       blockId: newId,
       inputName: inputName,
       inputType: inputType,
@@ -895,6 +898,17 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       val: 0,
       blockLocation: inputBlkLoc
     }
+    if(inputType == data_types.dt_series) {
+      newBlock = {
+        blockId: newId,
+        inputName: inputName,
+        inputType: inputType,
+        inputIdx: newIdx,
+        val: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        blockLocation: inputBlkLoc
+      }
+    }
+   
 
     setInputBlocks(inputBlocks => { console.log('in', newBlock); return [...inputBlocks, newBlock] })
 
@@ -1388,10 +1402,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('in changeInput, blks are ', inputBlocks, newValue);
     const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS, index: number) => {
       console.log('in changeInput', index, blk, newValue);
-      if (blk.blockId == inputId + 1000) {
+      if (blk.blockId == inputId) {
+        console.log("called in here");
         blk.val = newValue;
       }
-      console.log(blk.val);
+      console.log(blk.val, blk.blockId, inputId);
       return blk;
     })
     setInputBlocks(inputBlocks => [...inputBlocks]);
@@ -1420,7 +1435,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         return (
           <>
             <h3>{blk.inputName}</h3>
-            <SeriesInput handleStateChange={changeInput} ind={blk.inputIdx} inValues={blk.val as series} inputValueCap={INVALUECAP} />
+            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as series} inputValueCap={INVALUECAP} />
           </>
         );
       }
@@ -1430,7 +1445,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           <h3>{blk.inputName}</h3>
           <NumberInput handleStateChange={changeInput} ind={blk.inputIdx} inValue={0} inputId={blk.blockId} />
         </>
-      );
+    )
     }))
   }, [inputBlocks])
 
@@ -1448,7 +1463,19 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       data = []
       for (let i = 0; i < (outputObj.value as series).length; i++) {
         data.push({ x: i, y: (outputObj.value as series)[i] as number })
+        if((typeof (outputObj.value as series)[0]) !== "number") {
+          data = []
+          for (let i = 0; i < (outputObj.value as func_pt_series).length; i++) {
+            data.push({ x: i, y: (outputObj.value as func_pt_series)[i][1]})
+          }
+        } else {
+          data = []
+          for (let i = 0; i < (outputObj.value as series).length; i++) {
+            data.push({ x: i, y: (outputObj.value as series)[i]})
+          }
+        }
       }
+
     }
     console.log(data)
     outputList.push(
@@ -1684,9 +1711,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
       <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
       <h3>Function Builder</h3>
-      <div style={{ display: "flex" }}>
-        {fullInputBlocks}
-      </div>
       {inputBlocksList}
       {funcBlocksList}
       {outputBlocksList}
@@ -1697,7 +1721,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           key={ar.start + "-." + ar.start}
         />
       ))}
-      {outputList}
+      <div style={{position: "absolute", marginTop: "80%"}}>
+        <div style={{ display: "flex" }}>
+          {fullInputBlocks}
+        </div>
+        <br />
+        <div style={{ display: "flex" }}>
+          {outputList}
+        </div>
+      </div>
       {errMsgsDisplay}
       <Dialog opened={isTypeCheckDialogOpen} withCloseButton onClose={closeTypeCheckDialog} size="lg" radius="md" 
         transitionProps={{ transition: 'slide-left', duration: 100 }} withBorder
@@ -1715,6 +1747,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     </>
   );
 }
+
 
 export default FuncBuilderMain;
 
