@@ -3,7 +3,7 @@ import {initializeApp} from "firebase/app";
 import {getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup} from "firebase/auth";
 import {Avatar, Box, Button, ButtonProps, Group, LoadingOverlay, Menu, rem, Text, UnstyledButton} from "@mantine/core";
 import cx from "clsx";
-import classes from "../HeaderTabs.module.css";
+import classes from "../Components/HomeHeader/HeaderTabs.module.css";
 import {IconChevronDown, IconLogout, IconSettings,} from "@tabler/icons-react";
 import {useNavigate} from "react-router-dom";
 import {GoogleIcon} from "./GoogleIcon";

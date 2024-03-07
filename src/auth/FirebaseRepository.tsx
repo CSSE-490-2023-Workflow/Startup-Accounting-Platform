@@ -20,6 +20,7 @@ export interface FunctionData {
     type: string,
     fromTemplate: string,
     fromFunction: string,
+    allowAccess: string[] | string,
     rawJson: string;
 }
 
@@ -102,6 +103,7 @@ export class FirestoreRepository {
             type: "Custom Function",
             fromTemplate: "",
             fromFunction: "",
+            allowAccess: "",
             ownerUid: uid
         }
         const docRef = await addDoc(this.functionsRef, emptyFunctionData);
@@ -113,8 +115,70 @@ export class FirestoreRepository {
         return docRef.id;
     }
 
+    async grantAccessToFunction(functionId: string, uid: string) {
+        const funcRecord = await this.getFunction(functionId)
+        const funcBody = funcRecord.rawJson
+        const currentPermission = funcRecord.allowAccess
+        if (currentPermission == 'all') {
+
+        } else if (currentPermission == "") {
+            this.updateFunction(functionId, {allowAccess: [uid]})
+
+        } else { //shared with someone
+            if (!currentPermission.includes(uid))  {
+                this.updateFunction(functionId, {allowAccess: [...currentPermission, uid]})
+            }
+        }
+    }
+
+    async grantAccessUponShareFunction(functionId: string, uid: string) {
+        const funcRecord = await this.getFunction(functionId)
+        const funcBody = JSON.parse(funcRecord.rawJson)
+        this.grantAccessToFunction(functionId, uid)
+
+        const recursivelyGrantAccess : any = async (body: any) => {
+            console.log('in')
+            
+            if (body.type == 'custom_function_call') {
+                console.log('in custom function call')
+                this.grantAccessToFunction(body.functionId, uid)
+                for (const param of body.params) {
+                    await recursivelyGrantAccess(param)
+                }
+                //search the body of the custom function
+                await recursivelyGrantAccess(JSON.parse(body.body))
+                return body
+            } else if (body.type == 'input') {
+                return body
+            } else if (body.type == 'output') {
+                console.log('in output')
+                // console.log('in output')
+                // console.log(body)
+                await recursivelyGrantAccess(body.params[0])
+                return body
+            } else if (body.type == 'custom_function') {
+                for (const output of body.outputs) {
+                    console.log('in custom function')
+                    console.log(output)
+                    await recursivelyGrantAccess(output)
+                }
+                return body
+            } else if (body.type == 'builtin_function') {
+                for (const param of body.params) {
+                    await recursivelyGrantAccess(param);
+                }
+                return body
+            } else {
+                return body
+            }
+        }
+        recursivelyGrantAccess(funcBody);
+    }
+
     async shareFunction(senderId: string, receiverId: string, functionId: string) {
         //create a message
+        this.grantAccessUponShareFunction(functionId, receiverId)
+
         const msg : ShareTemplateMsg = {
             id: "",
             senderId: senderId,
@@ -138,7 +202,7 @@ export class FirestoreRepository {
 
     async createTemplateFromFunction(uid: string, functionId: string) {
 
-        let funcData: FunctionData = await this.getFunction(functionId)
+        let funcData: FunctionData = await this.getFunction(functionId);
 
         // We need to parse all custom functions used inside the template function
         //const getFunctionLocal = this.getFunction
@@ -164,6 +228,7 @@ export class FirestoreRepository {
                     type: "Template Function",
                     fromTemplate: functionId,
                     fromFunction: srcFunction,
+                    allowAccess: "",
                     rawJson: body.body
                 }
                 const docRefId : any = await this.createFunction(tmp);
@@ -213,6 +278,7 @@ export class FirestoreRepository {
             type: "Template",
             fromTemplate: functionId,
             fromFunction: "",
+            allowAccess: "",
             rawJson: JSON.stringify(templateBody)
         }
 

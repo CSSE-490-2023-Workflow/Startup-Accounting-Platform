@@ -144,6 +144,8 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
 
   const allowRenderBlocks = useRef<boolean>(false);
   const hasRenderedBlocks = useRef<boolean>(false);
+  const allowUpdateOutputType = useRef<boolean>(false);
+  const newArrow = useRef<StartAndEnd | null>(null);
 
   //const [inputs, setInputs] = useState([0,0])
   //const [result, setResult] = useState(0)
@@ -197,7 +199,7 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
   }, [currentUser])
 
   useEffect(() => {
-    if (allowRenderBlocks.current && allowRenderBlocks && !hasRenderedBlocks.current) {
+    if (allowRenderBlocks.current && !hasRenderedBlocks.current) {
       hasRenderedBlocks.current = true
       console.log('custom function triggered')
       if (props.functionRawJson) {
@@ -205,6 +207,14 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
       }
     }
   }, [customFunctions])
+
+  useEffect(() => {
+    if (newArrow.current != null) {
+      // If the arrow goes to an output block, we need to set to type of it
+      updateOutputBlkType(newArrow.current as StartAndEnd)
+      newArrow.current = null
+    }
+  }, [newArrow.current])
 
   useEffect(() => {
     reloadSavedCustomFunctions()
@@ -289,9 +299,8 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
     /**
      * tail(start) block  ------>   head(end) block
      */
-
-    // If the arrow goes to an output block, we need to set to type of it
-    updateOutputBlkType(v);
+    newArrow.current = v;
+    //allowUpdateOutputType.current = true
   }, [arrows, blkMap]);
 
 
@@ -322,7 +331,7 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
 
   // Given an arrow leading to an output block
   // Updates the output block's type if needed
-  function updateOutputBlkType(arrow: StartAndEnd) {
+  const updateOutputBlkType = (arrow: StartAndEnd) => {
     const endBlkId : number = Number(arrow.end.split('i')[0]);
     if (isOutputBlock(endBlkId)) { //end block is an output block
       const startBlkId : number = Number(arrow.start.split('o')[0]);
@@ -401,25 +410,21 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
    * Input block Logics
    */
   const addInputBlock = useCallback((inputName: string, inputType: data_types, inputBlkLoc: [number, number], blockId?: number, blockIdx?: number) => {
-    const newId = blockId ? blockId : currInputBlockId + 1;
-    const newIdx = blockIdx ? blockIdx : inputBlkIdxMap.size + 1;
-    console.log("index", inputBlkIdxMap);
-    console.log("ID", currInputBlockId);
-    setCurrInputBlockId(id => id + 1);
+    
     const newBlock: InputBlockDS = {
-      blockId: newId,
+      blockId: blockId as number,
       inputName: inputName,
       inputType: inputType,
-      inputIdx: newIdx,
+      inputIdx: blockIdx as number,
       val: 0,
       blockLocation: inputBlkLoc
     }
 
     setInputBlocks(inputBlocks => { console.log('in', newBlock); return [...inputBlocks, newBlock] })
 
-    setBlkMap(blkMap => { blkMap.set(newId, newBlock); return new Map(blkMap) });
+    setBlkMap(blkMap => { blkMap.set(blockId as number, newBlock); return new Map(blkMap) });
 
-    setInputBlkIdxMap(inputBlkIdxMap => { inputBlkIdxMap.set(newIdx, newBlock); return new Map(inputBlkIdxMap) });
+    setInputBlkIdxMap(inputBlkIdxMap => { inputBlkIdxMap.set(blockIdx as number, newBlock); return new Map(inputBlkIdxMap) });
 
     if (config.debug_mode_FuncBuilder == 1) {
       console.log('add input block. inputBlocks', inputBlocks);
@@ -427,7 +432,6 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
       console.log('add input block. inputBlkIdxMap', inputBlkIdxMap);
     }
 
-    return newId;
   }, [inputBlkIdxMap, currInputBlockId])
 
   /**
