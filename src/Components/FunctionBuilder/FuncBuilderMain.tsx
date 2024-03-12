@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
-import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series } from '../../engine/datatype_def'
+import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series, func_pt_series } from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
@@ -14,12 +14,13 @@ import Xarrow from 'react-xarrows';
 import NumberInput from '../NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
-import { Button } from "@mantine/core";
+import { Button, Dialog, Group, Alert, Text} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
 import SeriesInput from '../SeriesInput';
 import { MyDraggable } from './MyDraggable';
 import {flushSync} from "react-dom";
-import { IconTexture } from '@tabler/icons-react';
+import { IconCheck, IconInfoCircle, IconTexture } from '@tabler/icons-react';
+import { useDisclosure } from '@mantine/hooks';
 
 interface InputBlockDS {
   blockId: number
@@ -56,10 +57,14 @@ interface FuncBlockDS {
   funcType: FuncType
   funcName: string
   funcId: string
-  paramTypes: data_types[][]
+  //builtin functions can accept multiple combinations of input types
+  //custom functions only accept one as for now
+  paramTypes: data_types[][] | data_types[]
   paramNames: string[]
-  outputTypes: data_types[][]
+  outputTypes: data_types[][] | data_types[]
   outputNames: string[]
+  currentParamTypes: data_types[]
+  currentOutputTypes: data_types[]
   blockLocation: [number, number]
 }
 
@@ -99,6 +104,19 @@ type blk = FuncBlockDS | OutputBlockDS | InputBlockDS;
 interface ioObj {
   name: string,
   value: allowed_stack_components
+}
+
+interface TypeErrMsg {
+  blkId: number,
+  msg: string
+}
+
+/**
+ * Isn't this the same as TypeErrMsg?
+ */
+interface DisconnErrMsg {
+  blkId: number,
+  msg: string
 }
 
 // interface JSONInput {
@@ -149,8 +167,12 @@ interface ioObj {
 function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const mounted = useRef<boolean>(false);
+  // tracks if block rendering can be started
   const allowRenderBlocks = useRef<boolean>(false);
+  // tracks if blocks have been rendered
   const hasRenderedBlocks = useRef<boolean>(false);
+  // When a new arrow is added, it's stored here so that we can update all blocks attached to it
+  const newArrow = useRef<StartAndEnd | null>(null)
 
   //const [inputs, setInputs] = useState([0,0])
   //const [result, setResult] = useState(0)
@@ -178,6 +200,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [customFunctions, setCustomFunctions] = useState<Map<string, CustomFunctionDBRecord>>(new Map());
   const { currentUser } = useContext(AuthContext);
 
+  const [ typeErrMsgs, setTypeErrMsgs ] = useState<TypeErrMsg[]>([])
+  const [ disconnErrMsgs, setDisconnErrMsgs ] = useState<DisconnErrMsg[]>([])
+  const [isTypeCheckDialogOpen, {open: openTypeCheckDialog, close: closeTypeCheckDialog}] = useDisclosure(false);
+
   // const [addedOutputIds, setAddedOutputIds] = useState<number[]>([]);
 
   const reloadSavedCustomFunctions = useCallback(() => {
@@ -204,7 +230,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [currentUser])
 
   useEffect(() => {
-    if (allowRenderBlocks.current && allowRenderBlocks && !hasRenderedBlocks.current) {
+    if (allowRenderBlocks.current && !hasRenderedBlocks.current) {
       hasRenderedBlocks.current = true
       console.log('custom function triggered')
       if (props.functionRawJson) {
@@ -216,6 +242,18 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   useEffect(() => {
     reloadSavedCustomFunctions()
   }, [currentUser])
+
+  /**
+   * Handles all the change incurred by an arrow creation
+   */
+  useEffect(() => {
+    if (newArrow.current != null) {
+      // If the arrow goes to an output block, we need to set the type of it
+      updateFuncBlockUponArrowCreation(newArrow.current as StartAndEnd)
+      updateOutputBlockUponArrowCreation(newArrow.current as StartAndEnd)
+      newArrow.current = null
+    }
+  }, [newArrow.current])
   
   // re-render arrows
   const refreshArrows = useCallback(() => {
@@ -266,25 +304,28 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }
 
     const loadBlocksFromJSON = (rawJSON: string) => {
-
-        const loadParams = (parentBlockId: number, params: any) => {
-            for (let [paramIndex, param] of params.entries()) {
-                if (isBuiltinFunction(param)) {
-                    //param = param as JSONBuiltinFunction;
-                    addFuncBlock(param.functionId, FuncType.builtin, param.funcBlkLoc, param.blockId);
-                    addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
-                    loadParams(param.blockId, param.params);
-                } else if (isInput(param)) {
-                    //param = param as JSONInput;
-                    addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
-                    addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
-                } else if (isCustomFunctionCall(param)) {
-                  addFuncBlock(param.functionId, FuncType.custom, param.blockLocation, param.blockId);
+      const unique = new Set<string>();
+      const loadParams = (parentBlockId: number, params: any) => {
+          for (let [paramIndex, param] of params.entries()) {
+              if (isBuiltinFunction(param)) {
+                  //param = param as JSONBuiltinFunction;
+                  addFuncBlock(param.functionId, FuncType.builtin, param.funcBlkLoc, param.blockId);
                   addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
-                  loadParams(param.blockId, param.params)
-                }
-            }
-        }
+                  loadParams(param.blockId, param.params);
+              } else if (isInput(param)) {
+                  //param = param as JSONInput;
+                  if(!unique.has(param.inputName)) {
+                    unique.add(param.inputName);
+                    addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
+                  }
+                  addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+              } else if (isCustomFunctionCall(param)) {
+                addFuncBlock(param.functionId, FuncType.custom, param.blockLocation, param.blockId);
+                addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+                loadParams(param.blockId, param.params)
+              }
+          }
+      }
 
         if (rawJSON === "{}") {
             rawJSON = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
@@ -375,7 +416,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
      */
 
     // If the arrow goes to an output block, we need to set to type of it
-    updateOutputBlkType(v);
+    newArrow.current = v
   }, [arrows, blkMap]);
 
 
@@ -444,7 +485,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   // }
 
-  const updateOutputBlkType = useCallback((arrow: StartAndEnd) => {
+  const updateOutputBlockUponArrowCreation = useCallback((arrow: StartAndEnd) => {
     const endBlkId: number = Number(arrow.end.split('i')[0]);
     if (isOutputBlock(endBlkId)) { //end block is an output block
       const startBlkId: number = Number(arrow.start.split('o')[0]);
@@ -458,6 +499,219 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       }
     }
   }, [blkMap])
+
+  const updateFuncBlockUponArrowCreation = useCallback((arrow: StartAndEnd) => {
+    const endBlkId: number = Number(arrow.end.split('i')[0]);
+    if (isFuncBlock(endBlkId)) { //end block is a func block
+      const startBlkId: number = Number(arrow.start.split('o')[0]);
+      const startNodeIdx: number = Number(arrow.start.split('o')[1]);
+      if (isInputBlock(startBlkId)) { //start block is an input block
+        const startBlk: InputBlockDS = blkMap.get(startBlkId) as InputBlockDS;
+        editOutputBlock(endBlkId, null, startBlk.inputType, null);
+      } else if (isFuncBlock(startBlkId)) { //start block is a function block
+        const startBlk: FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
+        // editOutputBlock(endBlkId, null, startBlk.outputTypes[startNodeIdx - 1], null); // change from 1-based to 0-based indexing
+      }
+    }
+  }, [blkMap])
+
+  const runTypeCheck = useCallback(() => {
+    //check for disconnections
+    const localDisconnErrMsgs: DisconnErrMsg[] = []
+    console.log()
+
+    //back trace each output block
+    for (const outputBlk of outputBlocks) {
+      console.log("loc: ", outputBlk.blockLocation);
+      let path: any = {
+        type: 'output',
+        outputName: outputBlk.outputName,
+        outputType: outputBlk.outputType,
+        outputIdx: outputBlk.outputIdx,
+        outputBlkLoc: outputBlk.blockLocation,
+        blockId: outputBlk.blockId,
+        params: [
+          tracePath(outputBlk.blockId.toString() + 'i1', localDisconnErrMsgs)
+        ]
+      };
+    }
+    setDisconnErrMsgs(msgs => localDisconnErrMsgs)
+    
+    if (localDisconnErrMsgs.length != 0) {
+      return //return if there is disconnection
+    }
+
+    //reset the types of all func and output blocks
+    for (const funcBlock of funcBlocks) {
+      if (funcBlock.funcType == FuncType.custom) {
+        funcBlock.currentParamTypes = Array((funcBlock.paramTypes as data_types[]).length)
+        funcBlock.currentOutputTypes = Array((funcBlock.outputTypes as data_types[]).length)
+      } else if (funcBlock.funcType == FuncType.builtin) {
+        funcBlock.currentParamTypes = Array((funcBlock.paramTypes as data_types[][])[0].length)
+        funcBlock.currentOutputTypes = Array((funcBlock.paramTypes as data_types[][])[0].length)
+      }
+      
+    }
+    const locTypeErrMsgs : TypeErrMsg[] = []
+    for (const outputBlock of outputBlocks) {
+      outputBlock.outputType = undefined
+    }
+
+    const localArrows = new Set(arrows);
+    console.log('localarrows')
+    console.log(localArrows)
+    /**
+     * stores function blocks with incompatible input types
+     * e.g. [3001, 3003, ...]
+     *      [errMsg of 3001, errMsg of 3003, ...]
+     */
+    const badFuncBlks: Set<number> = new Set()
+
+    function stringifyTypes(typeArr: data_types[][] | data_types[])  {
+      let str: string = '['
+      if (Array.isArray(typeArr[0])) {
+        typeArr = typeArr as data_types[][]
+        let str: string = '['
+        let tmp: string = typeArr.reduce((currStr, t) => currStr += helper(t) + " ", "") 
+        tmp = tmp.substring(0, tmp.length - 1)
+        str += tmp
+        str += ']'
+        return str
+      } else {
+        return helper(typeArr as data_types[])
+      }
+    }
+
+    function helper(typeArr: data_types[]) {
+      let str : string = "["
+      let tmp: string = typeArr.reduce((currStr, t) => currStr += stringifyType(t)+ " ", "")
+      tmp = tmp.substring(0, tmp.length - 1)
+      str += tmp
+      str += ']'
+      return str
+    }
+
+    function stringifyType(type: data_types) {
+      if (type == data_types.dt_number) {
+        return 'N'
+      } else if (type == data_types.dt_series) {
+        return 'S'
+      } else {
+        return 'U'
+      }
+    }
+
+    /**
+     * Updates the types of the block at an arrow's tail, accordingly
+     * If the arrow's tail is a function block with incompatible input types, the block will be added to badFuncBlks with error msg added to errorMsgs
+     * @param arrowStartType data type of the arrow's start
+     * @param endBlkId id of the block at the arrow's end
+     * @param endNodeIdx what node is the arrow's end attached to
+     */
+    function updateArrowEndType(arrowStartType: data_types, endBlkId: number, endNodeIdx: number) {
+      if (isOutputBlock(endBlkId)) {
+        //note that there is no state update here. 
+        (blkMap.get(endBlkId) as OutputBlockDS).outputType = arrowStartType
+      } else if (isFuncBlock(endBlkId)) {
+        // node index is 1-indexed
+        const endBlk = blkMap.get(endBlkId) as FuncBlockDS
+        //update current param types
+        endBlk.currentParamTypes[endNodeIdx - 1] = arrowStartType
+
+        if (endBlk.funcType == FuncType.custom) {
+          const paramIsUndefined = endBlk.currentParamTypes.map(p => p != undefined)
+          const sum = paramIsUndefined.reduce((acc, e) => acc + Number(e), 0)
+          console.log(endBlk.currentParamTypes)
+          if (sum == endBlk.currentParamTypes.length) { // all parameters have types defined
+            // compare declared input types and current inputTypes
+            if (JSON.stringify(endBlk.currentParamTypes) != JSON.stringify(endBlk.paramTypes)) { //declared param types don't match with actual ones
+              locTypeErrMsgs.push({
+                blkId: endBlk.blockId,
+                msg: `Expecting: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`
+              })
+              badFuncBlks.add(endBlk.blockId)
+              // badFuncBlks.push(endBlk.blockId)
+              // errorMsgs.push(`Expecting input types: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`)
+            } else { //match
+              endBlk.currentOutputTypes = Array.from(endBlk.outputTypes as data_types[])
+            }
+            
+          } 
+          
+        } else if (endBlk.funcType == FuncType.builtin) { 
+          //builtin functions can accept different combinations of input types, it's in form [[x, y], [x', y'], ...]
+          //each inner array is a valid combination of input types
+          const paramIsUndefined = endBlk.currentParamTypes.map(p => p != undefined)
+          const sum = paramIsUndefined.reduce((acc, e) => acc + Number(e), 0)
+          if (sum == endBlk.currentParamTypes.length) { // all parameters have types defined
+            // compare declared input types and current inputTypes
+            let useInputCombination: number = -1;
+            for (let i = 0; i < endBlk.paramTypes.length; i++) {
+              const validCombination = endBlk.paramTypes[i]
+              if (JSON.stringify(validCombination) == JSON.stringify(endBlk.currentParamTypes)) {
+                useInputCombination = i
+                break
+              }
+            }
+            if (useInputCombination == -1) {
+              locTypeErrMsgs.push({
+                blkId: endBlk.blockId,
+                msg: `Expecting one of: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`
+              })
+              badFuncBlks.add(endBlk.blockId)
+              // errorMsgs.push(`Expecting one of the following input types: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`)
+            } else {
+              endBlk.currentOutputTypes = Array.from((endBlk.outputTypes as data_types[][])[useInputCombination])
+            } 
+          }
+        }
+      }
+      
+    }
+
+    while (localArrows.size > 0) {
+      const sizeAtStart: number = localArrows.size
+      for (const arrow of localArrows) {
+        const endBlkId: number = Number(arrow.end.split('i')[0]);
+        const endNodeIdx: number = Number(arrow.end.split('i')[1]);
+        const startBlkId: number = Number(arrow.start.split('o')[0]);
+        const startNodeIdx: number = Number(arrow.start.split('o')[1]);
+        if (badFuncBlks.has(startBlkId)) { // start blk does not have definite type
+          localArrows.delete(arrow)
+          continue
+        }
+        if (isInputBlock(startBlkId)) {
+          const arrowStartType: data_types = (blkMap.get(startBlkId) as InputBlockDS).inputType
+          updateArrowEndType(arrowStartType, endBlkId, endNodeIdx)
+          localArrows.delete(arrow)
+        } else if (isFuncBlock(startBlkId)) {
+          // check if the func block has its output type defined
+          const startBlk: FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS
+          console.log(startBlk)
+          if (startBlk.currentOutputTypes[0] != undefined) { //function output types have been defined
+            const arrowStartType: data_types = startBlk.currentOutputTypes[startNodeIdx - 1]
+            updateArrowEndType(arrowStartType, endBlkId, endNodeIdx)
+            localArrows.delete(arrow)
+          }
+        }
+      }
+      if (localArrows.size == sizeAtStart) {
+        throw new Error(`infinite loop at runTypeCheck. Plz let Qingyuan know 'cause this is not supposed to happen`)
+      }
+      
+    }
+    // console.log(typeErrMsgs)
+    // console.log(funcBlocks)
+    // console.log(locTypeErrMsgs)
+    if (locTypeErrMsgs.length == 0) {
+      openTypeCheckDialog()
+      setTimeout(closeTypeCheckDialog, 3000)
+    }
+    setTypeErrMsgs(msgs => locTypeErrMsgs)
+    //update types
+    setOutputBlocks(blks => [...blks])
+    
+  }, [inputBlocks, funcBlocks, outputBlocks])
 
 
   const [outputStore, setOutputStore] = useState<Map<number, ioObj>[]>([])
@@ -482,6 +736,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const saveFunction = useCallback(() => {
     console.log('saving')
     const tmp: any[] = [];
+    const localDisconnErrMsgs: DisconnErrMsg[] = []
 
     //back trace each output block
     for (const outputBlk of outputBlocks) {
@@ -494,11 +749,20 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         outputBlkLoc: outputBlk.blockLocation,
         blockId: outputBlk.blockId,
         params: [
-          tracePath(outputBlk.blockId.toString() + 'i1')
+          tracePath(outputBlk.blockId.toString() + 'i1', localDisconnErrMsgs)
         ]
       };
       //console.log('trace res', path);
       tmp.push(path);
+    }
+
+    console.log(localDisconnErrMsgs)
+
+    setDisconnErrMsgs(msgs => localDisconnErrMsgs)
+
+    // don't continue if there is disconnection
+    if (localDisconnErrMsgs.length != 0) {
+      return 
     }
 
     //sort input / output blocks by indices
@@ -529,20 +793,33 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
     database.updateFunction(props.functionId, { rawJson: JSON.stringify(res) });
     reloadSavedCustomFunctions();
-  }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId])
+  }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId, disconnErrMsgs])
   /**
    * Given the node id the head of an arrow is connected to, backtrace the path and return it
    * @param arrowHead
    */
-  const tracePath = function (arrowHead: string) {
+  const tracePath = function (arrowHead: string, disconnErrMsgs: DisconnErrMsg[]) {
     console.log('arrow head', arrowHead);
     //console.log(arrows);
-    let arrow: StartAndEnd = arrows.filter((sae: StartAndEnd) => {
+    
+    let arrow: StartAndEnd | undefined = undefined
+    let tmp: StartAndEnd[] = arrows.filter((sae: StartAndEnd) => {
       return sae.end == arrowHead
-    })[0]
+    })
+    if (tmp.length == 0) {
+      console.log('in')
+      let newMsg: DisconnErrMsg = {
+        blkId: Number(arrowHead.split('i')[0]),
+        msg: "Disconnected node"
+      }
+      disconnErrMsgs.push(newMsg)
+      return 
+    } else {
+      arrow = tmp[0]
+    }
+    arrow = arrow as StartAndEnd
     const tailBlkId: number = Number(arrow.start.split('o')[0]);
     const tailBlk: blk | undefined = blkMap.get(tailBlkId);
-    console.log('blkMap', blkMap);
 
     /**
      * tail block  ------>   head block
@@ -565,7 +842,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     } if ('funcType' in tailBlk) { //func block
       const params: any[] = [];
       for (const i of [...Array(tailBlk.paramNames.length).keys()].map(e => e + 1)) { //for i in [1, 2, ..., # of params]
-        params.push(tracePath(tailBlk.blockId.toString() + 'i' + i.toString()))
+        params.push(tracePath(tailBlk.blockId.toString() + 'i' + i.toString(), disconnErrMsgs))
       }
       //console.log('params', params);
       if (tailBlk.funcType == FuncType.builtin) {
@@ -613,7 +890,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log("index", inputBlkIdxMap);
     console.log("ID", currInputBlockId);
     setCurrInputBlockId(id => id + 1);
-    const newBlock: InputBlockDS = {
+    let newBlock: InputBlockDS = {
       blockId: newId,
       inputName: inputName,
       inputType: inputType,
@@ -621,6 +898,17 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       val: 0,
       blockLocation: inputBlkLoc
     }
+    if(inputType == data_types.dt_series) {
+      newBlock = {
+        blockId: newId,
+        inputName: inputName,
+        inputType: inputType,
+        inputIdx: newIdx,
+        val: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        blockLocation: inputBlkLoc
+      }
+    }
+   
 
     setInputBlocks(inputBlocks => { console.log('in', newBlock); return [...inputBlocks, newBlock] })
 
@@ -704,12 +992,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
                 }
                 blk.val = temp;
               }
-              // we need to update all outputs connected to the block
-              for (const arrow of arrows) {
-                if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
-                  updateOutputBlkType(arrow);
-                }
-              }
+              // we need to update all outputs connected to the block 
+              // maybe?
             }
             if (idx != null) {
               const oldIdx: number = blk.inputIdx;
@@ -913,6 +1197,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       paramNames: isBuiltin ? (f as builtin_function).param_names : customFuncBody.paramNames,
       outputTypes: isBuiltin ? (f as builtin_function).output_types : customFuncBody.outputTypes,
       outputNames: isBuiltin ? (f as builtin_function).output_names : customFuncBody.outputNames,
+      currentParamTypes: [],
+      currentOutputTypes: [],
       blockLocation: funcBlkLoc
     }
 
@@ -960,6 +1246,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       blk.paramNames = f.param_names;
       blk.outputTypes = f.output_types;
       blk.outputNames = f.output_names;
+      console.log(f.param_types)
     } else { // is custom function
       console.log('setting to custom function', blk)
       const f: CustomFunctionDBRecord | undefined = customFunctions.get(funcId);
@@ -985,8 +1272,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         blk.paramNames = customFuncBody.paramNames;
         blk.outputTypes = customFuncBody.outputTypes;
         blk.outputNames = customFuncBody.outputNames;
+        console.log(customFuncBody.paramTypes)
       }
-
     }
 
   }
@@ -1000,30 +1287,30 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log("current function blocks in parents", funcBlocks);
     }
 
-    const tmp: FuncBlockDS[] = funcBlocks.map((blk: FuncBlockDS) => {
-      if (blk.blockId == blkId) {
-        if (funcType == null && funcId != null) { // change to another function of the same type
-          setFuncBlockFunction(blk, funcId);
-        } else if (funcType != null && funcId == null) { //change function type
-          if (funcType == FuncType.builtin) {
-            setFuncBlockFunction(blk, '101'); //default to 101 (add)
-          } else if (funcType == FuncType.custom) {
-            console.log(customFunctions);
-            const f: CustomFunctionDBRecord = customFunctions.values().next().value;
-            setFuncBlockFunction(blk, f.id);
-          }
-        }
+    // const tmp: FuncBlockDS[] = funcBlocks.map((blk: FuncBlockDS) => {
+    //   if (blk.blockId == blkId) {
+    //     if (funcType == null && funcId != null) { // change to another function of the same type
+    //       setFuncBlockFunction(blk, funcId);
+    //     } else if (funcType != null && funcId == null) { //change function type
+    //       if (funcType == FuncType.builtin) {
+    //         setFuncBlockFunction(blk, '101'); //default to 101 (add)
+    //       } else if (funcType == FuncType.custom) {
+    //         console.log(customFunctions);
+    //         const f: CustomFunctionDBRecord = customFunctions.values().next().value;
+    //         setFuncBlockFunction(blk, f.id);
+    //       }
+    //     }
 
-        for (const arrow of arrows) {
-          if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
-            updateOutputBlkType(arrow);
-          }
-        }
-      }
+    //     for (const arrow of arrows) {
+    //       if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
+    //         updateOutputBlkType(arrow);
+    //       }
+    //     }
+    //   }
 
-      //setArrows(arrows => [...arrows]);
-      return blk;
-    })
+    //   //setArrows(arrows => [...arrows]);
+    //   return blk;
+    // })
 
     setFuncBlocks(funcBlocks => 
       funcBlocks.map((blk: FuncBlockDS) => {
@@ -1039,12 +1326,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               setFuncBlockFunction(blk, f.id);
             }
           }
-  
-          for (const arrow of arrows) {
-            if (arrowStartBlk(arrow) == blkId && isOutputBlock(arrowEndBlk(arrow))) {
-              updateOutputBlkType(arrow);
-            }
-          }
+
         }
         removeArrowsAttachedToBlk(blk.blockId)
         return blk;
@@ -1120,10 +1402,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('in changeInput, blks are ', inputBlocks, newValue);
     const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS, index: number) => {
       console.log('in changeInput', index, blk, newValue);
-      if (blk.blockId == inputId + 1000) {
+      if (blk.blockId == inputId) {
+        console.log("called in here");
         blk.val = newValue;
       }
-      console.log(blk.val);
+      console.log(blk.val, blk.blockId, inputId);
       return blk;
     })
     setInputBlocks(inputBlocks => [...inputBlocks]);
@@ -1152,7 +1435,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         return (
           <>
             <h3>{blk.inputName}</h3>
-            <SeriesInput handleStateChange={changeInput} ind={blk.inputIdx} inValues={blk.val as series} inputValueCap={INVALUECAP} />
+            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as series} inputValueCap={INVALUECAP} />
           </>
         );
       }
@@ -1162,7 +1445,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           <h3>{blk.inputName}</h3>
           <NumberInput handleStateChange={changeInput} ind={blk.inputIdx} inValue={0} inputId={blk.blockId} />
         </>
-      );
+    )
     }))
   }, [inputBlocks])
 
@@ -1180,7 +1463,19 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       data = []
       for (let i = 0; i < (outputObj.value as series).length; i++) {
         data.push({ x: i, y: (outputObj.value as series)[i] as number })
+        if((typeof (outputObj.value as series)[0]) !== "number") {
+          data = []
+          for (let i = 0; i < (outputObj.value as func_pt_series).length; i++) {
+            data.push({ x: i, y: (outputObj.value as func_pt_series)[i][1]})
+          }
+        } else {
+          data = []
+          for (let i = 0; i < (outputObj.value as series).length; i++) {
+            data.push({ x: i, y: (outputObj.value as series)[i]})
+          }
+        }
       }
+
     }
     console.log(data)
     outputList.push(
@@ -1357,20 +1652,65 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       />
     )
   })
+  
+  const icon = <IconInfoCircle />;
+  
+  let errMsgsDisplay = typeErrMsgs.map((msg: TypeErrMsg) => {
+    const errMsgStyle : any = {
+      'max-width' : '400px',
+      'position': 'absolute',
+      'left': blkMap.get(msg.blkId)?.blockLocation[0],
+      'top': blkMap.get(msg.blkId)?.blockLocation[1] as number - 50
 
+    }
+    return (
+      <Alert variant="filled" color="red" title={"Illegal Input Types. " + msg.msg} icon={icon} withCloseButton={true}
+        onClose={() => {
+          setTypeErrMsgs(errMsgs => errMsgs.filter((m) => m.blkId != msg.blkId))
+        }}
+        styles={{
+          root: errMsgStyle
+        }}>
+      
+      </Alert>
+    )
+  })
+
+  const errMsgsDisplay2 = disconnErrMsgs.map((msg: DisconnErrMsg) => {
+    const errMsgStyle : any = {
+      'max-width' : '400px',
+      'position': 'absolute',
+      'left': blkMap.get(msg.blkId)?.blockLocation[0],
+      'top': blkMap.get(msg.blkId)?.blockLocation[1] as number - 50
+
+    }
+    return (
+      <Alert variant="filled" color="red" title={msg.msg} icon={icon} withCloseButton={true}
+        onClose={() => {
+          setDisconnErrMsgs(errMsgs => errMsgs.filter((m) => m.blkId != msg.blkId))
+        }}
+        styles={{
+          root: errMsgStyle
+        }}>
+      
+      </Alert>
+    )
+  })
+
+  errMsgsDisplay = errMsgsDisplay.concat(errMsgsDisplay2)
 
   return (
     <>
       <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
         defaultAttr={["new input", data_types.dt_number, [200,200]]} />
-      <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" defaultAttr={['101', FuncType.builtin, [200,200]]} />
-      <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" defaultAttr={["new output", undefined, [200,200]]} />
+      <AddBlockButton onClick={addFuncBlock} buttonText="Add Function Block" 
+        defaultAttr={['101', FuncType.builtin, [200,200]]} />
+      <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" 
+        defaultAttr={["new output", undefined, [200,200]]} />
+      <button onClick={runTypeCheck}> run type check</button>
       <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
       <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
       <h3>Function Builder</h3>
-      <div style={{ display: "flex" }}>
-        {fullInputBlocks}
-      </div>
       {inputBlocksList}
       {funcBlocksList}
       {outputBlocksList}
@@ -1381,10 +1721,33 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           key={ar.start + "-." + ar.start}
         />
       ))}
-      {outputList}
+      <div style={{position: "absolute", marginTop: "80%"}}>
+        <div style={{ display: "flex" }}>
+          {fullInputBlocks}
+        </div>
+        <br />
+        <div style={{ display: "flex" }}>
+          {outputList}
+        </div>
+      </div>
+      {errMsgsDisplay}
+      <Dialog opened={isTypeCheckDialogOpen} withCloseButton onClose={closeTypeCheckDialog} size="lg" radius="md" 
+        transitionProps={{ transition: 'slide-left', duration: 100 }} withBorder
+        styles={
+          {root: {"background": "#33FF33", "max-width": "300px"}}
+        }  
+      >
+          <Group>
+              <IconCheck/>
+              <Text size="sm" fw={500}>
+                  {"Type check passed"}
+              </Text>
+          </Group>
+      </Dialog>
     </>
   );
 }
+
 
 export default FuncBuilderMain;
 
