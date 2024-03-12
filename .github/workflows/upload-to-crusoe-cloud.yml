@@ -8,9 +8,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      CI: false
-
     steps:
     - uses: actions/checkout@v3
 
@@ -22,14 +19,14 @@ jobs:
     - name: Build
       run: |
         npm install --force
-        npm run build
+        CI=false npm run build
 
     - name: Set up SSH key
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.CLOUD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.CLOUD_IP }} >> ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ vars.CLOUD_IP }} >> ~/.ssh/known_hosts
 
     - name: Copy files to crusoe cloud
       run: scp -i ~/.ssh/id_rsa ./build github-actions@${{ secrets.CLOUD_IP }}:/SAP
