@@ -26,10 +26,7 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.CLOUD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ CLOUD_IP }} >> ~/.ssh/known_hosts
-      env:
-        CLOUD_SSH_PRIVATE_KEY: ${{ secrets.CLOUD_SSH_PRIVATE_KEY }}
-        CLOUD_IP: ${{ secrets.CLOUD_IP }}
+        ssh-keyscan -H ${{ secrets.CLOUD_IP }} >> ~/.ssh/known_hosts
 
     - name: Copy files to crusoe cloud
       run: scp -i ~/.ssh/id_rsa ./build github-actions@${{ secrets.CLOUD_IP }}:/SAP
