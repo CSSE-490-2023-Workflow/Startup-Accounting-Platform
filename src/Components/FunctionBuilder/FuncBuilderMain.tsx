@@ -1185,7 +1185,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
 
   let outputListCount: number = 0;
-  const outputList: any[] = [];
+  const outputList: React.JSX.Element[] = [];
   for (const [outputIdx, outputObj] of evalResult) {
     let data = [{
       x: 0,
@@ -1254,7 +1254,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //   );
   // })
 
-  const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
+  const inputBlocksList = inputBlocks.map((blk: InputBlockDS, index: number) => {
     const element = (
       <InputBlock
         blockId={blk.blockId}
@@ -1263,6 +1263,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         inputTypeOptions={data_type_enum_name_pairs}
         inputIdx={[blk.inputIdx, inputBlkIdxMap.size]}
         blockLocation={blk.blockLocation}
+        inputValueElement={fullInputBlocks[index]}
         updateBlkCB={editInputBlock}
         removeBlkCB={removeInputBlock}
         setArrows={setArrows}
@@ -1354,7 +1355,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   })
 
-  const outputBlocksList = outputBlocks.map((blk: OutputBlockDS) => {
+  const outputBlocksList = outputBlocks.map((blk: OutputBlockDS, index: number) => {
     const element = (
       <OutputBlock
         key={blk.blockId}
@@ -1363,6 +1364,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         outputType={blk.outputType}
         outputIdx={[blk.outputIdx, outputBlkIdxMap.size]}
         blockLocation={blk.blockLocation}
+        outputGraph={outputList[index] ?? <></>}
         updateBlkCB={editOutputBlock}
         removeBlkCB={removeOutputBlock}
         addArrow={addArrow}
@@ -1405,7 +1407,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           key={ar.start + "-." + ar.start}
         />
       ))}
-      <div style={{position: "absolute", marginTop: "80%"}}>
+      {/* <div style={{position: "absolute", marginTop: "80%"}}>
         <div style={{ display: "flex" }}>
           {fullInputBlocks}
         </div>
@@ -1413,7 +1415,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         <div style={{ display: "flex" }}>
           {outputList}
         </div>
-      </div>
+      </div> */}
     </>
   );
 }

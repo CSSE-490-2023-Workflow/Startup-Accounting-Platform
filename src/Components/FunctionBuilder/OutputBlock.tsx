@@ -23,6 +23,7 @@ interface OutProps {
   outputType: data_types | undefined; //undefined if not connected to another block
   outputIdx: number[]; //the first element is the index of the block. The second element is the # of output blocks (i.e. maximum index)
   blockLocation: [number, number];
+  outputGraph?: React.JSX.Element;
   updateBlkCB: (blkId: number, outputName: string | null, outputType: data_types | null, idx: number | null) => void;
   removeBlkCB: (blkId: number) => void;
   addArrow: (value: StartAndEnd) => void;
@@ -34,12 +35,13 @@ interface OutProps {
 }
 
 function OutputBlock(props: OutProps) {
-  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc = [0,0], editCB, removeCB, addArrow, setArrows, removeArrow, updateLoc] = [
+  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc = [0,0], outputGraph, editCB, removeCB, addArrow, setArrows, removeArrow, updateLoc] = [
     props.blockId, 
     props.outputName, 
     props.outputType,
     props.outputIdx,
     props.blockLocation,
+    props.outputGraph,
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.addArrow, 
@@ -375,10 +377,10 @@ function OutputBlock(props: OutProps) {
       >  */}
     <div className='block-container'>
     <Card className="output-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder styles={{
-      root: {
-        height: '150px',
-        width: '200px'
-      },
+      // root: {
+      //   height: '150px',
+      //   width: '200px'
+      // },
       section: {
         padding: '0px 3px 0px 3px'
       }
@@ -392,6 +394,9 @@ function OutputBlock(props: OutProps) {
       </CardSection>
       <Card.Section>
         <Input className="output-block-name" onChange={handleNameChange} value={outputName} variant="filled" placeholder="Output Name" />
+      </Card.Section>
+      <Card.Section>
+        {outputGraph}
       </Card.Section>
       <CardSection>
         <hr className='solid-divider' />

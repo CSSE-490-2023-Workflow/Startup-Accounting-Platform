@@ -117,7 +117,7 @@ function SeriesInput(props: IProps) {
 //   <NumberInput handleStateChange={val.handleStateChange} ind={val.ind} inValue={inValues[i - 1]} inputId = {i - 1} />
     
     return (
-    <div style={{flexDirection: "column"}}>
+    <div style={{flexDirection: "row"}}>
      <button disabled={disabledInc} onClick={incrementNumber}>Add input</button>
      <button disabled={disabledDec} onClick={decrementNumber}>Remove input</button>
      {inputs}

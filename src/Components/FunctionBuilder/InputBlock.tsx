@@ -28,6 +28,7 @@ interface InputProps {
   inputTypeOptions: [data_types, string][];
   inputIdx: number[]; //the first entry is the current index. The second entry is the # of input blocks (i.e. maximum index)
   blockLocation: [number, number];
+  inputValueElement?: React.JSX.Element;
   updateBlkCB: (funcBlockId: number, inputName: string | null, inputType: data_types | null, idx: number | null) => void;
   removeBlkCB:  (id: number) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
@@ -36,13 +37,14 @@ interface InputProps {
 }
 
 function InputBlock(props: InputProps) {
-  const [ inputId, inputName, inputType, typeOptions, [inputIdx, maxIdx], blockLoc = [0,0], editCB, removeCB , setArrows, updateLoc] = [
+  const [ inputId, inputName, inputType, typeOptions, [inputIdx, maxIdx], blockLoc = [0,0], inputValueElement, editCB, removeCB , setArrows, updateLoc] = [
     props.blockId, 
     props.inputName, 
     props.inputType, 
     props.inputTypeOptions, 
     props.inputIdx,
     props.blockLocation,
+    props.inputValueElement,
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.setArrows,
@@ -390,10 +392,10 @@ function InputBlock(props: InputProps) {
       >  */}
     <div className='block-container'>
     <Card className="input-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder styles={{
-      root: {
-        height: '150px',
-        width: '200px'
-      },
+      // root: {
+      //   height: '150px',
+      //   width: '200px'
+      // },
       section: {
         padding: '0px 5px 0px 5px'
       }
@@ -407,6 +409,9 @@ function InputBlock(props: InputProps) {
       </CardSection>
       <Card.Section>
         <Input className="input-block-name" onChange={handleNameChange} value={inputName} variant="filled" placeholder="Input Name"/>
+      </Card.Section>
+      <Card.Section>
+        {inputValueElement}
       </Card.Section>
       <CardSection>
         <hr className='solid-divider' />
