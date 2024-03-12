@@ -303,109 +303,49 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     return param && param.type === "input";
   }
 
-    const loadBlocksFromJSON = (rawJSON: string) => {
-      const unique = new Set<string>();
-      const loadParams = (parentBlockId: number, params: any) => {
-          for (let [paramIndex, param] of params.entries()) {
-              if (isBuiltinFunction(param)) {
-                  //param = param as JSONBuiltinFunction;
-                  addFuncBlock(param.functionId, FuncType.builtin, param.funcBlkLoc, param.blockId);
-                  addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
-                  loadParams(param.blockId, param.params);
-              } else if (isInput(param)) {
-                  //param = param as JSONInput;
-                  if(!unique.has(param.inputName)) {
-                    unique.add(param.inputName);
-                    addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
-                  }
-                  addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
-              } else if (isCustomFunctionCall(param)) {
-                addFuncBlock(param.functionId, FuncType.custom, param.blockLocation, param.blockId);
+  const loadBlocksFromJSON = (rawJSON: string) => {
+    const unique = new Set<string>();
+    const loadParams = (parentBlockId: number, params: any) => {
+        for (let [paramIndex, param] of params.entries()) {
+            if (isBuiltinFunction(param)) {
+                //param = param as JSONBuiltinFunction;
+                addFuncBlock(param.functionId, FuncType.builtin, param.funcBlkLoc, param.blockId);
                 addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
-                loadParams(param.blockId, param.params)
-              }
-          }
-      }
-
-        if (rawJSON === "{}") {
-            rawJSON = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
+                loadParams(param.blockId, param.params);
+            } else if (isInput(param)) {
+                //param = param as JSONInput;
+                // if(!unique.has(param.inputName)) {
+                //   unique.add(param.inputName);
+                addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
+                //}
+                addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+            } else if (isCustomFunctionCall(param)) {
+              addFuncBlock(param.functionId, FuncType.custom, param.blockLocation, param.blockId);
+              addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+              loadParams(param.blockId, param.params)
+            }
         }
-
-        //const data: JSONCustomFunction = JSON.parse(rawJSON);
-        const data: any = JSON.parse(rawJSON)
-
-        for (const output of data.outputs) {
-            // if (!outputBlkIdxMap.has(output.outputIdx)) {
-            //     addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
-            //     loadParams(output.blockId, output.params);
-            // }
-            addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
-            loadParams(output.blockId, output.params);
-        }
-
-        setSavedFunction(data)
-
     }
 
-  // const testLoadFunctions = useCallback(() => {
-  //   if (currentUser) {
-  //     database.subscribeToFunctionsForUser(currentUser.uid, functionsFromDb => {
-  //       let currFunc: CustomFunctionDBRecord;
-  //       let json: string = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
-  //       functionsFromDb.forEach(functionData => {
-  //         if (functionData.id == props.functionId) {
-  //           currFunc = functionData;
-  //           json = currFunc.rawJson;
-  //           if (json === "{}") {
-  //             json = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
-  //           }
-  //
-  //           const data: JSONCustomFunction = (JSON.parse(json));
-  //           console.log("json", json);
-  //           const outputs: JSONOutput[] = data.outputs;
-  //           for (const output of outputs) {
-  //             // console.log("ids", addedOutputIds);
-  //             if (!outputBlkIdxMap.has(output.outputIdx)) {
-  //               // setAddedOutputIds([...addedOutputIds, output.outputIdx]);
-  //               console.log("output blockidx",output.outputIdx);
-  //               addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
-  //
-  //               const params = output.params;
-  //
-  //               for (let [paramIdx, param] of params.entries()) {
-  //                 if (isBuiltinFunction(param)) {
-  //                   console.log(param);
-  //
-  //                   addFuncBlock((param.functionId).toString(), param.type == "builtin_function" ? 1 : 0, param.funcBlkLoc);
-  //
-  //                   for (const [inputBlockIdx, input] of (param as JSONBuiltinFunction).params.entries()) {
-  //                     console.log(input.inputName);
-  //
-  //                     flushSync(() => {
-  //                         addInputBlock(input.inputName, input.inputType, input.inputBlkLoc, input.blockId);
-  //                     })
-  //
-  //                     addArrow({start: input.blockId + "o1", end: param.blockId + "i" + (inputBlockIdx + 1)} as StartAndEnd)
-  //
-  //                   }
-  //
-  //                   addArrow({start: param.blockId + "o1", end: output.blockId + "i" + (paramIdx + 1)} as StartAndEnd)
-  //
-  //                 } else if (isCustomFunction(param)) {
-  //
-  //                 } else if (isInput(param)) {
-  //
-  //                 }
-  //
-  //               }
-  //             }
-  //
-  //           }
-  //         }
-  //       })
-  //     });
-  //   }
-  // }, [currentUser, inputBlkIdxMap, outputBlkIdxMap])
+      if (rawJSON === "{}") {
+          rawJSON = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
+      }
+
+      //const data: JSONCustomFunction = JSON.parse(rawJSON);
+      const data: any = JSON.parse(rawJSON)
+
+      for (const output of data.outputs) {
+          // if (!outputBlkIdxMap.has(output.outputIdx)) {
+          //     addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
+          //     loadParams(output.blockId, output.params);
+          // }
+          addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId);
+          loadParams(output.blockId, output.params);
+      }
+
+      setSavedFunction(data)
+
+  }
 
 
   const addArrow = useCallback((v: StartAndEnd) => {
@@ -491,6 +431,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       const startBlkId: number = Number(arrow.start.split('o')[0]);
       const startNodeIdx: number = Number(arrow.start.split('o')[1]);
       if (isInputBlock(startBlkId)) { //start block is an input block
+        console.log(blkMap)
         const startBlk: InputBlockDS = blkMap.get(startBlkId) as InputBlockDS;
         editOutputBlock(endBlkId, null, startBlk.inputType, null);
       } else if (isFuncBlock(startBlkId)) { //start block is a function block
@@ -506,6 +447,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       const startBlkId: number = Number(arrow.start.split('o')[0]);
       const startNodeIdx: number = Number(arrow.start.split('o')[1]);
       if (isInputBlock(startBlkId)) { //start block is an input block
+        console.log(blkMap)
+        console.log(startBlkId)
         const startBlk: InputBlockDS = blkMap.get(startBlkId) as InputBlockDS;
         editOutputBlock(endBlkId, null, startBlk.inputType, null);
       } else if (isFuncBlock(startBlkId)) { //start block is a function block
@@ -515,14 +458,18 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
   }, [blkMap])
 
-  const runTypeCheck = useCallback(() => {
+  /**
+   * Check for disconnected blocks
+   * Return value: an array containing output objects if there's no disconnections, -1 otherwise
+   */
+  const checkForDisconnections = useCallback(() => {
     //check for disconnections
     const localDisconnErrMsgs: DisconnErrMsg[] = []
-    console.log()
+    const tmp: any[] = []
 
     //back trace each output block
     for (const outputBlk of outputBlocks) {
-      console.log("loc: ", outputBlk.blockLocation);
+      
       let path: any = {
         type: 'output',
         outputName: outputBlk.outputName,
@@ -534,11 +481,25 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           tracePath(outputBlk.blockId.toString() + 'i1', localDisconnErrMsgs)
         ]
       };
+      tmp.push(path)
     }
     setDisconnErrMsgs(msgs => localDisconnErrMsgs)
+    if (localDisconnErrMsgs.length == 0) {
+      return tmp
+    } else {
+      return -1
+    }
+  }, [blkMap, arrows])
+
+  /**
+   * Run type check for the current function construction
+   * Return value: # of type errors
+   */
+  const runTypeCheck = useCallback(() => {
     
-    if (localDisconnErrMsgs.length != 0) {
-      return //return if there is disconnection
+    const outputsObjs = checkForDisconnections()
+    if (outputsObjs == -1) {
+      return -1 //return if there is disconnection
     }
 
     //reset the types of all func and output blocks
@@ -710,8 +671,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setTypeErrMsgs(msgs => locTypeErrMsgs)
     //update types
     setOutputBlocks(blks => [...blks])
+
+    return outputsObjs
     
-  }, [inputBlocks, funcBlocks, outputBlocks])
+  }, [blkMap, arrows])
 
 
   const [outputStore, setOutputStore] = useState<Map<number, ioObj>[]>([])
@@ -734,36 +697,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction]);
 
   const saveFunction = useCallback(() => {
-    console.log('saving')
-    const tmp: any[] = [];
-    const localDisconnErrMsgs: DisconnErrMsg[] = []
+    
+    const outputObjs = runTypeCheck()
 
-    //back trace each output block
-    for (const outputBlk of outputBlocks) {
-      console.log("loc: ", outputBlk.blockLocation);
-      let path: any = {
-        type: 'output',
-        outputName: outputBlk.outputName,
-        outputType: outputBlk.outputType,
-        outputIdx: outputBlk.outputIdx,
-        outputBlkLoc: outputBlk.blockLocation,
-        blockId: outputBlk.blockId,
-        params: [
-          tracePath(outputBlk.blockId.toString() + 'i1', localDisconnErrMsgs)
-        ]
-      };
-      //console.log('trace res', path);
-      tmp.push(path);
-    }
+    if (outputObjs == -1) { //there is disconnection
+      return
+    } 
 
-    console.log(localDisconnErrMsgs)
-
-    setDisconnErrMsgs(msgs => localDisconnErrMsgs)
-
-    // don't continue if there is disconnection
-    if (localDisconnErrMsgs.length != 0) {
-      return 
-    }
 
     //sort input / output blocks by indices
 
@@ -782,7 +722,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       paramTypes: inputBlksSorted.map(iBlk => iBlk.inputType),
       outputNames: outputBlksSorted.map(oBlk => oBlk.outputName),
       outputTypes: outputBlksSorted.map(oBlk => oBlk.outputType),
-      outputs: tmp
+      outputs: outputObjs
     }
 
 
@@ -1660,7 +1600,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       'max-width' : '400px',
       'position': 'absolute',
       'left': blkMap.get(msg.blkId)?.blockLocation[0],
-      'top': blkMap.get(msg.blkId)?.blockLocation[1] as number - 50
+      'top': blkMap.get(msg.blkId)?.blockLocation[1] as number - 80
 
     }
     return (
@@ -1707,7 +1647,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         defaultAttr={['101', FuncType.builtin, [200,200]]} />
       <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" 
         defaultAttr={["new output", undefined, [200,200]]} />
-      <button onClick={runTypeCheck}> run type check</button>
+      <Button variant='default' onClick={runTypeCheck}> run type check</Button>
       <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
       <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
       <h3>Function Builder</h3>
