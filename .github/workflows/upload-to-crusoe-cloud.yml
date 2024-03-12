@@ -8,6 +8,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    environment: 
+      name: Crusoe Cloud
+
     steps:
     - uses: actions/checkout@v3
 
@@ -26,6 +29,7 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.CLOUD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
+        echo IP of cloud is ${{ vars.CLOUD_IP }}
         ssh-keyscan -H ${{ vars.CLOUD_IP }} >> ~/.ssh/known_hosts
 
     - name: Copy files to crusoe cloud
