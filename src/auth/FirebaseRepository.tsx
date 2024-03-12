@@ -200,6 +200,29 @@ export class FirestoreRepository {
         })
     }
 
+    /**
+     * Create a template, which is a copy of the given function f. Also, create template functions from the functions used by f.
+     * Note that the fromTemplate field of a 'template' is the original function, 
+     * while the fromTemplate field of a 'template function' is the template
+     * 
+     * Example: 
+     * Function foo and function bar are custom functions. Foo uses bar as part of it. 
+     * Creating a template from foo results in :
+     *      foo_template {
+     *          type: Template
+     *          fromTemplate: foo
+     *      }
+     * 
+     *      bar_template_function {
+     *          type: Template Function
+     *          fromTemplate: foo_template
+     *          fromFunction: bar
+     *      }
+     *      
+     * @param uid user id
+     * @param functionId function to create template from 
+     * @returns id of the template created
+     */
     async createTemplateFromFunction(uid: string, functionId: string) {
 
         let funcData: FunctionData = await this.getFunction(functionId);
@@ -207,6 +230,19 @@ export class FirestoreRepository {
         // We need to parse all custom functions used inside the template function
         //const getFunctionLocal = this.getFunction
         let templateBody: any = JSON.parse(funcData.rawJson)
+
+        const templateData : FunctionData = {
+            id: "",
+            ownerUid: uid,
+            name: (funcData as FunctionData).name + " template",
+            type: "Template",
+            fromTemplate: functionId,
+            fromFunction: "",
+            allowAccess: "",
+            rawJson: "{}"
+        }
+
+        const templateId = await this.createFunction(templateData);
         
         const addedFunctions : Set<string> = new Set()
         // console.log(templateBody)
@@ -226,7 +262,7 @@ export class FirestoreRepository {
                     ownerUid: uid,
                     name: res.name,
                     type: "Template Function",
-                    fromTemplate: functionId,
+                    fromTemplate: templateId,
                     fromFunction: srcFunction,
                     allowAccess: "",
                     rawJson: body.body
@@ -270,19 +306,8 @@ export class FirestoreRepository {
 
         templateBody = await recursivelyCreateTemplateFunctions(templateBody);
         console.log(templateBody);
-
-        const templateData : FunctionData = {
-            id: "",
-            ownerUid: uid,
-            name: (funcData as FunctionData).name + " template",
-            type: "Template",
-            fromTemplate: functionId,
-            fromFunction: "",
-            allowAccess: "",
-            rawJson: JSON.stringify(templateBody)
-        }
-
-        this.createFunction(templateData);
+        this.updateFunction(templateId, {rawJson: JSON.stringify(templateBody)})
+        return templateId
 
     }
 
@@ -346,6 +371,20 @@ export class FirestoreRepository {
         });
     }
 
+    subscribeToTemplateFunctionsInTemplate(userId: string, templateId: string, callback: (functions: FunctionData[]) => void) {
+        const q = query(this.functionsRef, where('ownerUid', '==', userId), 
+            where('type', '==', 'Template Function'), 
+            where('fromTemplate', '==', templateId)
+        );
+        console.log('subscribe to template', templateId)
+        onSnapshot(q, (snapshot) => {
+            callback(snapshot.docs.map(doc => {
+                console.log(doc)
+                return {...doc.data(), id: doc.id} as FunctionData
+            }))
+        })
+    }
+
     async getFunctionsForUser(userId: string) {
         const q = query(this.functionsRef, where('ownerUid', '==', userId));
         const qResult = await getDocs(q)
@@ -356,6 +395,24 @@ export class FirestoreRepository {
 
     async deleteFunction(id: string) {
         return deleteDoc(doc(this.functionsRef, id));
+    }
+
+    /**
+     * Delete the template and all template functions used by it
+     * @param templateId 
+     */
+    async deleteTemplate(uid: string, templateId: string) {
+        const q = query(this.functionsRef,
+            where('ownerUid', '==', uid),
+            where('type', '==', 'Template Function'), 
+            where('fromTemplate', '==', templateId)
+        );
+        getDocs(q).then(qSnapshot => {
+            qSnapshot.forEach(qDocSnapshot => {
+                deleteDoc(qDocSnapshot.ref)
+            })
+        })
+        return deleteDoc(doc(this.functionsRef, templateId));
     }
 
     subscribeToWorkflowsForUser(userId: string, callback: (workflows: WorkflowData[]) => void) {

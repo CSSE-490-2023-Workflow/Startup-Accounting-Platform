@@ -32,8 +32,7 @@ const tabs = [
 
 const HomeHeader = memo((props: any) => {
   const [opened, { toggle }] = useDisclosure(false);
-  const [activeTab, setActiveTab] = useState('Demo')
-  const [alertContent, setAlertContent] = useState('')
+  const [activeTab, setActiveTab] = useState<String | null>('Demo')
   console.log('header mounted')
 
   const handleTabChange = useCallback((tabName: string | null) => {
