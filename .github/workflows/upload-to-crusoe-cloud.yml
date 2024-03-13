@@ -33,4 +33,4 @@ jobs:
         ssh-keyscan -H ${{ vars.CLOUD_IP }} >> ~/.ssh/known_hosts
 
     - name: Copy files to crusoe cloud
-      run: scp -i ~/.ssh/id_rsa ./build github-actions@${{ vars.CLOUD_IP }}:/SAP
+      run: scp -i ~/.ssh/id_rsa -r ./build github-actions@${{ vars.CLOUD_IP }}:/SAP
