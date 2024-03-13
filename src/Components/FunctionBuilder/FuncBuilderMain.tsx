@@ -713,7 +713,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               blk.inputType = inputType;
               if (inputType == data_types.dt_series) {
                 const temp = [];
-                for (let i = 0; i < INVALUECAP; i++) {
+                for (let i = 0; i < 5; i++) {
                   temp.push(0)
                 }
                 blk.val = temp;
@@ -1148,7 +1148,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   // let inputListCount: number = 0;
   // const [inputStore, setInputStore] = useState<data_types[]>([]);
-  const INVALUECAP = 20;
+  const INVALUECAP = 1000;
   const [fullInputBlocks, setFullInputBlocks] = useState<React.JSX.Element[]>([]);
   useEffect(() => {
     console.log("also called");

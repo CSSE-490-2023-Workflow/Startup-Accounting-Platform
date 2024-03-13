@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState} from 'react';
 import { data_types, data_type_enum_name_pairs} from "../../engine/datatype_def"
-import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, useCombobox, Combobox, InputBase } from '@mantine/core';
+import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, useCombobox, Combobox, InputBase, Center } from '@mantine/core';
 import Draggable, { DraggableEvent } from 'react-draggable';
 
 enum direction {
@@ -68,6 +68,8 @@ function OutputBlock(props: OutProps) {
 
   // controlls node name popover state
   const [ showNodeName, setShowNodeName ] = useState(false);
+
+  const [ showValue, setShowValue ] = useState(false);
 
   useEffect(() => {
     setArrows(arrows => [...arrows]);
@@ -377,10 +379,10 @@ function OutputBlock(props: OutProps) {
       >  */}
     <div className='block-container'>
     <Card className="output-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder styles={{
-      // root: {
-      //   height: '150px',
-      //   width: '200px'
-      // },
+      root: {
+        height: '170px',
+        width: '200px'
+      },
       section: {
         padding: '0px 3px 0px 3px'
       }
@@ -395,8 +397,30 @@ function OutputBlock(props: OutProps) {
       <Card.Section>
         <Input className="output-block-name" onChange={handleNameChange} value={outputName} variant="filled" placeholder="Output Name" />
       </Card.Section>
+      <CardSection>
+        <hr className='solid-divider' />
+      </CardSection>
       <Card.Section>
-        {outputGraph}
+        <Center inline>
+          <Popover width={300} opened={showValue} withArrow styles={{
+            // dropdown: nodeNameStyle
+          }}>
+            <Popover.Target>
+              <div
+                // style={nodeStyle}
+                className='connection-handle-wrapper'
+                onClick={() => {setShowValue((value) => !value)}}
+              >
+                <div className='connection-handle connection-handle-out'>
+                  Graph:
+                </div>
+              </div>
+            </Popover.Target>
+            <Popover.Dropdown>
+              {outputGraph}
+            </Popover.Dropdown>
+          </Popover>
+      </Center>
       </Card.Section>
       <CardSection>
         <hr className='solid-divider' />
