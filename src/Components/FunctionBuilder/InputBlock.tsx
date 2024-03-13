@@ -426,7 +426,7 @@ function InputBlock(props: InputProps) {
       </CardSection>
       <Card.Section>
         <Center inline>
-          <Popover width={300} opened={showValue} withArrow styles={{
+          <Popover width={410} opened={showValue} withArrow styles={{
             // dropdown: nodeNameStyle
           }}>
             <Popover.Target>

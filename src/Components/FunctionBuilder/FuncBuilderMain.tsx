@@ -26,7 +26,7 @@ interface InputBlockDS {
   inputName: string
   inputType: data_types
   inputIdx: number
-  val: allowed_stack_components
+  val: any
   blockLocation: [number, number]
 }
 
@@ -467,7 +467,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const evaluateFunction = useCallback(() => {
     const paramMap: Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
-      paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
+      paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val.map((value: number[]) => value[1]) });
     }
     console.log(`starting evaluation`)
     for (const [i, v] of paramMap.entries()) {
@@ -714,7 +714,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               if (inputType == data_types.dt_series) {
                 const temp = [];
                 for (let i = 0; i < 5; i++) {
-                  temp.push(0)
+                  temp.push([i, 0])
                 }
                 blk.val = temp;
               }
@@ -1130,7 +1130,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
   )
 
-  const changeInput = useCallback((inputId: number, newValue: allowed_stack_components) => {
+  const changeInput = useCallback((inputId: number, newValue: number | number[][] | func_pt_series) => {
     console.log('in changeInput, blks are ', inputBlocks, newValue);
     const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS, index: number) => {
       console.log('in changeInput', index, blk, newValue);
@@ -1167,7 +1167,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         return (
           <>
             <h3>{blk.inputName}</h3>
-            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as series} inputValueCap={INVALUECAP} />
+            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[][]} inputValueCap={INVALUECAP} />
           </>
         );
       }
