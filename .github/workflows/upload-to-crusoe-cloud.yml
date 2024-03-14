@@ -1,0 +1,36 @@
+name: Build and Upload to Crusoe Cloud
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    environment: 
+      name: Crusoe Cloud
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Use Node.js 20
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: Build
+      run: |
+        npm install --force
+        CI=false npm run build
+
+    - name: Set up SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.CLOUD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        echo IP of cloud is ${{ vars.CLOUD_IP }}
+        ssh-keyscan -H ${{ vars.CLOUD_IP }} >> ~/.ssh/known_hosts
+
+    - name: Copy files to crusoe cloud
+      run: scp -i ~/.ssh/id_rsa -r ./build/* github-actions@${{ vars.CLOUD_IP }}:/SAP/

@@ -31,9 +31,9 @@ interface FuncProps {
   funcId: string;
   funcName: string;
   funcOptions: funcInfo[];
-  paramTypes: data_types[][];
+  paramTypes: data_types[][] | data_types[];
   paramNames: string[];
-  outputTypes: data_types[][];
+  outputTypes: data_types[][] | data_types[];
   outputNames: string[];
   blockLocation: [number, number];
   updateBlkCB: (funcBlockId: number, funcType: FuncType | null, funcId: string | null) => void;

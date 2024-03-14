@@ -1,6 +1,6 @@
 import React, {useCallback, useContext, useEffect, useState, useRef} from 'react';
 // import FuncBuilderMain from '../../Components/FunctionBuilder/FuncBuilderMain';
-import {ActionIcon, Box, Button, Card, Center, Group, LoadingOverlay, Space, Text, Dialog} from "@mantine/core";
+import {ActionIcon, Box, Button, Card, Center, Group, LoadingOverlay, Space, Text, Dialog, Title, Container} from "@mantine/core";
 import {AuthContext, database} from "../../auth/firebase";
 import CardPage from "../CardPage/CardPage";
 import DynamicModal from "../../Components/Modal/DynamicModal";
@@ -11,7 +11,7 @@ import {FunctionData, UserData} from "../../auth/FirebaseRepository";
 import ShareModal from "../../Components/Modal/ShareModal";
 import SelectionModal from '../../Components/Modal/SelectionModal';
 
-function Templates() {
+function Templates(props: any) {
     const [loading, setLoading] = useState(false);
     const [functions, setFunctions] = useState<FunctionData[]>([]);
     const selectedFunction = useRef<FunctionData | null>(null);
@@ -20,19 +20,38 @@ function Templates() {
     const [isShareSuccessDialogOpen, { open: openShareSuccessDialog, close: closeShareSuccessDialog }] = useDisclosure(false);
     const [shareSuccessDialogText, setShareSuccessDialogText] = useState("Success");
     const [isSelectionModalOpen, {open: openSelectionModal, close: closeSelectionModal}] = useDisclosure(false);
+    //tracks whether to display all templates or template functions used in a template
+    const [toggleDisplayTemplateFunctions, setToggleDisplayTemplateFunctions] = useState<null | FunctionData>(null)
     const [options, setOptions] = useState<string[]>([]);
     const {currentUser} = useContext(AuthContext);
 
     useEffect(() => {
         if(currentUser) {
-            database.subscribeToTemplatesForUser(currentUser.uid, functionsFromDb => {
-                setFunctions(functionsFromDb);
-            });
+            if (toggleDisplayTemplateFunctions == null) { //show all templates
+                database.subscribeToTemplatesForUser(currentUser.uid, functionsFromDb => {
+                    setFunctions(functionsFromDb);
+                });
+            } else { //show template functions used in the current template
+                database.subscribeToTemplateFunctionsInTemplate(currentUser.uid, toggleDisplayTemplateFunctions.id, functionsFromDb => {
+                    setFunctions(functionsFromDb)
+                })
+            }
+            
         }
-    }, [currentUser]);
+    }, [currentUser, toggleDisplayTemplateFunctions]);
 
     const openFunctionPage = (functionId: string) => {
         window.open(`/function/${functionId}`, '_blank');
+    }
+
+    const viewFunctionsInTemplates = (templateId: string) => {
+        let tmp = null
+        for (const func of functions) {
+            if (func.id == templateId) {
+                tmp = func
+            }
+        }
+        setToggleDisplayTemplateFunctions(tmp)
     }
 
     const createNewFunction = () => {
@@ -63,6 +82,7 @@ function Templates() {
 
     };
 
+
     const makeCards = useCallback((functionsData: FunctionData[]) => {
         return (
             functionsData.map((functionData) => {
@@ -85,6 +105,15 @@ function Templates() {
                                 <IconTrash className={classes.delete} stroke={1.5}/>
                             </ActionIcon>
                         </Group>
+                        {toggleDisplayTemplateFunctions == null ? (
+                            <Group mt='xs'>
+                                <Button radius="md" style={{flex: 1}} onClick={() => { viewFunctionsInTemplates(functionData.id)}}>
+                                    View Functions
+                                </Button>
+                            </Group>
+                        ) : <></>
+                        }
+                        
                     </Card>
                 )
             })
@@ -96,8 +125,11 @@ function Templates() {
     }
 
     const handleDeleteFunction = (func: FunctionData | null) => {
-        if(func)
-            database.deleteFunction(func.id);
+        if (currentUser) {
+            if(func)
+                database.deleteTemplate(currentUser?.uid, func.id);
+        }
+        
     }
 
     const testTemplate = useCallback(() => {
@@ -127,6 +159,14 @@ function Templates() {
 
     return (
         <>
+            
+            {toggleDisplayTemplateFunctions == null ? <></> : (
+                <Container size='md' style={{display: 'flex', flexDirection: 'row', paddingTop: '5px'}}>
+                    <Button variant='transparent' onClick={() => (setToggleDisplayTemplateFunctions(null))}>Back</Button>
+                    <Title order={5} style={{padding: '5px 0px 0px 15px'}}>{toggleDisplayTemplateFunctions.name}</Title>
+                </Container>
+            )
+            }
             <CardPage cards={makeCards(functions)}/>
             <Center>
                 <Box pos='relative'>
