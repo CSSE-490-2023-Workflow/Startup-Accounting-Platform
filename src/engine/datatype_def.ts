@@ -1,6 +1,6 @@
 enum data_types {
     dt_number = 0,
-    dt_func_pt_series,
+    dt_double_series,
     dt_series
 }
 
@@ -12,14 +12,14 @@ type allowed_stack_components = number | func_pt_series | series
 
 const data_type_enum_name_pairs: [data_types, string][] = [
     [data_types.dt_number, "Number"], 
-    [data_types.dt_func_pt_series, "Function Points"],
+    [data_types.dt_double_series, "Double Series"],
     [data_types.dt_series, "Series"]
 ];
 
 const data_type_name_to_enum : {[name: string] : number} = {};   
 
 data_type_name_to_enum["Number"] = data_types.dt_number;
-data_type_name_to_enum["Function Points"] = data_types.dt_func_pt_series;
+data_type_name_to_enum["Double Series"] = data_types.dt_double_series;
 data_type_name_to_enum["Series"] = data_types.dt_series;
 
 //type checking function for each data type

@@ -14,13 +14,14 @@ import Xarrow from 'react-xarrows';
 import NumberInput from '../NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
-import { Button, Dialog, Group, Alert, Text} from "@mantine/core";
+import { Button, Dialog, Group, Alert, Text, Modal, FileInput} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
 import SeriesInput from '../SeriesInput';
 import { MyDraggable } from './MyDraggable';
 import {flushSync} from "react-dom";
 import { IconCheck, IconInfoCircle, IconTexture } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
+import CsvImportModal from './CsvImportModal';
 
 interface InputBlockDS {
   blockId: number
@@ -203,6 +204,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [ typeErrMsgs, setTypeErrMsgs ] = useState<TypeErrMsg[]>([])
   const [ disconnErrMsgs, setDisconnErrMsgs ] = useState<DisconnErrMsg[]>([])
   const [isTypeCheckDialogOpen, {open: openTypeCheckDialog, close: closeTypeCheckDialog}] = useDisclosure(false);
+  const [isCsvImportDialogOpen, {open: openCsvImportDialog, close: closeCsvImportDialog}] = useDisclosure(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null)
 
   // const [addedOutputIds, setAddedOutputIds] = useState<number[]>([]);
 
@@ -242,6 +245,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   useEffect(() => {
     reloadSavedCustomFunctions()
   }, [currentUser])
+
+  useEffect(() => {
+    console.log('csv')
+    console.log(csvFile)
+  }, [csvFile])
 
   /**
    * Handles all the change incurred by an arrow creation
@@ -1650,6 +1658,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" 
         defaultAttr={["new output", undefined, [200,200]]} />
       <Button variant='default' onClick={runTypeCheck}> run type check</Button>
+      <Button variant='default' onClick={openCsvImportDialog}> import from csv</Button>
       <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
       <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
       <h3>Function Builder</h3>
@@ -1663,7 +1672,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           key={ar.start + "-." + ar.start}
         />
       ))}
-      {/* <div style={{position: "absolute", marginTop: "80%"}}>
+      <div style={{position: "absolute", marginTop: "80%"}}>
         <div style={{ display: "flex" }}>
           {fullInputBlocks}
         </div>
@@ -1686,6 +1695,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               </Text>
           </Group>
       </Dialog>
+      <CsvImportModal 
+        inputIdxMap={null} 
+        inputEditCB={null} 
+        isCsvImportDialogOpen={isCsvImportDialogOpen} 
+        closeCsvImportDialog={closeCsvImportDialog}
+      />
     </>
   );
 }
