@@ -1,7 +1,7 @@
 import React, { ChangeEvent, useCallback, useEffect, useRef, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
 import { StartAndEnd, Arrow } from './FuncBuilderMain'
-import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, Combobox, CheckIcon, useCombobox, InputBase} from '@mantine/core';
+import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, Combobox, CheckIcon, useCombobox, InputBase, Center} from '@mantine/core';
 import '../../assets/font-awesome/css/all.css'
 import Draggable, { DraggableEvent } from 'react-draggable';
 import DotlessConnectPointsWrapper from "../DotlessConnectPointsWrapper";
@@ -21,32 +21,48 @@ enum direction {
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
-interface InputProps {
-  blockId: number;
-  inputName: string;
-  inputType: data_types;
-  inputTypeOptions: [data_types, string][];
-  inputIdx: number[]; //the first entry is the current index. The second entry is the # of input blocks (i.e. maximum index)
-  blockLocation: [number, number];
-  updateBlkCB: (funcBlockId: number, inputName: string | null, inputType: data_types | null, idx: number | null) => void;
-  removeBlkCB:  (id: number) => void;
-  setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
-  updateBlkLoc: (blkId: number, blockLocation: [number, number]) => void;
-  //setArrows: React.Dispatch<React.SetStateAction<Arrow[]>>;
-}
+// interface InputProps {
+//   blockId: number;
+//   inputName: string;
+//   inputType: data_types;
+//   inputTypeOptions: [data_types, string][];
+//   inputIdx: number[]; //the first entry is the current index. The second entry is the # of input blocks (i.e. maximum index)
+//   blockLocation: [number, number];
+//   inputValueElement?: React.JSX.Element;
+//   updateBlkCB: (funcBlockId: number, inputName: string | null, inputType: data_types | null, idx: number | null, val: any) => void;
+//   removeBlkCB:  (id: number) => void;
+//   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
+//   updateBlkLoc: (blkId: number, blockLocation: [number, number]) => void;
+//   //setArrows: React.Dispatch<React.SetStateAction<Arrow[]>>;
+// }
 
-function InputBlock(props: InputProps) {
-  const [ inputId, inputName, inputType, typeOptions, [inputIdx, maxIdx], blockLoc = [0,0], editCB, removeCB , setArrows, updateLoc] = [
+function InputBlock(props: any) {
+  const [ 
+    inputId, 
+    inputName, 
+    inputType, 
+    typeOptions, 
+    [inputIdx, maxIdx], 
+    blockLoc = [0,0], 
+    inputValueElement, 
+    editCB, 
+    removeCB , 
+    setArrows, 
+    updateLoc,
+    forcePopoverRerender
+  ] = [
     props.blockId, 
     props.inputName, 
     props.inputType, 
     props.inputTypeOptions, 
     props.inputIdx,
     props.blockLocation,
+    props.inputValueElement,
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.setArrows,
-    props.updateBlkLoc
+    props.updateBlkLoc,
+    props.forcePopoverRerender
   ]
   
   const dragRef = useRef<Draggable>(null);
@@ -69,8 +85,10 @@ function InputBlock(props: InputProps) {
   // controlls node name popover state
   const [ showNodeName, setShowNodeName ] = useState(false);
 
+  const [ showValue, setShowValue ] = useState(false);
+
   useEffect(() => {
-    setArrows(arrows => [...arrows])
+    setArrows((arrows: any) => [...arrows])
   }, [outputNodeDir])
 
   // Is this even necessary?
@@ -178,7 +196,7 @@ function InputBlock(props: InputProps) {
               variant="subtle"
               className='node-menu-item'
               onClick={() => {
-                setArrows(arrows => [...arrows]);
+                setArrows((arrows: any) => [...arrows]);
                 changeOutputNodeDir(dir);
                 let tmp = showSideMenu.map(e => false);
                 setShowSideMenu(tmp);
@@ -323,12 +341,12 @@ function InputBlock(props: InputProps) {
 
   function handleNameChange(e: any) {
     //setName(e.target.value);
-    editCB(inputId, e.target.value, null, null);
+    editCB(inputId, e.target.value, null, null, null);
   }
 
   function handleTypeChange(t: number) {
     //setType(t);
-    editCB(inputId, null, t, null);
+    editCB(inputId, null, t, null, null);
   }
 
   function handleRemoveBlock(e: any) {
@@ -337,7 +355,7 @@ function InputBlock(props: InputProps) {
 
   function handleIdxChange(i: number) {
     //setInputIdx(i);
-    editCB(inputId, null, null, i);
+    editCB(inputId, null, null, i, null);
   }
 
   const typeCombobox = useCombobox({
@@ -352,7 +370,7 @@ function InputBlock(props: InputProps) {
     <option value={id}>{dt_name}</option>
   ))
 
-  const dataTypeOptions = typeOptions.map(([typeId, dt_name]) => (
+  const dataTypeOptions = typeOptions.map(([typeId, dt_name] : [any, any]) => (
     <Combobox.Option value={typeId.toString()} key={dt_name} active={typeId === inputType}>
       <Group gap="xs">
         {typeId === inputType && <CheckIcon size={8} />}
@@ -373,6 +391,19 @@ function InputBlock(props: InputProps) {
   /**
    * <div className="input-block-id">{id}</div>
    */
+  // let faIcon : any = '';
+  // let faIconStyle : any = {};
+  // faIconStyle.transform = 'translate(0px, -7px)'
+  // faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
+  // const nodeStyle : any = {};
+  // nodeStyle.left = offset;
+  // nodeStyle.bottom = '0';
+  // nodeStyle.width = '15px';
+  // nodeStyle.height = '10px';
+  let typeDivider: number = 1;
+  if(inputType == data_types.dt_series) {
+    typeDivider = 2;
+  }
   return (
     <>
     {/* <Draggable cancel='.connection-handle-icon'
@@ -391,11 +422,11 @@ function InputBlock(props: InputProps) {
     <div className='block-container'>
     <Card className="input-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder styles={{
       root: {
-        height: '150px',
+        height: '170px',
         width: '200px'
       },
       section: {
-        padding: '0px 5px 0px 5px'
+        padding: '0px 5px 0px 5px',
       }
     }}>
       <Card.Section className='block-header'>
@@ -407,6 +438,31 @@ function InputBlock(props: InputProps) {
       </CardSection>
       <Card.Section>
         <Input className="input-block-name" onChange={handleNameChange} value={inputName} variant="filled" placeholder="Input Name"/>
+      </Card.Section>
+      <CardSection>
+        <hr className='solid-divider' />
+      </CardSection>
+      <Card.Section>
+        <Center inline>
+          <Popover width={410 / typeDivider} opened={showValue} withArrow styles={{
+            // dropdown: nodeNameStyle
+          }}>
+            <Popover.Target>
+              <div
+                // style={nodeStyle}
+                className='connection-handle-wrapper'
+                onClick={() => {setShowValue((value) => !value)}}
+              >
+                <div className='connection-handle connection-handle-out'>
+                  Values:
+                </div>
+              </div>
+            </Popover.Target>
+            <Popover.Dropdown>
+              {inputValueElement}
+            </Popover.Dropdown>
+          </Popover>
+      </Center>
       </Card.Section>
       <CardSection>
         <hr className='solid-divider' />

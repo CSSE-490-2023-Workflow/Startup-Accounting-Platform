@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import NumberInput from './NumberInput';
+import NumberInput from './Inputs/NumberInput';
 import { func_interpreter_new_caller} from '../engine/engine'
 import { allowed_stack_components } from '../engine/datatype_def';
 

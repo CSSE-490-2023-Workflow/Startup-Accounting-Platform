@@ -1,12 +1,15 @@
 import React, { ChangeEvent, useCallback, useEffect, useState} from 'react';
 import NumberInput from './NumberInput';
+import CsvImportModal from './CsvImportModal';
+import { Button } from '@mantine/core';
 
 interface IProps {
     handleStateChange: any
     ind: number
     inValues: number[]
     inputValueCap: number
-    
+    setFocusedInput: (idx: number | null) => void 
+    openCsvImportDialog: () => void
 }
 
 interface NumberInputDS {
@@ -19,6 +22,7 @@ interface NumberInputDS {
 function SeriesInput(props: IProps) {
   const { handleStateChange, inValues, inputValueCap, ind} = props
   const [numberOfInputs, setNumberOfInputs] = useState(inValues.length);
+  const [openCsvImportDialog, setFocusedInput] = [props.openCsvImportDialog, props.setFocusedInput]
   console.log("made empty");
 //   const [inpValues, setInpValues] = useState<NumberInputDS[]>(inValues.map(() => {
 
@@ -28,6 +32,8 @@ function SeriesInput(props: IProps) {
   const [disabledInc, setDisabledInc] = useState<boolean>(false);
   const [disabledDec, setDisabledDec] = useState<boolean>(false);
   const [inputs, setInputs] = useState<React.JSX.Element[]>([]);
+  console.log('invalues')
+  console.log(inValues)
 //   useEffect(() => {
 //     const temp = []
 //     for(let i = 0; i < numberOfInputs; i++) {
@@ -38,18 +44,18 @@ function SeriesInput(props: IProps) {
 //   }, [numberOfInputs])
   const changeInput = useCallback((inputId: number, newValue: number | string) => {
     console.log('in changeInput, blks are ', inputId, newValue, numberOfInputs);
-    setCurValues(curValues.map((val: number, index: number) => {
-      //console.log('in changeInput',blk.inputId, inputId);
-       if (index == inputId) {
-          return Number(newValue)
-        //    curValues[ind] = Number(newValue);
-        //    setCurValues([...curValues]);
+  //   setCurValues(curValues.map((val: number, index: number) => {
+  //     //console.log('in changeInput',blk.inputId, inputId);
+  //      if (index == inputId) {
+  //         return Number(newValue)
+  //       //    curValues[ind] = Number(newValue);
+  //       //    setCurValues([...curValues]);
 
-        //    console.log("changed");
-       }
-       console.log(val);
-       return val;
-   }))
+  //       //    console.log("changed");
+  //      }
+  //      console.log(val);
+  //      return val;
+  //  }))
 //    setInpValues([...tmp]);
    console.log("here");
    handleStateChange(ind, curValues.map((val: number, index: number) => {
@@ -106,21 +112,33 @@ function SeriesInput(props: IProps) {
     //     }
     //     setInpValues(temp2)
     // },[])
+
+    
+
     useEffect(() => {
+      console.log('curvals')
+      console.log(curValues)
         setDisabledInc(numberOfInputs >= inputValueCap);
         setDisabledDec(numberOfInputs <= 0);
         setInputs(curValues.map((val: number, index: number) => {
             return <NumberInput handleStateChange={changeInput} ind={index} inValue={val} inputId = {index} />
         }));
     }, [curValues, numberOfInputs])
+
+    const newInputs = curValues.map((val: number, index: number) => {
+      return <NumberInput handleStateChange={changeInput} ind={index} inValue={val} inputId = {index} />
+    });
+
+
    
 //   <NumberInput handleStateChange={val.handleStateChange} ind={val.ind} inValue={inValues[i - 1]} inputId = {i - 1} />
     
     return (
-    <div style={{flexDirection: "column"}}>
+    <div style={{flexDirection: "row"}}>
      <button disabled={disabledInc} onClick={incrementNumber}>Add input</button>
      <button disabled={disabledDec} onClick={decrementNumber}>Remove input</button>
-     {inputs}
+     <Button variant='default' onClick={() => {openCsvImportDialog(); setFocusedInput(ind)}}> import from csv</Button>
+     {newInputs}
     </div>
     )
    

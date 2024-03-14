@@ -12,7 +12,7 @@ import OutputBlock from './OutputBlock';
 import Xarrow from 'react-xarrows';
 import { AuthContext, database } from "../../auth/firebase";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
-import SeriesInput from '../SeriesInput';
+import SeriesInput from '../Inputs/DoubleSeriesInput';
 import { MyDraggable } from './MyDraggable';
 
 interface InputBlockDS {

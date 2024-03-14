@@ -85,7 +85,7 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
         func_name : 'scalar_to_function_points',
         param_types : [[data_types.dt_number, data_types.dt_number]],
         param_names : ['value', 'length'],
-        output_types : [[data_types.dt_func_pt_series]],
+        output_types : [[data_types.dt_double_series]],
         output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_integer(args[1]) || args.length !== 2)
@@ -109,9 +109,9 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
     '106' : {
         param_count : 2,
         func_name : 'apply_interest_rate',
-        param_types : [[data_types.dt_number, data_types.dt_func_pt_series]],
+        param_types : [[data_types.dt_number, data_types.dt_double_series]],
         param_names : ['interest rate', 'func pts'],
-        output_types : [[data_types.dt_func_pt_series]],
+        output_types : [[data_types.dt_double_series]],
         output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
             if (!declared_type_verifier[0](args[0]) || !declared_type_verifier[1](args[1]))
@@ -134,6 +134,40 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
         output_names : ['output 1', 'output 2', 'output 3'],
         func: (...args : allowed_stack_components[]) => {
             return [1];
+        }
+    },
+
+    /**
+     * Merge two double series by summing the corresponding y values 
+     * Example inputs:
+     *    [[2000, 10], [2001, 20], [2002, 30]]
+     *    [[2002, 40], [2003, 50], [2004, 60]]
+     * Example output:
+     *    [[2000, 10], [2001, 20], [2002, 70], [2003, 50], [2004, 60]]
+     */
+    '108': {
+        param_count: 2,
+        func_name: 'Merge double series',
+        param_types : [[data_types.dt_double_series, data_types.dt_double_series]],
+        param_names : ['double series 1', 'double series 2'],
+        output_types: [[data_types.dt_double_series]],
+        output_names : ['merged series'],
+        func: (...args : allowed_stack_components[]) => {
+            console.log(args)
+            if (!declared_type_verifier[1](args[0]) || !declared_type_verifier[1](args[1]))
+                throw new FuncArgError('Merge double series receives two double series as parameters');
+            const m = new Map<number, number>()
+            const dser1 = args[0] as number[][]
+            const dser2 = args[1] as number[][]
+            for (let pt of dser1) {
+                m.set(pt[0], m.has(pt[0]) ? Number(m.get(pt[0])) + pt[1] : pt[1])
+            }
+            for (let pt of dser2) {
+                m.set(pt[0], m.has(pt[0]) ? Number(m.get(pt[0])) + pt[1] : pt[1])
+            }
+            const res = Array.from(m)
+            res.sort((a, b) => a[0] - b[0])
+            return [res];
         }
     }
 

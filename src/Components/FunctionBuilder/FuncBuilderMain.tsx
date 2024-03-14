@@ -11,23 +11,24 @@ import * as utils from './utils.json'
 import OutputBlock from './OutputBlock';
 import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
-import NumberInput from '../NumberInput';
+import NumberInput from '../Inputs/NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
-import { Button, Dialog, Group, Alert, Text} from "@mantine/core";
+import { Button, Dialog, Group, Alert, Text, Modal, FileInput} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
-import SeriesInput from '../SeriesInput';
+import SeriesInput from '../Inputs/SeriesInput';
 import { MyDraggable } from './MyDraggable';
-import {flushSync} from "react-dom";
 import { IconCheck, IconInfoCircle, IconTexture } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
+import CsvImportModal from '../Inputs/CsvImportModal';
+import DoubleSeriesInput from '../Inputs/DoubleSeriesInput';
 
 interface InputBlockDS {
   blockId: number
   inputName: string
   inputType: data_types
   inputIdx: number
-  val: allowed_stack_components
+  val: any
   blockLocation: [number, number]
 }
 
@@ -203,6 +204,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [ typeErrMsgs, setTypeErrMsgs ] = useState<TypeErrMsg[]>([])
   const [ disconnErrMsgs, setDisconnErrMsgs ] = useState<DisconnErrMsg[]>([])
   const [isTypeCheckDialogOpen, {open: openTypeCheckDialog, close: closeTypeCheckDialog}] = useDisclosure(false);
+  const [isCsvImportDialogOpen, {open: openCsvImportDialog, close: closeCsvImportDialog}] = useDisclosure(false);
+  const focusedInput = useRef<number | null>(null)
+
+  const setFocusedInput = (idx: number | null) => {
+    focusedInput.current = idx
+  }
 
   // const [addedOutputIds, setAddedOutputIds] = useState<number[]>([]);
 
@@ -681,7 +688,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const evaluateFunction = useCallback(() => {
     const paramMap: Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
-      paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
+      if(inputBlk.inputType === data_types.dt_double_series) {
+        paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
+      } else {
+        paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
+      }
     }
     console.log(`starting evaluation`)
     for (const [i, v] of paramMap.entries()) {
@@ -910,7 +921,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       blkId: number,
       inputName: string | null,
       inputType: data_types | null,
-      idx: number | null
+      idx: number | null,
+      val: any 
     ) => {
       if (config.debug_mode_FuncBuilder == 1) {
         console.log('edit callback', blkId, inputName, inputType);
@@ -925,9 +937,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             }
             if (inputType != null) {
               blk.inputType = inputType;
-              if (inputType == data_types.dt_series) {
+              if (inputType == data_types.dt_double_series) {
                 const temp = [];
-                for (let i = 0; i < INVALUECAP; i++) {
+                for (let i = 0; i < 5; i++) {
+                  temp.push([i, 0])
+                }
+                blk.val = temp;
+              } else if(inputType == data_types.dt_series) {
+                const temp = [];
+                for (let i = 0; i < 5; i++) {
                   temp.push(0)
                 }
                 blk.val = temp;
@@ -945,18 +963,23 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               }
               inputBlkIdxMap.set(idx, blk);
             }
+            if (val != null) {
+              console.log('its happening')
+              blk.val = val
+            }
           }
           return blk;
         })
       })
 
       setInputBlkIdxMap(inputBlkIdxMap => new Map(inputBlkIdxMap));
+      setInputBlocks(inputBlks => [...inputBlks])
 
       if (config.debug_mode_FuncBuilder == 1) {
         console.log('edit input block. Input blk idx map', inputBlkIdxMap);
       }
 
-    }, [inputBlkIdxMap])
+    }, [blkMap])
 
   const updateInputBlkLoc = useCallback(
     (blkId: number, newLocation: [number, number]) => {
@@ -1338,7 +1361,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
   )
 
-  const changeInput = useCallback((inputId: number, newValue: allowed_stack_components) => {
+  const changeInput = useCallback((inputId: number, newValue: data_types) => {
     console.log('in changeInput, blks are ', inputBlocks, newValue);
     const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS, index: number) => {
       console.log('in changeInput', index, blk, newValue);
@@ -1353,10 +1376,14 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('tmp', inputBlocks);
   }, [inputBlocks, setInputBlocks])
 
+  useEffect(() => {
+    console.log('focus input', focusedInput.current)
+  }, [focusedInput.current])
+
 
   // let inputListCount: number = 0;
   // const [inputStore, setInputStore] = useState<data_types[]>([]);
-  const INVALUECAP = 20;
+  const INVALUECAP = 1000;
   const [fullInputBlocks, setFullInputBlocks] = useState<React.JSX.Element[]>([]);
   useEffect(() => {
     console.log("also called");
@@ -1375,7 +1402,17 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         return (
           <>
             <h3>{blk.inputName}</h3>
-            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as series} inputValueCap={INVALUECAP} />
+            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[]} inputValueCap={INVALUECAP} 
+              openCsvImportDialog={openCsvImportDialog}
+              setFocusedInput={setFocusedInput}
+            />
+          </>
+        );
+      } else if(blk.inputType === data_types.dt_double_series) {
+        return (
+          <>
+            <h3>{blk.inputName}</h3>
+            <DoubleSeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[][]} inputValueCap={INVALUECAP} />
           </>
         );
       }
@@ -1393,7 +1430,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
 
   let outputListCount: number = 0;
-  const outputList: any[] = [];
+  const outputList: React.JSX.Element[] = [];
   for (const [outputIdx, outputObj] of evalResult) {
     let data = [{
       x: 0,
@@ -1405,8 +1442,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         data.push({ x: i, y: (outputObj.value as series)[i] as number })
         if((typeof (outputObj.value as series)[0]) !== "number") {
           data = []
-          for (let i = 0; i < (outputObj.value as func_pt_series).length; i++) {
-            data.push({ x: i, y: (outputObj.value as func_pt_series)[i][1]})
+          for (let i = 0; i < (outputObj.value as number[][]).length; i++) {
+            data.push({ x: (outputObj.value as func_pt_series)[i][0], y: (outputObj.value as func_pt_series)[i][1]})
           }
         } else {
           data = []
@@ -1462,7 +1499,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //   );
   // })
 
-  const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
+  const inputBlocksList = inputBlocks.map((blk: InputBlockDS, index: number) => {
     const element = (
       <InputBlock
         blockId={blk.blockId}
@@ -1471,6 +1508,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         inputTypeOptions={data_type_enum_name_pairs}
         inputIdx={[blk.inputIdx, inputBlkIdxMap.size]}
         blockLocation={blk.blockLocation}
+        inputValueElement={fullInputBlocks[index]}
         updateBlkCB={editInputBlock}
         removeBlkCB={removeInputBlock}
         setArrows={setArrows}
@@ -1562,7 +1600,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   })
 
-  const outputBlocksList = outputBlocks.map((blk: OutputBlockDS) => {
+  const outputBlocksList = outputBlocks.map((blk: OutputBlockDS, index: number) => {
     const element = (
       <OutputBlock
         key={blk.blockId}
@@ -1571,6 +1609,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         outputType={blk.outputType}
         outputIdx={[blk.outputIdx, outputBlkIdxMap.size]}
         blockLocation={blk.blockLocation}
+        outputGraph={outputList[index] ?? <></>}
         updateBlkCB={editOutputBlock}
         removeBlkCB={removeOutputBlock}
         addArrow={addArrow}
@@ -1662,7 +1701,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           key={ar.start + "-." + ar.start}
         />
       ))}
-      <div style={{position: "absolute", marginTop: "80%"}}>
+      {/* <div style={{position: "absolute", marginTop: "80%"}}>
         <div style={{ display: "flex" }}>
           {fullInputBlocks}
         </div>
@@ -1670,7 +1709,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         <div style={{ display: "flex" }}>
           {outputList}
         </div>
-      </div>
+      </div> */}
       {errMsgsDisplay}
       <Dialog opened={isTypeCheckDialogOpen} withCloseButton onClose={closeTypeCheckDialog} size="lg" radius="md" 
         transitionProps={{ transition: 'slide-left', duration: 100 }} withBorder
@@ -1685,6 +1724,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               </Text>
           </Group>
       </Dialog>
+      <CsvImportModal 
+        isCsvImportDialogOpen={isCsvImportDialogOpen} 
+        closeCsvImportDialog={closeCsvImportDialog}
+        editCB={(newVals: any) => {
+          if (focusedInput.current != null) {
+            editInputBlock(focusedInput.current, null, null, null, newVals)
+          }
+        }}
+      />
     </>
   );
 }
