@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import NumberInput from './NumberInput';
+import NumberInput from './Inputs/NumberInput';
 import { func_2, func_interpreter_new_caller } from '../engine/engine'
 
 const Calculator: React.FC = () => {
