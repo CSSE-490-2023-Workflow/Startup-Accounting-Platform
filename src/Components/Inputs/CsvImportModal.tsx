@@ -5,9 +5,11 @@ import { useEffect, useState, useRef} from "react";
 function CsvImportModal(props: any) {
   const [csvFile, setCsvFile] = useState<File | null>(null)
   // true: parse by row; false: parse by column
+  const editCB = props.editCB
   const parseBy = useRef<String>('row')
   const parsing = useRef<boolean>(false)
   const parseMethods = ['row', 'column']
+  const [errorState, setErrorState]  = useState<number>(-1)
 
   const [inputIdxMap, inputEditCB] = [
     props.inputIdxMap,
@@ -22,7 +24,20 @@ function CsvImportModal(props: any) {
     
     (csvFile as File).text().then(res => {
       
-      console.log(res.split('\n'))
+      const rows = res.split('\n')
+      const rows_delim = rows.map(row => row.split(','))
+      const vals = []
+      //only use the first row
+      for (let i = 0; i < rows_delim[0].length; i++) {
+        const tmp = Number(rows_delim[0][i])
+        if (isNaN(tmp)) {
+          setErrorState(1)
+          break
+        } else {
+          vals.push(tmp)
+        }
+      }
+      editCB(vals)
     })
     
   }

@@ -11,17 +11,17 @@ import * as utils from './utils.json'
 import OutputBlock from './OutputBlock';
 import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
-import NumberInput from '../NumberInput';
+import NumberInput from '../Inputs/NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
 import { Button, Dialog, Group, Alert, Text, Modal, FileInput} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
-import SeriesInput from '../SeriesInput';
+import SeriesInput from '../Inputs/SeriesInput';
 import { MyDraggable } from './MyDraggable';
 import { IconCheck, IconInfoCircle, IconTexture } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
-import CsvImportModal from './CsvImportModal';
-import DoubleSeriesInput from '../DoubleSeriesInput';
+import CsvImportModal from '../Inputs/CsvImportModal';
+import DoubleSeriesInput from '../Inputs/DoubleSeriesInput';
 
 interface InputBlockDS {
   blockId: number
@@ -205,7 +205,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [ disconnErrMsgs, setDisconnErrMsgs ] = useState<DisconnErrMsg[]>([])
   const [isTypeCheckDialogOpen, {open: openTypeCheckDialog, close: closeTypeCheckDialog}] = useDisclosure(false);
   const [isCsvImportDialogOpen, {open: openCsvImportDialog, close: closeCsvImportDialog}] = useDisclosure(false);
-  const [csvFile, setCsvFile] = useState<File | null>(null)
+  const focusedInput = useRef<number | null>(null)
+
+  const setFocusedInput = (idx: number | null) => {
+    focusedInput.current = idx
+  }
 
   // const [addedOutputIds, setAddedOutputIds] = useState<number[]>([]);
 
@@ -245,11 +249,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   useEffect(() => {
     reloadSavedCustomFunctions()
   }, [currentUser])
-
-  useEffect(() => {
-    console.log('csv')
-    console.log(csvFile)
-  }, [csvFile])
 
   /**
    * Handles all the change incurred by an arrow creation
@@ -922,7 +921,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       blkId: number,
       inputName: string | null,
       inputType: data_types | null,
-      idx: number | null
+      idx: number | null,
+      val: any 
     ) => {
       if (config.debug_mode_FuncBuilder == 1) {
         console.log('edit callback', blkId, inputName, inputType);
@@ -963,18 +963,23 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               }
               inputBlkIdxMap.set(idx, blk);
             }
+            if (val != null) {
+              console.log('its happening')
+              blk.val = val
+            }
           }
           return blk;
         })
       })
 
       setInputBlkIdxMap(inputBlkIdxMap => new Map(inputBlkIdxMap));
+      setInputBlocks(inputBlks => [...inputBlks])
 
       if (config.debug_mode_FuncBuilder == 1) {
         console.log('edit input block. Input blk idx map', inputBlkIdxMap);
       }
 
-    }, [inputBlkIdxMap])
+    }, [blkMap])
 
   const updateInputBlkLoc = useCallback(
     (blkId: number, newLocation: [number, number]) => {
@@ -1371,6 +1376,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('tmp', inputBlocks);
   }, [inputBlocks, setInputBlocks])
 
+  useEffect(() => {
+    console.log('focus input', focusedInput.current)
+  }, [focusedInput.current])
+
 
   // let inputListCount: number = 0;
   // const [inputStore, setInputStore] = useState<data_types[]>([]);
@@ -1393,7 +1402,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         return (
           <>
             <h3>{blk.inputName}</h3>
-            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[]} inputValueCap={INVALUECAP} />
+            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[]} inputValueCap={INVALUECAP} 
+              openCsvImportDialog={openCsvImportDialog}
+              setFocusedInput={setFocusedInput}
+            />
           </>
         );
       } else if(blk.inputType === data_types.dt_double_series) {
@@ -1675,7 +1687,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" 
         defaultAttr={["new output", undefined, [200,200]]} />
       <Button variant='default' onClick={runTypeCheck}> run type check</Button>
-      <Button variant='default' onClick={openCsvImportDialog}> import from csv</Button>
       <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
       <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
       <h3>Function Builder</h3>
@@ -1713,10 +1724,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           </Group>
       </Dialog>
       <CsvImportModal 
-        inputIdxMap={null} 
-        inputEditCB={null} 
         isCsvImportDialogOpen={isCsvImportDialogOpen} 
         closeCsvImportDialog={closeCsvImportDialog}
+        editCB={(newVals: any) => {
+          if (focusedInput.current != null) {
+            editInputBlock(focusedInput.current, null, null, null, newVals)
+          }
+        }}
       />
     </>
   );

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import NumberInput from './NumberInput';
+import NumberInput from './Inputs/NumberInput';
 import { func_2, func_interpreter_new_caller } from '../engine/engine'
 import { XYPlot, XAxis, YAxis, HorizontalGridLines, LineSeries, HorizontalBarSeries, VerticalBarSeries } from 'react-vis';
 import { allowed_stack_components } from '../engine/datatype_def';

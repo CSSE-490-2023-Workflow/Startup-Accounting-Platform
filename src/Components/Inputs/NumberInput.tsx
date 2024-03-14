@@ -1,5 +1,4 @@
 import React, { ChangeEvent, useCallback, useState} from 'react';
-import { allowed_stack_components } from '../engine/datatype_def';
 
 interface IProps {
     handleStateChange: any
