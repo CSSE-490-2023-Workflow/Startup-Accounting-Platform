@@ -1648,6 +1648,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" 
         defaultAttr={["new output", undefined, [200,200]]} />
       <Button variant='default' onClick={runTypeCheck}> run type check</Button>
+      <Button variant='default' onClick={() => {}}> import from csv</Button>
       <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
       <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
       <h3>Function Builder</h3>
