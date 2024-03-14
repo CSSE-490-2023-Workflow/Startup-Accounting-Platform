@@ -153,7 +153,8 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
         output_types: [[data_types.dt_double_series]],
         output_names : ['merged series'],
         func: (...args : allowed_stack_components[]) => {
-            if (!declared_type_verifier[0](args[0]) || !declared_type_verifier[1](args[1]))
+            console.log(args)
+            if (!declared_type_verifier[1](args[0]) || !declared_type_verifier[1](args[1]))
                 throw new FuncArgError('Merge double series receives two double series as parameters');
             const m = new Map<number, number>()
             const dser1 = args[0] as number[][]
@@ -162,7 +163,7 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
                 m.set(pt[0], m.has(pt[0]) ? Number(m.get(pt[0])) + pt[1] : pt[1])
             }
             for (let pt of dser2) {
-                m.set(pt[0], m.has(pt[0]) ? Number(m.get(pt[0])) + pt[1] : 0)
+                m.set(pt[0], m.has(pt[0]) ? Number(m.get(pt[0])) + pt[1] : pt[1])
             }
             const res = Array.from(m)
             res.sort((a, b) => a[0] - b[0])

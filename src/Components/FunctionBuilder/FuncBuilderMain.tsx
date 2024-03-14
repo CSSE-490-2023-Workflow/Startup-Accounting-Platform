@@ -690,7 +690,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     const paramMap: Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
       if(inputBlk.inputType === data_types.dt_double_series) {
-        paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val.map((value: number[]) => value[1]) });
+        paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
       } else {
         paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
       }

@@ -6,6 +6,7 @@ function CsvImportModal(props: any) {
   const [csvFile, setCsvFile] = useState<File | null>(null)
   // true: parse by row; false: parse by column
   const parseBy = useRef<String>('row')
+  const parsing = useRef<boolean>(false)
   const parseMethods = ['row', 'column']
 
   const [inputIdxMap, inputEditCB] = [
@@ -16,6 +17,15 @@ function CsvImportModal(props: any) {
   useEffect(() => {
     
   }, [csvFile]) 
+
+  async function parse() {
+    
+    (csvFile as File).text().then(res => {
+      
+      console.log(res.split('\n'))
+    })
+    
+  }
 
   return (
     <Modal opened={props.isCsvImportDialogOpen} onClose={() => {setCsvFile(null); props.closeCsvImportDialog()}} title="Import from csv">
@@ -33,7 +43,13 @@ function CsvImportModal(props: any) {
         }}
         data={parseMethods}
       />
-      <Button ></Button>
+      <Button variant='default' style={{margin: '10px 0px'}} onClick=
+      {() => {
+        parsing.current = true
+        parse().then(() => {
+          parsing.current = false
+        })
+      }}>Parse</Button>
     </Modal>
   )
 }
