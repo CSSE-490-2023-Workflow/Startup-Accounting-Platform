@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState} from 'react';
 import { data_types, data_type_enum_name_pairs} from "../../engine/datatype_def"
-import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, useCombobox, Combobox, InputBase } from '@mantine/core';
+import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, useCombobox, Combobox, InputBase, Center } from '@mantine/core';
 import Draggable, { DraggableEvent } from 'react-draggable';
 
 enum direction {
@@ -23,6 +23,7 @@ interface OutProps {
   outputType: data_types | undefined; //undefined if not connected to another block
   outputIdx: number[]; //the first element is the index of the block. The second element is the # of output blocks (i.e. maximum index)
   blockLocation: [number, number];
+  outputGraph?: React.JSX.Element;
   updateBlkCB: (blkId: number, outputName: string | null, outputType: data_types | null, idx: number | null) => void;
   removeBlkCB: (blkId: number) => void;
   addArrow: (value: StartAndEnd) => void;
@@ -34,12 +35,13 @@ interface OutProps {
 }
 
 function OutputBlock(props: OutProps) {
-  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc = [0,0], editCB, removeCB, addArrow, setArrows, removeArrow, updateLoc] = [
+  const [ outputId, outputName, oType, [outputIdx, maxIdx], blockLoc = [0,0], outputGraph, editCB, removeCB, addArrow, setArrows, removeArrow, updateLoc] = [
     props.blockId, 
     props.outputName, 
     props.outputType,
     props.outputIdx,
     props.blockLocation,
+    props.outputGraph,
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.addArrow, 
@@ -66,6 +68,8 @@ function OutputBlock(props: OutProps) {
 
   // controlls node name popover state
   const [ showNodeName, setShowNodeName ] = useState(false);
+
+  const [ showValue, setShowValue ] = useState(false);
 
   useEffect(() => {
     setArrows(arrows => [...arrows]);
@@ -376,7 +380,7 @@ function OutputBlock(props: OutProps) {
     <div className='block-container'>
     <Card className="output-block func-builder-block" shadow='sm' padding='lg' radius='md' withBorder styles={{
       root: {
-        height: '150px',
+        height: '170px',
         width: '200px'
       },
       section: {
@@ -392,6 +396,31 @@ function OutputBlock(props: OutProps) {
       </CardSection>
       <Card.Section>
         <Input className="output-block-name" onChange={handleNameChange} value={outputName} variant="filled" placeholder="Output Name" />
+      </Card.Section>
+      <CardSection>
+        <hr className='solid-divider' />
+      </CardSection>
+      <Card.Section>
+        <Center inline>
+          <Popover width={300} opened={showValue} withArrow styles={{
+            // dropdown: nodeNameStyle
+          }}>
+            <Popover.Target>
+              <div
+                // style={nodeStyle}
+                className='connection-handle-wrapper'
+                onClick={() => {setShowValue((value) => !value)}}
+              >
+                <div className='connection-handle connection-handle-out'>
+                  Graph:
+                </div>
+              </div>
+            </Popover.Target>
+            <Popover.Dropdown>
+              {outputGraph}
+            </Popover.Dropdown>
+          </Popover>
+      </Center>
       </Card.Section>
       <CardSection>
         <hr className='solid-divider' />

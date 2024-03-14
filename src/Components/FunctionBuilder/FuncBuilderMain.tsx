@@ -27,7 +27,7 @@ interface InputBlockDS {
   inputName: string
   inputType: data_types
   inputIdx: number
-  val: allowed_stack_components
+  val: any
   blockLocation: [number, number]
 }
 
@@ -681,7 +681,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const evaluateFunction = useCallback(() => {
     const paramMap: Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
-      paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
+      paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val.map((value: number[]) => value[1]) });
     }
     console.log(`starting evaluation`)
     for (const [i, v] of paramMap.entries()) {
@@ -927,8 +927,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               blk.inputType = inputType;
               if (inputType == data_types.dt_series) {
                 const temp = [];
-                for (let i = 0; i < INVALUECAP; i++) {
-                  temp.push(0)
+                for (let i = 0; i < 5; i++) {
+                  temp.push([i, 0])
                 }
                 blk.val = temp;
               }
@@ -1338,7 +1338,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
   )
 
-  const changeInput = useCallback((inputId: number, newValue: allowed_stack_components) => {
+  const changeInput = useCallback((inputId: number, newValue: number | number[][] | func_pt_series) => {
     console.log('in changeInput, blks are ', inputBlocks, newValue);
     const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS, index: number) => {
       console.log('in changeInput', index, blk, newValue);
@@ -1356,7 +1356,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   // let inputListCount: number = 0;
   // const [inputStore, setInputStore] = useState<data_types[]>([]);
-  const INVALUECAP = 20;
+  const INVALUECAP = 1000;
   const [fullInputBlocks, setFullInputBlocks] = useState<React.JSX.Element[]>([]);
   useEffect(() => {
     console.log("also called");
@@ -1375,7 +1375,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         return (
           <>
             <h3>{blk.inputName}</h3>
-            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as series} inputValueCap={INVALUECAP} />
+            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[][]} inputValueCap={INVALUECAP} />
           </>
         );
       }
@@ -1393,7 +1393,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
 
   let outputListCount: number = 0;
-  const outputList: any[] = [];
+  const outputList: React.JSX.Element[] = [];
   for (const [outputIdx, outputObj] of evalResult) {
     let data = [{
       x: 0,
@@ -1462,7 +1462,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //   );
   // })
 
-  const inputBlocksList = inputBlocks.map((blk: InputBlockDS) => {
+  const inputBlocksList = inputBlocks.map((blk: InputBlockDS, index: number) => {
     const element = (
       <InputBlock
         blockId={blk.blockId}
@@ -1471,6 +1471,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         inputTypeOptions={data_type_enum_name_pairs}
         inputIdx={[blk.inputIdx, inputBlkIdxMap.size]}
         blockLocation={blk.blockLocation}
+        inputValueElement={fullInputBlocks[index]}
         updateBlkCB={editInputBlock}
         removeBlkCB={removeInputBlock}
         setArrows={setArrows}
@@ -1562,7 +1563,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   })
 
-  const outputBlocksList = outputBlocks.map((blk: OutputBlockDS) => {
+  const outputBlocksList = outputBlocks.map((blk: OutputBlockDS, index: number) => {
     const element = (
       <OutputBlock
         key={blk.blockId}
@@ -1571,6 +1572,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         outputType={blk.outputType}
         outputIdx={[blk.outputIdx, outputBlkIdxMap.size]}
         blockLocation={blk.blockLocation}
+        outputGraph={outputList[index] ?? <></>}
         updateBlkCB={editOutputBlock}
         removeBlkCB={removeOutputBlock}
         addArrow={addArrow}
@@ -1661,7 +1663,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           key={ar.start + "-." + ar.start}
         />
       ))}
-      <div style={{position: "absolute", marginTop: "80%"}}>
+      {/* <div style={{position: "absolute", marginTop: "80%"}}>
         <div style={{ display: "flex" }}>
           {fullInputBlocks}
         </div>
