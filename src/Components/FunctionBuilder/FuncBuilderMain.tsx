@@ -18,7 +18,6 @@ import { Button, Dialog, Group, Alert, Text, Modal, FileInput} from "@mantine/co
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
 import SeriesInput from '../SeriesInput';
 import { MyDraggable } from './MyDraggable';
-import {flushSync} from "react-dom";
 import { IconCheck, IconInfoCircle, IconTexture } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 import CsvImportModal from './CsvImportModal';
