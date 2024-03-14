@@ -21,6 +21,7 @@ import { MyDraggable } from './MyDraggable';
 import { IconCheck, IconInfoCircle, IconTexture } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 import CsvImportModal from './CsvImportModal';
+import DoubleSeriesInput from '../DoubleSeriesInput';
 
 interface InputBlockDS {
   blockId: number
@@ -688,7 +689,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const evaluateFunction = useCallback(() => {
     const paramMap: Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
-      paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val.map((value: number[]) => value[1]) });
+      if(inputBlk.inputType === data_types.dt_double_series) {
+        paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
+      } else {
+        paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
+      }
     }
     console.log(`starting evaluation`)
     for (const [i, v] of paramMap.entries()) {
@@ -932,10 +937,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             }
             if (inputType != null) {
               blk.inputType = inputType;
-              if (inputType == data_types.dt_series) {
+              if (inputType == data_types.dt_double_series) {
                 const temp = [];
                 for (let i = 0; i < 5; i++) {
                   temp.push([i, 0])
+                }
+                blk.val = temp;
+              } else if(inputType == data_types.dt_series) {
+                const temp = [];
+                for (let i = 0; i < 5; i++) {
+                  temp.push(0)
                 }
                 blk.val = temp;
               }
@@ -1345,7 +1356,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
   )
 
-  const changeInput = useCallback((inputId: number, newValue: number | number[][] | func_pt_series) => {
+  const changeInput = useCallback((inputId: number, newValue: data_types) => {
     console.log('in changeInput, blks are ', inputBlocks, newValue);
     const tmp: InputBlockDS[] = inputBlocks.map((blk: InputBlockDS, index: number) => {
       console.log('in changeInput', index, blk, newValue);
@@ -1382,7 +1393,14 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         return (
           <>
             <h3>{blk.inputName}</h3>
-            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[][]} inputValueCap={INVALUECAP} />
+            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[]} inputValueCap={INVALUECAP} />
+          </>
+        );
+      } else if(blk.inputType === data_types.dt_double_series) {
+        return (
+          <>
+            <h3>{blk.inputName}</h3>
+            <DoubleSeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[][]} inputValueCap={INVALUECAP} />
           </>
         );
       }
@@ -1412,8 +1430,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         data.push({ x: i, y: (outputObj.value as series)[i] as number })
         if((typeof (outputObj.value as series)[0]) !== "number") {
           data = []
-          for (let i = 0; i < (outputObj.value as func_pt_series).length; i++) {
-            data.push({ x: i, y: (outputObj.value as func_pt_series)[i][1]})
+          for (let i = 0; i < (outputObj.value as number[][]).length; i++) {
+            data.push({ x: (outputObj.value as func_pt_series)[i][0], y: (outputObj.value as func_pt_series)[i][1]})
           }
         } else {
           data = []
@@ -1671,7 +1689,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           key={ar.start + "-." + ar.start}
         />
       ))}
-      <div style={{position: "absolute", marginTop: "80%"}}>
+      {/* <div style={{position: "absolute", marginTop: "80%"}}>
         <div style={{ display: "flex" }}>
           {fullInputBlocks}
         </div>
@@ -1679,7 +1697,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         <div style={{ display: "flex" }}>
           {outputList}
         </div>
-      </div>
+      </div> */}
       {errMsgsDisplay}
       <Dialog opened={isTypeCheckDialogOpen} withCloseButton onClose={closeTypeCheckDialog} size="lg" radius="md" 
         transitionProps={{ transition: 'slide-left', duration: 100 }} withBorder

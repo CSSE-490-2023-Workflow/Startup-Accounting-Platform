@@ -386,6 +386,10 @@ function InputBlock(props: InputProps) {
   // nodeStyle.bottom = '0';
   // nodeStyle.width = '15px';
   // nodeStyle.height = '10px';
+  let typeDivider: number = 1;
+  if(inputType == data_types.dt_series) {
+    typeDivider = 2;
+  }
   return (
     <>
     {/* <Draggable cancel='.connection-handle-icon'
@@ -426,7 +430,7 @@ function InputBlock(props: InputProps) {
       </CardSection>
       <Card.Section>
         <Center inline>
-          <Popover width={410} opened={showValue} withArrow styles={{
+          <Popover width={410 / typeDivider} opened={showValue} withArrow styles={{
             // dropdown: nodeNameStyle
           }}>
             <Popover.Target>
