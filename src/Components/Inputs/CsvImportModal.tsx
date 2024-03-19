@@ -43,7 +43,7 @@ function CsvImportModal(props: any) {
   }
 
   return (
-    <Modal opened={props.isCsvImportDialogOpen} onClose={() => {setCsvFile(null); props.closeCsvImportDialog()}} title="Import from csv">
+    <Modal opened={props.isCsvImportModalOpen} onClose={() => {setCsvFile(null); props.closeCsvImportModal()}} title="Import from csv">
           
       <FileInput clearable={true} 
         accept=".csv" 

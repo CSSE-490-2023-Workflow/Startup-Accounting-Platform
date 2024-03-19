@@ -5,10 +5,10 @@ enum data_types {
 }
 
 type func_pt = [number, number]
-type func_pt_series = Array<func_pt>
+type double_series = Array<func_pt>
 type series = Array<number>
 
-type allowed_stack_components = number | func_pt_series | series 
+type allowed_stack_components = number | double_series | series 
 
 const data_type_enum_name_pairs: [data_types, string][] = [
     [data_types.dt_number, "Number"], 
@@ -107,4 +107,4 @@ export function is_series(val: any) {
 
 export { data_types, declared_type_verifier }
 export { data_type_enum_name_pairs, data_type_name_to_enum }
-export type {func_pt, func_pt_series, series, allowed_stack_components, custom_function, builtin_function}
+export type {func_pt, double_series as func_pt_series, series, allowed_stack_components, custom_function, builtin_function}

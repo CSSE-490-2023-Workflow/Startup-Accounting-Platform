@@ -22,6 +22,7 @@ import { IconCheck, IconInfoCircle, IconTexture } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 import CsvImportModal from '../Inputs/CsvImportModal';
 import DoubleSeriesInput from '../Inputs/DoubleSeriesInput';
+import InputModal from '../Inputs/InputModal';
 
 interface InputBlockDS {
   blockId: number
@@ -205,12 +206,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [ disconnErrMsgs, setDisconnErrMsgs ] = useState<DisconnErrMsg[]>([])
   const [isTypeCheckDialogOpen, {open: openTypeCheckDialog, close: closeTypeCheckDialog}] = useDisclosure(false);
   const [isCsvImportDialogOpen, {open: openCsvImportDialog, close: closeCsvImportDialog}] = useDisclosure(false);
-  const focusedInput = useRef<number | null>(null)
+  const [isInputModalOpen, { open: openInputModal, close: closeInputModal }] = useDisclosure(false);
+  const [ focusedInput, setFocusedInput ] = useState<number | null>(null)
 
-  const setFocusedInput = (idx: number | null) => {
-    focusedInput.current = idx
+  const requestFocus = (id: number) => {
+    setFocusedInput(id)
   }
-
   // const [addedOutputIds, setAddedOutputIds] = useState<number[]>([]);
 
   const reloadSavedCustomFunctions = useCallback(() => {
@@ -1376,55 +1377,51 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('tmp', inputBlocks);
   }, [inputBlocks, setInputBlocks])
 
-  useEffect(() => {
-    console.log('focus input', focusedInput.current)
-  }, [focusedInput.current])
-
 
   // let inputListCount: number = 0;
   // const [inputStore, setInputStore] = useState<data_types[]>([]);
   const INVALUECAP = 1000;
   const [fullInputBlocks, setFullInputBlocks] = useState<React.JSX.Element[]>([]);
-  useEffect(() => {
-    console.log("also called");
-    setFullInputBlocks(inputBlocks.map((blk: InputBlockDS) => {
-      //   inputListCount += 1
-      //   if(inputStore.length < inputListCount) {
-      //     setInputStore((inputStore) => [...inputStore, 0])
-      //   }
-      console.log("called", inputBlocks);
-      if (blk.inputType === data_types.dt_series) {
-        // const temp = []
-        // for(let i = 0; i < INVALUECAP; i++) {
-        //   temp.push(0)
-        // }
-        console.log(blk.val);
-        return (
-          <>
-            <h3>{blk.inputName}</h3>
-            <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[]} inputValueCap={INVALUECAP} 
-              openCsvImportDialog={openCsvImportDialog}
-              setFocusedInput={setFocusedInput}
-            />
-          </>
-        );
-      } else if(blk.inputType === data_types.dt_double_series) {
-        return (
-          <>
-            <h3>{blk.inputName}</h3>
-            <DoubleSeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[][]} inputValueCap={INVALUECAP} />
-          </>
-        );
-      }
+  // useEffect(() => {
+  //   console.log("also called");
+  //   setFullInputBlocks(inputBlocks.map((blk: InputBlockDS) => {
+  //     //   inputListCount += 1
+  //     //   if(inputStore.length < inputListCount) {
+  //     //     setInputStore((inputStore) => [...inputStore, 0])
+  //     //   }
+  //     console.log("called", inputBlocks);
+  //     if (blk.inputType === data_types.dt_series) {
+  //       // const temp = []
+  //       // for(let i = 0; i < INVALUECAP; i++) {
+  //       //   temp.push(0)
+  //       // }
+  //       console.log(blk.val);
+  //       return (
+  //         <>
+  //           <h3>{blk.inputName}</h3>
+  //           <SeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[]} inputValueCap={INVALUECAP} 
+  //             openCsvImportDialog={openCsvImportDialog}
+  //             setFocusedInput={setFocusedInput}
+  //           />
+  //         </>
+  //       );
+  //     } else if(blk.inputType === data_types.dt_double_series) {
+  //       return (
+  //         <>
+  //           <h3>{blk.inputName}</h3>
+  //           <DoubleSeriesInput handleStateChange={changeInput} ind={blk.blockId} inValues={blk.val as number[][]} inputValueCap={INVALUECAP} />
+  //         </>
+  //       );
+  //     }
 
-      return (
-        <>
-          <h3>{blk.inputName}</h3>
-          <NumberInput handleStateChange={changeInput} ind={blk.inputIdx} inValue={0} inputId={blk.blockId} />
-        </>
-    )
-    }))
-  }, [inputBlocks])
+  //     return (
+  //       <>
+  //         <h3>{blk.inputName}</h3>
+  //         <NumberInput handleStateChange={changeInput} ind={blk.inputIdx} inValue={0} inputId={blk.blockId} />
+  //       </>
+  //   )
+  //   }))
+  // }, [inputBlocks])
 
 
 
@@ -1513,6 +1510,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         removeBlkCB={removeInputBlock}
         setArrows={setArrows}
         updateBlkLoc={updateInputBlkLoc}
+        openInputModal={openInputModal}
+        requestFocus={requestFocus}
       />
     )
     return (
@@ -1678,6 +1677,20 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   errMsgsDisplay = errMsgsDisplay.concat(errMsgsDisplay2)
 
+  let inputModalDisplay = focusedInput == null ? <></> : 
+    <InputModal 
+      handleStateChange={editInputBlock}
+      isInputModalOpen={isInputModalOpen}
+      closeInputModal={closeInputModal}
+      blockId={focusedInput}
+      onCloseCB={() => {setFocusedInput(null)}}
+      val={(blkMap.get(focusedInput) as InputBlockDS).val}
+      valCap={INVALUECAP}
+      inputType={(blkMap.get(focusedInput) as InputBlockDS).inputType}
+      inputName={(blkMap.get(focusedInput) as InputBlockDS).inputName}
+      editCB={editInputBlock}
+    />
+
   return (
     <>
       <AddBlockButton onClick={addInputBlock} buttonText="Add Input Block"
@@ -1724,7 +1737,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               </Text>
           </Group>
       </Dialog>
-      <CsvImportModal 
+      {/* <CsvImportModal 
         isCsvImportDialogOpen={isCsvImportDialogOpen} 
         closeCsvImportDialog={closeCsvImportDialog}
         editCB={(newVals: any) => {
@@ -1732,11 +1745,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             editInputBlock(focusedInput.current, null, null, null, newVals)
           }
         }}
-      />
+      /> */}
+      {inputModalDisplay}
+      
+    
+      
     </>
   );
 }
 
 
 export default FuncBuilderMain;
+export type { InputBlockDS }
 

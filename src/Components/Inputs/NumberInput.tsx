@@ -1,20 +1,31 @@
 import React, { ChangeEvent, useCallback, useState} from 'react';
 
+/**
+ * One of inputIdx and inputId should be null
+ * If this is a component used in main, idx should be null b/c main's editCB uses blockId for identification
+ * If this is a component used in SeriesInput, id should be null 
+ * 
+ */
 interface IProps {
     handleStateChange: any
-    ind: number
+    inputIdx: number | null
     inValue: number | string
-    inputId: number
-    
+    inputId: number | null
 }
 
 function NumberInput(props: IProps) {
-  const { handleStateChange, ind, inValue, inputId} = props
+  const { handleStateChange, inputIdx, inValue, inputId} = props
   const [inpValue, setInpValue] = useState(inValue);
+  console.log(props)
   function handleChange(e: ChangeEvent) {
     const { value } = e.target as HTMLInputElement
     if(value === "" || value === "-") {
-        handleStateChange(inputId, 0)
+        if (inputId == null) {
+          handleStateChange(inputIdx, null, null, null, 0)
+        } else {
+          handleStateChange(inputId, null, null, null, 0)
+        }
+        
         setInpValue(value)
     }
     else {
@@ -23,8 +34,11 @@ function NumberInput(props: IProps) {
         modifiedValue = value.replace(".","")
       }
       if(!isNaN(Number(modifiedValue))) {
-        console.log(inputId);
-        handleStateChange(inputId, Number(modifiedValue));
+        if (inputId == null) { //This is a component used in SeriesInput
+          handleStateChange(inputIdx, null, null, null, Number(modifiedValue))
+        } else { 
+          handleStateChange(inputId, null, null, null, Number(modifiedValue))
+        }
         setInpValue(value)
       }
     }

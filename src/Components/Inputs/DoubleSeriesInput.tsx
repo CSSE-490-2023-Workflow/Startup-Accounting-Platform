@@ -3,10 +3,9 @@ import NumberInput from './NumberInput';
 
 interface IProps {
     handleStateChange: any
-    ind: number
+    inputId: number
     inValues: number[][]
     inputValueCap: number
-    
 }
 
 // interface NumberInputDS {
@@ -17,7 +16,7 @@ interface IProps {
 // }
 
 function DoubleSeriesInput(props: IProps) {
-  const { handleStateChange, inValues, inputValueCap, ind} = props
+  const { handleStateChange, inputId, inValues, inputValueCap} = props
   const [numberOfInputs, setNumberOfInputs] = useState(inValues.length);
   console.log("made empty");
 //   const [inpValues, setInpValues] = useState<NumberInputDS[]>(inValues.map(() => {
@@ -36,36 +35,33 @@ function DoubleSeriesInput(props: IProps) {
 //     console.log(temp);
 //     setInpValues(temp);
 //   }, [numberOfInputs])
-  const changeInput = useCallback((inputId: number, newValue: number | string) => {
+  const changeInput = useCallback((inputIdx: number, placeholder0: any, placeholder1: any, placeholder2: any, newValue: number | string) => {
     console.log('in changeInput, blks are ', inputId, newValue, numberOfInputs);
-    setCurValues(curValues.map((val: number[], index: number) => {
+    const tmp = curValues.map((val: number[], index: number) => {
       //console.log('in changeInput',blk.inputId, inputId);
-      if (index == inputId) {
-        console.log("changed", newValue);
+      if (index == inputIdx) {
         return [Number(newValue), val[1]]
-      //    curValues[ind] = Number(newValue);
-      //    setCurValues([...curValues]);
-     } else if (index + curValues.length == inputId){
+         
+     } else if (index + curValues.length == inputIdx){
       return [val[0], Number(newValue)]
      }
- //   console.log(blk.val);
      return val;
-   }))
+   })
+   setCurValues(tmp)
 //    setInpValues([...tmp]);
-   console.log("here");
-   handleStateChange(ind, curValues.map((val: number[], index: number) => {
-    //console.log('in changeInput',blk.inputId, inputId);
-     if (index == inputId) {
-        console.log("changed", newValue);
-        return [Number(newValue), val[1]]
-      //    curValues[ind] = Number(newValue);
-      //    setCurValues([...curValues]);
-     } else if (index + curValues.length == inputId){
-      return [val[0], Number(newValue)]
-     }
- //   console.log(blk.val);
-     return val;
- }))
+//    handleStateChange(inputId, null, null, null, curValues.map((val: number[], index: number) => {
+//     //console.log('in changeInput',blk.inputId, inputId);
+//      if (index == inputIdx) {
+//         // curValues[inputIdx] = [Number(newValue), val[1]]
+//         // setCurValues([...curValues]);
+//         return [Number(newValue), val[1]]
+//      } else if (index + curValues.length == inputId){
+//       return [val[0], Number(newValue)]
+//      }
+//  //   console.log(blk.val);
+//      return val;
+//  }))
+   handleStateChange(inputId, null, null, null, tmp)
    // console.log('tmp', inputBlocks);
    }, [curValues, numberOfInputs])
 //    setInpValues([])
@@ -84,13 +80,13 @@ function DoubleSeriesInput(props: IProps) {
     // setInpValues((inpValues) => [...inpValues, {handleStateChange: changeInput, ind: numberOfInputs, inValue: inValues[numberOfInputs], inputId: numberOfInputs}])
     let temp = curValues.map((value) => value);
     temp.push([temp.length, 0])
-    handleStateChange(ind, temp)
+    handleStateChange(inputId, null, null, null, temp)
     setCurValues((curValues) => [...curValues, [temp.length - 1, 0]])
     setNumberOfInputs((numberOfInputs) => numberOfInputs + 1)
   },[curValues, numberOfInputs])
   const decrementNumber = useCallback(() => {
     console.log(curValues.slice(0, numberOfInputs - 1).length);
-    handleStateChange(ind, curValues.slice(0, numberOfInputs - 1))
+    handleStateChange(inputId, null, null, null, curValues.slice(0, numberOfInputs - 1))
     setCurValues(curValues.slice(0, numberOfInputs - 1))
     setNumberOfInputs((numberOfInputs) => numberOfInputs - 1)
     // setCurValues((curValues) => {
@@ -114,8 +110,8 @@ function DoubleSeriesInput(props: IProps) {
         setDisabledDec(numberOfInputs <= 0);
         setInputs(curValues.map((val: number[], index: number) => {
             return <div style={{flexDirection: "row", display: "flex"}}>
-                    <NumberInput handleStateChange={changeInput} ind={index} inValue={val[0]} inputId = {index} />
-                    <NumberInput handleStateChange={changeInput} ind={index} inValue={val[1]} inputId = {index + curValues.length} />
+                    <NumberInput handleStateChange={changeInput} inputIdx={index} inValue={val[0]} inputId={null} />
+                    <NumberInput handleStateChange={changeInput} inputIdx={index + curValues.length} inValue={val[1]} inputId={null} />
                    </div>
         }));
     }, [curValues, numberOfInputs])
