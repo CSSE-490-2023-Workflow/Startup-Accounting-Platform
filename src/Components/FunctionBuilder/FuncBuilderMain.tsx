@@ -205,12 +205,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [ typeErrMsgs, setTypeErrMsgs ] = useState<TypeErrMsg[]>([])
   const [ disconnErrMsgs, setDisconnErrMsgs ] = useState<DisconnErrMsg[]>([])
   const [isTypeCheckDialogOpen, {open: openTypeCheckDialog, close: closeTypeCheckDialog}] = useDisclosure(false);
-  const [isCsvImportDialogOpen, {open: openCsvImportDialog, close: closeCsvImportDialog}] = useDisclosure(false);
   const [isInputModalOpen, { open: openInputModal, close: closeInputModal }] = useDisclosure(false);
   const [ focusedInput, setFocusedInput ] = useState<number | null>(null)
+  //const [ focusedInputVal, setFocusedInputVal ] = useState(null)
+
 
   const requestFocus = (id: number) => {
     setFocusedInput(id)
+    //setFocusedInputVal((blkMap.get(id) as InputBlockDS).val)
+    openInputModal()
   }
   // const [addedOutputIds, setAddedOutputIds] = useState<number[]>([]);
 
@@ -950,6 +953,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
                   temp.push(0)
                 }
                 blk.val = temp;
+              } else if (inputType == data_types.dt_number) {
+                blk.val = 0
               }
               // we need to update all outputs connected to the block 
               // maybe?
@@ -975,6 +980,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
       setInputBlkIdxMap(inputBlkIdxMap => new Map(inputBlkIdxMap));
       setInputBlocks(inputBlks => [...inputBlks])
+
+      console.log('focus', focusedInput)
 
       if (config.debug_mode_FuncBuilder == 1) {
         console.log('edit input block. Input blk idx map', inputBlkIdxMap);
@@ -1677,14 +1684,19 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   errMsgsDisplay = errMsgsDisplay.concat(errMsgsDisplay2)
 
+  //console.log((blkMap.get(focusedInput as number) as InputBlockDS).val)
+
   let inputModalDisplay = focusedInput == null ? <></> : 
     <InputModal 
       handleStateChange={editInputBlock}
       isInputModalOpen={isInputModalOpen}
-      closeInputModal={closeInputModal}
       blockId={focusedInput}
+      onClose={closeInputModal}
       onCloseCB={() => {setFocusedInput(null)}}
+      // val={focusedInputVal}
       val={(blkMap.get(focusedInput) as InputBlockDS).val}
+      //setVal={setFocusedInputVal}
+      setVal={() => {}}
       valCap={INVALUECAP}
       inputType={(blkMap.get(focusedInput) as InputBlockDS).inputType}
       inputName={(blkMap.get(focusedInput) as InputBlockDS).inputName}
@@ -1700,7 +1712,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" 
         defaultAttr={["new output", undefined, [200,200]]} />
       <Button variant='default' onClick={runTypeCheck}> run type check</Button>
-      <Button variant='default' onClick={() => {}}> import from csv</Button>
       <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
       <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
       <h3>Function Builder</h3>

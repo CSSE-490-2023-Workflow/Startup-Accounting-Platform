@@ -27,7 +27,6 @@ function SeriesInput(props: IProps) {
   const inputValueCap = props.inputValueCap
   const setVal = props.setVal
   const val = props.val as number[]
-  console.log(props)
   const [numberOfInputs, setNumberOfInputs] = useState(val.length);
   
   // const [curValues, setCurValues] = useState<number[]>(inValues)
@@ -46,41 +45,24 @@ function SeriesInput(props: IProps) {
 
   // placeholder params are for keeping the format same as editInputBlock in main
   const changeInput = useCallback((inputIdx: number, placeholder0: any, placeholder1: any, placeholder2: any, newValue: number | string) => {
-    //console.log('in changeInput, blks are ', inputId, newValue, numberOfInputs);
-  //   setCurValues(curValues.map((val: number, index: number) => {
-  //     //console.log('in changeInput',blk.inputId, inputId);
-  //      if (index == inputId) {
-  //         return Number(newValue)
-  //       //    curValues[ind] = Number(newValue);
-  //       //    setCurValues([...curValues]);
-
-  //       //    console.log("changed");
-  //      }
-  //      console.log(val);
-  //      return val;
-  //  }))
-//    setInpValues([...tmp]);
-   console.log(val.map((val: number, index: number) => {
-     if (index == inputIdx) {
-        return Number(newValue)
-      //    curValues[ind] = Number(newValue);
-      //    setCurValues([...curValues]);
-     }
-     return val;
- }));
-
-   handleStateChange(inputId, null, null, null, val.map((currVal: number, index: number) => {
+    
+    /**
+     * This call will change the values stored in the InputBlockDS is main
+     */
+    handleStateChange(inputId, null, null, null, val.map((currVal: number, index: number) => {
     //console.log('in changeInput',blk.inputId, inputId);
-     if (index == inputIdx) {
-        val[inputIdx] = Number(newValue);
-        setVal([...val]);
+      if (index == inputIdx) {
         return Number(newValue)
-     }
- //   console.log(blk.val);
-     return val;
- }))
+      }
+      return currVal;
+    }))
+    /**
+     * This updates the values displayed 
+     */
+    
+    //setVal([...val]);
    // console.log('tmp', inputBlocks);
-   }, [val, numberOfInputs])
+  }, [val, numberOfInputs])
 //    setInpValues([])
 //   useEffect(() => {
 //     const temp = []
@@ -92,20 +74,20 @@ function SeriesInput(props: IProps) {
 
   
  
-  const incrementNumber = useCallback(() => {
+  const incrementNumber = () => {
     // setCurValues((curValues) => [...curValues, 0])
     // setInpValues((inpValues) => [...inpValues, {handleStateChange: changeInput, ind: numberOfInputs, inValue: inValues[numberOfInputs], inputId: numberOfInputs}])
-    let temp = val.map((value) => value);
-    temp.push(0)
-    handleStateChange(inputId, null, null, null, temp)
-    setVal((curValues) => [...(curValues as number[]), 0])
-    setNumberOfInputs((numberOfInputs) => numberOfInputs + 1)
-  },[val, numberOfInputs])
-  const decrementNumber = useCallback(() => {
-    console.log(val.slice(0, numberOfInputs - 1).length);
-    handleStateChange(inputId, null, null, null, val.slice(0, numberOfInputs - 1))
-    setVal(val.slice(0, numberOfInputs - 1))
-    setNumberOfInputs((numberOfInputs) => numberOfInputs - 1)
+    handleStateChange(inputId, null, null, null, [...val, 0])
+    //setVal((curValues) => [...(curValues as number[]), 0])
+    //setNumberOfInputs((numberOfInputs) => numberOfInputs + 1)
+  }
+
+
+  const decrementNumber = () => {
+    
+    handleStateChange(inputId, null, null, null, val.slice(0, val.length - 1))
+    //setVal(val.slice(0, numberOfInputs - 1))
+    //setNumberOfInputs((numberOfInputs) => numberOfInputs - 1)
     // setCurValues((curValues) => {
     //     curValues.pop()
     //     return curValues;
@@ -114,7 +96,7 @@ function SeriesInput(props: IProps) {
     //     inpValues.pop()
     //     return inpValues;
     // })
-  },[val, numberOfInputs])
+  }
     // useEffect(() => {
     //     const temp2 = []
     //     for(let i = 0; i < numberOfInputs; i++) {
@@ -134,7 +116,7 @@ function SeriesInput(props: IProps) {
     //         return <NumberInput handleStateChange={changeInput} inputIdx={index} inValue={val} inputId={null} />
     //     }));
     // }, [curValues, numberOfInputs])
-
+    console.log('rendering', val)
     const newInputs = val.map((currVal: number, index: number) => {
       return <NumberInput handleStateChange={changeInput} inputIdx={index} inValue={currVal} inputId={null} />
     });

@@ -15,7 +15,6 @@ interface IProps {
 
 function NumberInput(props: IProps) {
   const { handleStateChange, inputIdx, inValue, inputId} = props
-  const [inpValue, setInpValue] = useState(inValue);
   console.log(props)
   function handleChange(e: ChangeEvent) {
     const { value } = e.target as HTMLInputElement
@@ -26,7 +25,7 @@ function NumberInput(props: IProps) {
           handleStateChange(inputId, null, null, null, 0)
         }
         
-        setInpValue(value)
+        //setInpValue(value)
     }
     else {
       let modifiedValue = value;
@@ -39,11 +38,11 @@ function NumberInput(props: IProps) {
         } else { 
           handleStateChange(inputId, null, null, null, Number(modifiedValue))
         }
-        setInpValue(value)
+        //setInpValue(value)
       }
     }
   }
-  return <input onChange={handleChange} value = {inpValue}></input>;
+  return <input onChange={handleChange} value = {inValue}></input>;
 }
 
 export default NumberInput;

@@ -465,7 +465,6 @@ function InputBlock(props: any) {
           <Button 
             variant='default' 
             onClick={() => {
-              openInputModal()
               requestFocus(inputId);
             }} 
             size='compact-xs' 
