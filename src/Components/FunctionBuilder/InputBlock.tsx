@@ -1,7 +1,7 @@
 import React, { ChangeEvent, useCallback, useEffect, useRef, useState} from 'react';
 import { data_types } from "../../engine/datatype_def"
 import { StartAndEnd, Arrow } from './FuncBuilderMain'
-import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, Combobox, CheckIcon, useCombobox, InputBase, Center} from '@mantine/core';
+import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, Combobox, CheckIcon, useCombobox, InputBase, Center, Button} from '@mantine/core';
 import '../../assets/font-awesome/css/all.css'
 import Draggable, { DraggableEvent } from 'react-draggable';
 import DotlessConnectPointsWrapper from "../DotlessConnectPointsWrapper";
@@ -48,8 +48,8 @@ function InputBlock(props: any) {
     editCB, 
     removeCB , 
     setArrows, 
-    updateLoc,
-    forcePopoverRerender
+    openInputModal,
+    requestFocus
   ] = [
     props.blockId, 
     props.inputName, 
@@ -61,8 +61,8 @@ function InputBlock(props: any) {
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.setArrows,
-    props.updateBlkLoc,
-    props.forcePopoverRerender
+    props.openInputModal,
+    props.requestFocus
   ]
   
   const dragRef = useRef<Draggable>(null);
@@ -444,7 +444,7 @@ function InputBlock(props: any) {
       </CardSection>
       <Card.Section>
         <Center inline>
-          <Popover width={410 / typeDivider} opened={showValue} withArrow styles={{
+          {/* <Popover width={410 / typeDivider} opened={showValue} withArrow styles={{
             // dropdown: nodeNameStyle
           }}>
             <Popover.Target>
@@ -461,7 +461,15 @@ function InputBlock(props: any) {
             <Popover.Dropdown>
               {inputValueElement}
             </Popover.Dropdown>
-          </Popover>
+          </Popover> */}
+          <Button 
+            variant='default' 
+            onClick={() => {
+              requestFocus(inputId);
+            }} 
+            size='compact-xs' 
+            fullWidth
+          >Value</Button>
       </Center>
       </Card.Section>
       <CardSection>

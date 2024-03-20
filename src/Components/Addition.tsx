@@ -63,10 +63,10 @@ function Addition() {
   return (
     <>
         <label>
-          First number: <NumberInput handleStateChange={handleChange} ind={0} inValue={0} inputId={0} />
+          First number: <NumberInput handleStateChange={handleChange} inputIdx={0} inValue={0} inputId={null} />
         </label>
         <label>
-          Second number: <NumberInput handleStateChange={handleChange} ind={1} inValue={0} inputId={1} />
+          Second number: <NumberInput handleStateChange={handleChange} inputIdx={1} inValue={0} inputId={null} />
         </label>
         <button onClick={handleAdd}>Add</button>
         <p>Sum: {result}</p>

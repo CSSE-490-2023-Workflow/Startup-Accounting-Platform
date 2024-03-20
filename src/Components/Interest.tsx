@@ -77,16 +77,16 @@ function Interest() {
   return (
     <>
       <label>
-        Initial Amount: <NumberInput handleStateChange={handleChange} ind={0} inValue={0} inputId={0}/>
+        Initial Amount: <NumberInput handleStateChange={handleChange} inputIdx={0} inValue={0} inputId={null}/>
       </label>
       <label>
-        Interest Rate: <NumberInput handleStateChange={handleChange} ind={1} inValue={0} inputId={1}/>
+        Interest Rate: <NumberInput handleStateChange={handleChange} inputIdx={1} inValue={0} inputId={null}/>
       </label>
       {/* <label>
           Start Time: <NumberInput handleStateChange={handleChange} ind={2} inValue={0}/>
         </label> */}
       <label>
-        End Time: <NumberInput handleStateChange={handleChange} ind={2} inValue={0} inputId={2}/>
+        End Time: <NumberInput handleStateChange={handleChange} inputIdx={2} inValue={0} inputId={null}/>
       </label>
       {/* <label>
           Interval: <NumberInput handleStateChange={handleChange} ind={4} inValue={0}/>
