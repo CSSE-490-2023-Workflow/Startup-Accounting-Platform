@@ -35,20 +35,22 @@ interface FuncProps {
   paramNames: string[];
   outputTypes: data_types[][] | data_types[];
   outputNames: string[];
-  blockLocation: [number, number];
+  // blockLocation: [number, number];
   updateBlkCB: (funcBlockId: number, funcType: FuncType | null, funcId: string | null) => void;
   removeBlkCB:  (id: number) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
   addArrow: (value: StartAndEnd) => void;
   removeArrow: (value: string[]) => void;
-  updateBlkLoc: (blkId: number, blockLocation: [number, number]) => void;
+  // updateBlkLoc: (blkId: number, blockLocation: [number, number]) => void;
+  displayWarningCB: (msg: string) => void
 }
 
 const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
 function FuncBlock(props: FuncProps) {
   const [ blkId, funcId, funcType, funcName, funcOptions, paramTypes, paramNames, 
-          outputTypes, outputNames, blockLoc, editCB, removeCB, setArrows, addArrow, removeArrow, updateLoc] = [
+          outputTypes, outputNames, editCB, removeCB, 
+          setArrows, addArrow, removeArrow, displayWarningCB] = [
     props.blockId, 
     props.funcId, 
     props.funcType,
@@ -58,13 +60,12 @@ function FuncBlock(props: FuncProps) {
     props.paramNames, 
     props.outputTypes, 
     props.outputNames,
-    props.blockLocation, 
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.setArrows, 
     props.addArrow,
     props.removeArrow,
-    props.updateBlkLoc
+    props.displayWarningCB
   ]
 
   const dragRef = useRef<Draggable>(null);
@@ -181,7 +182,15 @@ function FuncBlock(props: FuncProps) {
                 if (e.dataTransfer.getData("arrow") === handleId + "") {
                   console.log(e.dataTransfer.getData("arrow"), handleId + "");
                 } else {
+                  console.log("chiikawa")
+                  
                   const refs = { start: e.dataTransfer.getData("arrow"), end: handleId + "" };
+                  // do not add arrow if the arrow starts and ends at the same block
+                  if (refs.start.split('o')[0] == handleId.split('i')[0])  {
+                    displayWarningCB("An arrow cannot start and end at the same block")
+                    return 
+                  }
+                    
                   addArrow(refs);
                   console.log("dropped!", refs);
                 }

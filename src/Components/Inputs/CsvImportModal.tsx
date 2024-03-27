@@ -39,11 +39,6 @@ function CsvImportModal(props: any) {
       const rows_delim = rows.map(row => row.split(','))
       const vals = []
       console.log(rows)
-      if (rows.length == 0 || rows[0].length == 0) {
-        setErrorState(2)
-        parsing.current = false
-        return
-      }
       if (type == data_types.dt_series) {
         //only use the first row
         for (let i = 0; i < rows_delim[0].length; i++) {

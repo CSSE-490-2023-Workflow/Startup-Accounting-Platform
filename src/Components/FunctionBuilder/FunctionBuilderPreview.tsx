@@ -644,13 +644,12 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
         paramNames={blk.paramNames}
         outputTypes={blk.outputTypes}
         outputNames={blk.outputNames}
-        blockLocation={blk.blockLocation}
-        updateBlkLoc={() => {}}
         updateBlkCB={() => {}}
         removeBlkCB={() => {}}
         addArrow={() => {}}
         setArrows={() => {}}
         removeArrow={() => {}}
+        displayWarningCB={() => {}}
       />
     )
     return (
