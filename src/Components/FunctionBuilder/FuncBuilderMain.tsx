@@ -16,12 +16,9 @@ import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 're
 import { AuthContext, database } from "../../auth/firebase";
 import { Button, Dialog, Group, Alert, Text, Modal, FileInput} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
-import SeriesInput from '../Inputs/SeriesInput';
 import { MyDraggable } from './MyDraggable';
-import { IconCheck, IconInfoCircle, IconTexture } from '@tabler/icons-react';
+import { IconAlertCircle, IconCheck, IconInfoCircle } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
-import CsvImportModal from '../Inputs/CsvImportModal';
-import DoubleSeriesInput from '../Inputs/DoubleSeriesInput';
 import InputModal from '../Inputs/InputModal';
 
 interface InputBlockDS {
@@ -205,7 +202,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const [ typeErrMsgs, setTypeErrMsgs ] = useState<TypeErrMsg[]>([])
   const [ disconnErrMsgs, setDisconnErrMsgs ] = useState<DisconnErrMsg[]>([])
   const [isTypeCheckDialogOpen, {open: openTypeCheckDialog, close: closeTypeCheckDialog}] = useDisclosure(false);
+  const [isWarningDialogOpen, {open: openWarningDialog, close: closeWarningDialog}] = useDisclosure(false);
   const [isInputModalOpen, { open: openInputModal, close: closeInputModal }] = useDisclosure(false);
+  const warningMsg = useRef("Warning")
   const [ focusedInput, setFocusedInput ] = useState<number | null>(null)
   //const [ focusedInputVal, setFocusedInputVal ] = useState(null)
 
@@ -216,6 +215,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     openInputModal()
   }
   // const [addedOutputIds, setAddedOutputIds] = useState<number[]>([]);
+
+  const displayWarning = (msg: string) => {
+    warningMsg.current = msg
+    openWarningDialog()
+    setTimeout(closeWarningDialog, 5000)
+  }
 
   const reloadSavedCustomFunctions = useCallback(() => {
     if (currentUser) {
@@ -228,15 +233,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         setCustomFunctions(tmp);
         allowRenderBlocks.current = true;
       })
-      setFuncBlocks(funcBlocks => {
-        for (const funcBlk of funcBlocks) {
-          if (funcBlk.funcId == props.functionId) {
-            console.log(funcBlk, props.functionId);
-            setFuncBlockFunction(funcBlk, props.functionId);
-          }
-        }
-        return [...funcBlocks];
-      })
+      // setFuncBlocks(funcBlocks => {
+      //   for (const funcBlk of funcBlocks) {
+      //     if (funcBlk.funcId == props.functionId) {
+      //       console.log(funcBlk, props.functionId);
+      //       setFuncBlockFunction(funcBlk, props.functionId);
+      //     }
+      //   }
+      //   return [...funcBlocks];
+      // })
     }
   }, [currentUser])
 
@@ -446,7 +451,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         const startBlk: InputBlockDS = blkMap.get(startBlkId) as InputBlockDS;
         editOutputBlock(endBlkId, null, startBlk.inputType, null);
       } else if (isFuncBlock(startBlkId)) { //start block is a function block
-        const startBlk: FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
+        // const startBlk: FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
         // editOutputBlock(endBlkId, null, startBlk.outputTypes[startNodeIdx - 1], null); // change from 1-based to 0-based indexing
       }
     }
@@ -463,7 +468,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         const startBlk: InputBlockDS = blkMap.get(startBlkId) as InputBlockDS;
         editOutputBlock(endBlkId, null, startBlk.inputType, null);
       } else if (isFuncBlock(startBlkId)) { //start block is a function block
-        const startBlk: FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
+        // const startBlk: FuncBlockDS = blkMap.get(startBlkId) as FuncBlockDS;
         // editOutputBlock(endBlkId, null, startBlk.outputTypes[startNodeIdx - 1], null); // change from 1-based to 0-based indexing
       }
     }
@@ -654,6 +659,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
         if (isInputBlock(startBlkId)) {
           const arrowStartType: data_types = (blkMap.get(startBlkId) as InputBlockDS).inputType
+          console.log(arrow)
           updateArrowEndType(arrowStartType, endBlkId, endNodeIdx)
           localArrows.delete(arrow)
         } else if (isFuncBlock(startBlkId)) {
@@ -668,7 +674,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
       }
       if (localArrows.size == sizeAtStart) {
-        throw new Error(`infinite loop at runTypeCheck. Plz let Qingyuan know 'cause this is not supposed to happen`)
+        throw new Error(`infinite loop at runTypeCheck`)
       }
       
     }
@@ -677,13 +683,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     // console.log(locTypeErrMsgs)
     if (locTypeErrMsgs.length == 0) {
       openTypeCheckDialog()
+      setTypeErrMsgs(msgs => [])
       setTimeout(closeTypeCheckDialog, 3000)
+      return outputsObjs
     }
     setTypeErrMsgs(msgs => locTypeErrMsgs)
     //update types
     setOutputBlocks(blks => [...blks])
-
-    return outputsObjs
+    return -1
+    
     
   }, [blkMap, arrows])
 
@@ -702,14 +710,26 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     for (const [i, v] of paramMap.entries()) {
       console.log('param:', i, v.value)
     }
-    console.log(savedFunction)
-    const res: Map<number, ioObj> = func_interpreter_new(JSON.stringify(savedFunction), paramMap)
+    
+    let res: Map<number, ioObj> = new Map()
+
+    try {
+      res = func_interpreter_new(JSON.stringify(savedFunction), paramMap)
+    } catch (e: any) {
+      displayWarning((e as Error).message)
+      return 
+    }
+    
     //setOutputMap(res);
     console.log('Evaluation completed. Outputs of the custom function are: ', res);
     setEvalResult(new Map(res));
-    setOutputStore([res]);
-    console.log('complete. Outputs of the custom function are: ', res);
-  }, [inputBlocks, outputBlocks, funcBlocks, arrows, savedFunction]);
+    setOutputStore([res ]);
+  }, [savedFunction]);
+
+  const downloadFunction = useCallback(() => {
+    var blob = new Blob([JSON.stringify(savedFunction)], { type: "application/json; charset=utf-8" });
+    saveAs(blob, "hello world.json");
+  }, [savedFunction])
 
   const saveFunction = useCallback(() => {
     
@@ -740,9 +760,22 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       outputs: outputObjs
     }
 
+    // run an evaluation to make sure there's no error
+    const paramMap : Map<number, ioObj> = new Map()
+    for (let [idx, blk] of inputBlkIdxMap.entries()) {
+      paramMap.set(idx, {name: blk.inputName, value: blk.val})
+    }
 
-    var blob = new Blob([JSON.stringify(res)], { type: "application/json; charset=utf-8" });
-    saveAs(blob, "hello world.json");
+    const tmp = new Set()
+    tmp.add(props.functionId)
+    try {
+      func_interpreter_new(JSON.stringify(res), paramMap, tmp)
+    } catch(e: any) {
+      displayWarning((e as Error).message)
+      return 
+    }
+
+
     setSavedFunction(res);
     console.log('saved func', res);
 
@@ -1220,6 +1253,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log(f.param_types)
     } else { // is custom function
       console.log('setting to custom function', blk)
+      console.log(customFunctions)
       const f: CustomFunctionDBRecord | undefined = customFunctions.get(funcId);
       if (f == undefined) {
         throw new Error(`Bad custom function id ${funcId}`);
@@ -1366,6 +1400,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const customFuncOptions: funcInfo[] = Array.from(customFunctions.values()).map(
     (f: CustomFunctionDBRecord) => {
       return { id: f.id, name: f.name }
+    }
+  ).filter(
+    (f: any) => {
+      return f.id != props.functionId
     }
   )
 
@@ -1582,13 +1620,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         paramNames={blk.paramNames}
         outputTypes={blk.outputTypes}
         outputNames={blk.outputNames}
-        blockLocation={blk.blockLocation}
-        updateBlkLoc={updateFuncBlkLoc}
         updateBlkCB={editFuncBlock}
         removeBlkCB={removeFuncBlock}
         addArrow={addArrow}
         setArrows={setArrows}
         removeArrow={removeArrow}
+        displayWarningCB={displayWarning}
       />
     )
     return (
@@ -1713,6 +1750,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         defaultAttr={["new output", undefined, [200,200]]} />
       <Button variant='default' onClick={runTypeCheck}> run type check</Button>
       <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
+      <Button id='download-custom-function' variant='default' onClick={() => { downloadFunction() }}>Download as JSON</Button>
       <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
       <h3>Function Builder</h3>
       {inputBlocksList}
@@ -1738,13 +1776,26 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       <Dialog opened={isTypeCheckDialogOpen} withCloseButton onClose={closeTypeCheckDialog} size="lg" radius="md" 
         transitionProps={{ transition: 'slide-left', duration: 100 }} withBorder
         styles={
-          {root: {"background": "#33FF33", "max-width": "300px"}}
+          {root: {"background": "#66FF66", "max-width": "300px"}}
         }  
       >
           <Group>
               <IconCheck/>
               <Text size="sm" fw={500}>
                   {"Type check passed"}
+              </Text>
+          </Group>
+      </Dialog>
+      <Dialog opened={isWarningDialogOpen} withCloseButton onClose={closeWarningDialog} size="lg" radius="md" 
+        transitionProps={{ transition: 'slide-left', duration: 100 }} withBorder
+        styles={
+          {root: {"background": "#FF6666", "max-width": "500px"}}
+        }  
+      >
+          <Group>
+              <IconAlertCircle/>
+              <Text size="sm" fw={500}>
+                  {warningMsg.current}
               </Text>
           </Group>
       </Dialog>

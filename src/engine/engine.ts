@@ -7,10 +7,10 @@
 //     operations: [9, 0, 2, 2, 4, 1, 0, 1],
 // }
 
-import {data_types, declared_type_verifier, is_integer, is_number} from './datatype_def'
-import type {func_pt, func_pt_series, series, allowed_stack_components, custom_function, builtin_function} from './datatype_def'
+import {data_types} from './datatype_def'
+import type {allowed_stack_components, custom_function} from './datatype_def'
 import { id_to_builtin_func } from './builtin_func_def';
-import { FuncArgError } from './error_def';
+import { NestedCallError } from './error_def';
 
 let func_2 : custom_function = {
     func_name : 'test_func2',
@@ -144,14 +144,15 @@ export function func_interpreter_new_caller(func_str : string, args: Map<number,
  *  ...
  * }
  * a builtin function evaluation will return a LIST containing all outputs
- * When use output = some integer, both function types will return a plain value
+ * When output = some integer, both builtin function and custom function will return a plain value
  * NOTE: this function is designed for evaluting a custom function
  * @param func_str json string representation of the custom function
- * @param ret a map from output index to {name : outputName, value : outputValue}. Will be filled in the course of evaluation
+ * 
  * @param args a map from input index to {name : inputName, value : inputValue}
  * @returns Map<number, ioObj> if custom function, allowed_stack_components[] if builtin function, an allowed_stack_component otherwise
+ * @throws NestedCallError if there is a nested function call (i.e. if a function calls itself, either directly or through some function it uses)
  */
-const func_interpreter_new : any = function(func_str: string, args: Map<number, ioObj>) {
+const func_interpreter_new : any = function(func_str: string, args: Map<number, ioObj>, funcCallStack: Set<string>) {
     //console.log(func_str)
     const func_content = JSON.parse(func_str);
     if (func_content.type == 'custom_function') {
@@ -162,7 +163,7 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         let counter : number = 1;
         for (const func_param of func_content['outputs']) {
             // This should return null
-            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), args);
+            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), args, funcCallStack);
             //console.log(`evalution of output no.${counter} finished. Got ${eval_res}`);
             outputDict.set(counter, { name : func_content.outputNames[counter - 1], value : eval_res})
             counter++;
@@ -179,15 +180,24 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
             throw new Error('useOutput should either be the index of the output to use, or \'all\' to use all outputs');
         }
     } else if (func_content.type == 'custom_function_call') {
+        console.log('in custom function call')
         const paramDict : Map<number, ioObj> = new Map();
         let counter : number = 1;
+        console.log(funcCallStack)
+        if (funcCallStack.has(func_content.functionId)) {
+            throw new NestedCallError("Nested function call. Please make sure that this function is not calling itself through the function it uses")
+        } else {
+            funcCallStack.add(func_content.functionId)
+        }
         for (const param of func_content.params) {
-            const paramValue : any = func_interpreter_new(JSON.stringify(param), args);
+            const paramValue : any = func_interpreter_new(JSON.stringify(param), args, funcCallStack);
             paramDict.set(counter, {name : func_content.paramNames[counter - 1], value : paramValue});
             counter++;
         } 
-        const outputDict : Map<number, ioObj> = func_interpreter_new(func_content.body, paramDict);
-        //console.log(outputDict);
+        const outputDict : Map<number, ioObj> = func_interpreter_new(func_content.body, paramDict, funcCallStack);
+        
+
+        // Logics for selecting what output(s) to use
         if (Number.isInteger(func_content['useOutput'])) {
             if (func_content['useOutput'] > outputDict.size) {
                 throw new Error(`Function interpreter: output index ${func_content['useOutput']} out of range for ${outputDict.size} outputs`);
@@ -200,8 +210,9 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         } else {
             throw new Error('useOutput should either be the index of the output to use, or \'all\' to use all outputs');
         }
+
     } else if (func_content['type'] == 'output') {
-        const outputEvalRes : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), args);
+        const outputEvalRes : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), args, funcCallStack);
         //console.log('evaluated output', outputEvalRes);
         //ret.set(func_content['outputIdx'], { name: func_content['outputName'], value: outputEvalRes });
         return outputEvalRes;
@@ -209,14 +220,13 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         let param_arr : allowed_stack_components[] = [];
         for (const func_param of func_content['params']) {
         
-            const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), args);
+            const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), args, funcCallStack);
             //console.log('evaluting', func_content['functionName'], ', param is:', func_param, ', evaluated param is:', func_param_eval_res);    
             param_arr.push(func_param_eval_res);
         }
         const func_eval_res : allowed_stack_components[] = id_to_builtin_func[func_content['functionId']].func(...param_arr);
-        //console.log(name_to_builtin_func[func_content['functionName']].func)
-        //console.log('evaluated', func_content['functionName'], ' with params ', param_arr, '. Got result ', new Array(func_eval_res));
-        //return func_eval_res;
+        
+        // Logics for selecting what output(s) to use
         if (Number.isInteger(func_content['useOutput'])) {
             if (func_content['useOutput'] > func_eval_res.length) {
                 throw new Error(`Function interpreter: output index ${func_content['useOutput']} out of range for ${func_eval_res.length} outputs`);
@@ -242,7 +252,7 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         }
     } else {
         //console.log(func_content)
-        throw new Error(`Unrecognized function component type. See last log msg.`);
+        throw new Error(`Unrecognized function component type`);
     } 
 
 }

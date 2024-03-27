@@ -1,3 +1,4 @@
+import { useParams } from 'react-router-dom'
 import { func_interpreter_new } from '../engine/engine'
 import * as add from './json/hello world (20).json'
 import * as sub from './json/hello world (21).json'
@@ -8,6 +9,7 @@ import * as addSub from './json/hello world (25).json'
 import * as subMul from './json/hello world (26).json'
 import * as subMulDiv from './json/hello world (27).json'
 import * as subMulDivTwoOut from './json/hello world (28).json'
+import * as seriesAdd from './json/hello world (3).json'
 import { assert } from 'console'
 
 /**
@@ -265,6 +267,33 @@ function testSubMulDivTwoOutputs() {
   }
 }
 
+function testSeriesAdd() {
+  const runs = 10
+  let run = 0
+  while (run < runs) {
+    const p1 = []
+    const p2 = []
+    const params = new Map()
+    for (let i = 0; i < 10; i++) {
+      p1.push(Math.random() * 100)
+      p2.push(Math.random() * 100)
+    }
+    params.set(1, {
+      name : "new input",
+      value : p1
+    })
+    params.set(2, {
+      name : "new input",
+      value : p2
+    })
+    const res = func_interpreter_new(JSON.stringify(seriesAdd), params)
+    for (let i = 0; i < 10; i++) {
+      assert(res.get(1).value[i] == p1[i] + p2[i])
+    }
+    run += 1
+  }
+}
+
 
 
 
@@ -280,6 +309,7 @@ function runAll() {
   testSubMul()
   testSubMulDiv()
   testSubMulDivTwoOutputs()
+  testSeriesAdd()
 }
 
 runAll()

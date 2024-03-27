@@ -10,6 +10,7 @@ var addSub = require("./json/hello world (25).json");
 var subMul = require("./json/hello world (26).json");
 var subMulDiv = require("./json/hello world (27).json");
 var subMulDivTwoOut = require("./json/hello world (28).json");
+var seriesAdd = require("./json/hello world (3).json");
 var console_1 = require("console");
 /**
  * JSON representations are generated using function builder
@@ -189,6 +190,9 @@ function testSubMul() {
         run += 1;
     }
 }
+/**
+ * This test case contains nested custom function
+ */
 function testSubMulDiv() {
     var runs = 10;
     var run = 0;
@@ -252,6 +256,32 @@ function testSubMulDivTwoOutputs() {
         run += 1;
     }
 }
+function testSeriesAdd() {
+    var runs = 10;
+    var run = 0;
+    while (run < runs) {
+        var p1 = [];
+        var p2 = [];
+        var params = new Map();
+        for (var i = 0; i < 10; i++) {
+            p1.push(Math.random() * 100);
+            p2.push(Math.random() * 100);
+        }
+        params.set(1, {
+            name: "new input",
+            value: p1
+        });
+        params.set(2, {
+            name: "new input",
+            value: p2
+        });
+        var res = (0, engine_1.func_interpreter_new)(JSON.stringify(seriesAdd), params);
+        for (var i = 0; i < 10; i++) {
+            (0, console_1.assert)(res.get(1).value[i] == p1[i] + p2[i]);
+        }
+        run += 1;
+    }
+}
 function runAll() {
     testAdd();
     testSub();
@@ -262,5 +292,6 @@ function runAll() {
     testSubMul();
     testSubMulDiv();
     testSubMulDivTwoOutputs();
+    testSeriesAdd();
 }
 runAll();

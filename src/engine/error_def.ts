@@ -3,3 +3,9 @@ export class FuncArgError extends Error {
         super(msg)
     }
 }
+
+export class NestedCallError extends Error {
+    constructor(msg: string) {
+        super(msg)
+    }
+}
