@@ -21,15 +21,6 @@ import { IconAlertCircle, IconCheck, IconInfoCircle } from '@tabler/icons-react'
 import { useDisclosure } from '@mantine/hooks';
 import InputModal from '../Inputs/InputModal';
 
-interface InputBlockDS {
-  blockId: number
-  inputName: string
-  inputType: data_types
-  inputIdx: number
-  val: any
-  blockLocation: [number, number]
-}
-
 interface Pair {
   x: number
   y: number
@@ -49,6 +40,15 @@ interface ioObj {
 interface ioObj {
   name: string,
   value: allowed_stack_components
+}
+
+interface InputBlockDS {
+  blockId: number
+  inputName: string
+  inputType: data_types
+  inputIdx: number
+  val: any
+  blockLocation: [number, number]
 }
 
 interface FuncBlockDS {
@@ -332,7 +332,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
                 //param = param as JSONInput;
                 // if(!unique.has(param.inputName)) {
                 //   unique.add(param.inputName);
-                addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
+                addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx, param.inputVal);
                 //}
                 addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
             } else if (isCustomFunctionCall(param)) {
@@ -766,6 +766,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       paramMap.set(idx, {name: blk.inputName, value: blk.val})
     }
 
+    // try to evaluate and catch any errors
     const tmp = new Set()
     tmp.add(props.functionId)
     try {
@@ -824,6 +825,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         inputName: tailBlk.inputName,
         inputType: tailBlk.inputType,
         inputIdx: tailBlk.inputIdx,
+        inputVal: tailBlk.val,
         inputBlkLoc: tailBlk.blockLocation,
         blockId: tailBlk.blockId
       }
@@ -872,32 +874,34 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   /**
    * Input block Logics
    */
-  const addInputBlock = useCallback((inputName: string, inputType: data_types, inputBlkLoc: [number, number], blockId?: number, blockIdx?: number) => {
+  const addInputBlock = useCallback(
+    (
+      inputName: string, 
+      inputType: data_types, 
+      inputBlkLoc: [number, number], 
+      blockId?: number, 
+      blockIdx?: number,
+      blockVal?: allowed_stack_components) => {
     const newId = blockId ? blockId : currInputBlockId + 1;
     const newIdx = blockIdx ? blockIdx : inputBlkIdxMap.size + 1;
-    console.log("index", inputBlkIdxMap);
-    console.log("ID", currInputBlockId);
+    // console.log("index", inputBlkIdxMap);
+    // console.log("ID", currInputBlockId);
+    let defaultVal : allowed_stack_components = 0
+    if (inputType == data_types.dt_series) {
+      defaultVal = [0, 0, 0, 0]
+    } else if (inputType == data_types.dt_double_series) {
+      defaultVal = [[1, 0], [2, 0], [3, 0], [4, 0], [5, 0]]
+    }
     setCurrInputBlockId(id => id + 1);
     let newBlock: InputBlockDS = {
       blockId: newId,
       inputName: inputName,
       inputType: inputType,
       inputIdx: newIdx,
-      val: 0,
+      val: blockVal ? blockVal : defaultVal,
       blockLocation: inputBlkLoc
     }
-    if(inputType == data_types.dt_series) {
-      newBlock = {
-        blockId: newId,
-        inputName: inputName,
-        inputType: inputType,
-        inputIdx: newIdx,
-        val: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        blockLocation: inputBlkLoc
-      }
-    }
-   
-
+  
     setInputBlocks(inputBlocks => { console.log('in', newBlock); return [...inputBlocks, newBlock] })
 
     setBlkMap(blkMap => { blkMap.set(newId, newBlock); return new Map(blkMap) });
