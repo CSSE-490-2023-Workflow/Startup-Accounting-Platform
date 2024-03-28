@@ -268,7 +268,7 @@ export class FirestoreRepository {
                     rawJson: body.body
                 }
                 const docRefId : any = await this.createFunction(tmp);
-                body.functionId = docRefId;
+                body.functionId = docRefId; 
                 // console.log('in custom function call.')
                 // console.log(tmp)
                 if (!addedFunctions.has(srcFunction)) {

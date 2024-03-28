@@ -332,7 +332,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
                 //param = param as JSONInput;
                 // if(!unique.has(param.inputName)) {
                 //   unique.add(param.inputName);
-                addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx);
+                addInputBlock(param.inputName, param.inputType, param.val, param.inputBlkLoc, param.blockId, param.inputIdx);
                 //}
                 addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
             } else if (isCustomFunctionCall(param)) {
@@ -344,7 +344,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
 
       if (rawJSON === "{}") {
-          rawJSON = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
+          rawJSON = '{"type":"custom_function","paramNames":[],"paramTypes":[],"vals":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
       }
 
       //const data: JSONCustomFunction = JSON.parse(rawJSON);
@@ -755,6 +755,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       useOutput: 'all',
       paramNames: inputBlksSorted.map(iBlk => iBlk.inputName),
       paramTypes: inputBlksSorted.map(iBlk => iBlk.inputType),
+      paramValues: inputBlksSorted.map(iBlk => iBlk.val),
       outputNames: outputBlksSorted.map(oBlk => oBlk.outputName),
       outputTypes: outputBlksSorted.map(oBlk => oBlk.outputType),
       outputs: outputObjs
@@ -824,6 +825,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         inputName: tailBlk.inputName,
         inputType: tailBlk.inputType,
         inputIdx: tailBlk.inputIdx,
+        val: tailBlk.val,
         inputBlkLoc: tailBlk.blockLocation,
         blockId: tailBlk.blockId
       }
@@ -872,7 +874,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   /**
    * Input block Logics
    */
-  const addInputBlock = useCallback((inputName: string, inputType: data_types, inputBlkLoc: [number, number], blockId?: number, blockIdx?: number) => {
+  const addInputBlock = useCallback((inputName: string, inputType: data_types, inputVal: any, inputBlkLoc: [number, number], blockId?: number, blockIdx?: number) => {
     const newId = blockId ? blockId : currInputBlockId + 1;
     const newIdx = blockIdx ? blockIdx : inputBlkIdxMap.size + 1;
     console.log("index", inputBlkIdxMap);
@@ -883,7 +885,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       inputName: inputName,
       inputType: inputType,
       inputIdx: newIdx,
-      val: 0,
+      val: inputVal ?? 0,
       blockLocation: inputBlkLoc
     }
     if(inputType == data_types.dt_series) {
@@ -892,7 +894,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         inputName: inputName,
         inputType: inputType,
         inputIdx: newIdx,
-        val: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        val: inputVal ?? [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        blockLocation: inputBlkLoc
+      }
+    } else {
+      newBlock = {
+        blockId: newId,
+        inputName: inputName,
+        inputType: inputType,
+        inputIdx: newIdx,
+        val: inputVal ?? [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]],
         blockLocation: inputBlkLoc
       }
     }
