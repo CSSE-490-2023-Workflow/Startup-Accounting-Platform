@@ -76,6 +76,7 @@ interface builtin_function {
     // TODO add an id
     param_count : number;
     func_name: string;
+    description: string;
     param_types: data_types[][];
     param_names: string[];
     output_types: data_types[][];

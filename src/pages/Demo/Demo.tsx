@@ -1,10 +1,6 @@
 import { useCallback, useState } from 'react';
 import './Demo.css';
 import PageButton from '../../Components/PageButton';
-import Addition from '../../Components/Addition';
-import Interest from '../../Components/Interest';
-import Calculator from '../../Components/Calculator';
-import CashFlow from '../../Components/CashFlow';
 import FuncBuilderMain from '../../Components/FunctionBuilder/FuncBuilderMain';
 
 function Demo() {
@@ -21,10 +17,10 @@ function Demo() {
         <PageButton onClick={handlePageChange} value={1} name="Interest Page" />
         <PageButton onClick={handlePageChange} value={2} name="Calculator Page" />
         <PageButton onClick={handlePageChange} value={3} name="Cash Flow Page" />
-        {page == 0 && <Addition/>}
+        {/* {page == 0 && <Addition/>}
         {page == 1 && <Interest/>}
         {page == 2 && <Calculator/>}
-        {page == 3 && <CashFlow/>}
+        {page == 3 && <CashFlow/>} */}
       </header>
     </div>
   );

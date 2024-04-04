@@ -5,7 +5,7 @@ import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
 import '../../Styles/FuncBuilderBlk.css'
-import { func_interpreter_new, func_interpreter_new_caller } from '../../engine/engine'
+import { func_interpreter_new } from '../../engine/engine'
 //import '../../lib/font-awesome-4.7.0/css/font-awesome.min.css'
 import * as utils from './utils.json'
 import OutputBlock from './OutputBlock';
@@ -14,7 +14,7 @@ import Xarrow from 'react-xarrows';
 import NumberInput from '../Inputs/NumberInput';
 import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
-import { Button, Dialog, Group, Alert, Text, Modal, FileInput} from "@mantine/core";
+import { Button, Dialog, Group, Alert, Text, Modal, FileInput, Tooltip} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
 import { MyDraggable } from './MyDraggable';
 import { IconAlertCircle, IconCheck, IconInfoCircle } from '@tabler/icons-react';
@@ -201,10 +201,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const [ typeErrMsgs, setTypeErrMsgs ] = useState<TypeErrMsg[]>([])
   const [ disconnErrMsgs, setDisconnErrMsgs ] = useState<DisconnErrMsg[]>([])
-  const [isTypeCheckDialogOpen, {open: openTypeCheckDialog, close: closeTypeCheckDialog}] = useDisclosure(false);
+  const [isSuccessDialogOpen, {open: openSuccessDialog, close: closeSuccessDialog}] = useDisclosure(false);
   const [isWarningDialogOpen, {open: openWarningDialog, close: closeWarningDialog}] = useDisclosure(false);
   const [isInputModalOpen, { open: openInputModal, close: closeInputModal }] = useDisclosure(false);
   const warningMsg = useRef("Warning")
+  const successMsg = useRef("Success")
   const [ focusedInput, setFocusedInput ] = useState<number | null>(null)
   //const [ focusedInputVal, setFocusedInputVal ] = useState(null)
 
@@ -220,6 +221,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     warningMsg.current = msg
     openWarningDialog()
     setTimeout(closeWarningDialog, 5000)
+  }
+
+  const displaySuccess = (msg: string) => {
+    successMsg.current = msg
+    openSuccessDialog()
+    setTimeout(closeSuccessDialog, 3000)
   }
 
   const reloadSavedCustomFunctions = useCallback(() => {
@@ -248,7 +255,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   useEffect(() => {
     if (allowRenderBlocks.current && !hasRenderedBlocks.current) {
       hasRenderedBlocks.current = true
-      console.log('custom function triggered')
       if (props.functionRawJson) {
         loadBlocksFromJSON(props.functionRawJson)
       }
@@ -270,22 +276,32 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       newArrow.current = null
     }
   }, [newArrow.current])
-  
-  // re-render arrows
-  const refreshArrows = useCallback(() => {
-    setArrows(arrows => arrows.filter(arrow => {
-      const start : string = arrow.start
-      const end : string = arrow.end
-      console.log('rerender arrow')
-      console.log(arrow)
-      if (document.getElementById(start) == null || 
-        document.getElementById(end) == null){
-        console.log('is null')
-        return false
+
+  /**
+   * refresh arrows when block map is updated
+   */
+  useEffect(() => {
+    setArrows(arrows => arrows.filter(v => {
+      const startId = Number(v.start.split('o')[0])
+      const startNode = Number(v.start.split('o')[1])
+      const endId = Number(v.end.split('i')[0])
+      const endNode = Number(v.end.split('i')[1])
+      if (isFuncBlock(startId)){
+        
+        console.log(blkMap.get(startId))
+        if (blkMap.get(startId) != undefined && startNode > (blkMap.get(startId) as FuncBlockDS).outputTypes.length) {
+          return false
+        }
+      }
+      if (isFuncBlock(endId)) {
+        if (blkMap.get(endId) != undefined && endNode > (blkMap.get(endId) as FuncBlockDS).paramTypes.length) {
+          return false
+        }
       }
       return true
     }))
-  }, [blkMap])
+  }, [funcBlocks])
+
   
 
   // function isBuiltinFunction(param: any): param is JSONBuiltinFunction {
@@ -323,20 +339,29 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     const unique = new Set<string>();
     const loadParams = (parentBlockId: number, params: any) => {
         for (let [paramIndex, param] of params.entries()) {
+            
             if (isBuiltinFunction(param)) {
-                //param = param as JSONBuiltinFunction;
+              //param = param as JSONBuiltinFunction;
+              if (!unique.has(param.blockId)) {
+                unique.add(param.blockId)
                 addFuncBlock(param.functionId, FuncType.builtin, param.funcBlkLoc, param.blockId);
-                addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
-                loadParams(param.blockId, param.params);
+              }
+              console.log({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)})
+              addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+              loadParams(param.blockId, param.params);
             } else if (isInput(param)) {
-                //param = param as JSONInput;
-                // if(!unique.has(param.inputName)) {
-                //   unique.add(param.inputName);
-                addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx, param.inputVal);
-                //}
-                addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+              if (!unique.has(param.blockId)) {
+                unique.add(param.blockId)
+                addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx, param.inputVal);  
+              }
+              unique.add(param.blockId)
+              addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
             } else if (isCustomFunctionCall(param)) {
-              addFuncBlock(param.functionId, FuncType.custom, param.blockLocation, param.blockId);
+              if (!unique.has(param.blockId)) {
+                unique.add(param.blockId)
+                addFuncBlock(param.functionId, FuncType.custom, param.blockLocation, param.blockId);
+              }
+              unique.add(param.blockId)
               addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
               loadParams(param.blockId, param.params)
             }
@@ -365,8 +390,17 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
 
   const addArrow = useCallback((v: StartAndEnd) => {
-    console.log("ARROW", v);
-    setArrows(oldArrows => [...oldArrows, v]);
+    let isValid = true
+    for (const a of arrows) {
+      if (a.end == v.end) {
+        isValid = false
+        displayWarning("Only one arrow can be connected to an input node")
+      }
+    }
+    if (isValid) {
+      setArrows(oldArrows => [...oldArrows, v]);
+    }
+    
     /**
      * tail(start) block  ------>   head(end) block
      */
@@ -374,6 +408,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     // If the arrow goes to an output block, we need to set to type of it
     newArrow.current = v
   }, [arrows, blkMap]);
+
+
 
 
   const removeArrowsAttachedToBlk = useCallback((blkId: number) => {
@@ -573,8 +609,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         return 'N'
       } else if (type == data_types.dt_series) {
         return 'S'
-      } else {
-        return 'U'
+      } else if (type == data_types.dt_double_series) {
+        return 'DS'
       }
     }
 
@@ -674,7 +710,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
       }
       if (localArrows.size == sizeAtStart) {
-        throw new Error(`infinite loop at runTypeCheck`)
+        displayWarning(`infinite loop at runTypeCheck`)
+        return
       }
       
     }
@@ -682,9 +719,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     // console.log(funcBlocks)
     // console.log(locTypeErrMsgs)
     if (locTypeErrMsgs.length == 0) {
-      openTypeCheckDialog()
-      setTypeErrMsgs(msgs => [])
-      setTimeout(closeTypeCheckDialog, 3000)
+      displaySuccess("Type check passed")
       return outputsObjs
     }
     setTypeErrMsgs(msgs => locTypeErrMsgs)
@@ -697,6 +732,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
 
   const [outputStore, setOutputStore] = useState<Map<number, ioObj>[]>([])
+
+  /**
+   * Saves and evaluates the current function
+   * @returns -1 if any error occurs
+   */
   const evaluateFunction = useCallback(() => {
     const paramMap: Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
@@ -712,9 +752,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
     
     let res: Map<number, ioObj> = new Map()
-
+    //res = func_interpreter_new(JSON.stringify(savedFunction), paramMap, new Set<string>, customFunctions)
     try {
-      res = func_interpreter_new(JSON.stringify(savedFunction), paramMap)
+      res = func_interpreter_new(JSON.stringify(savedFunction), paramMap, new Set<string>, customFunctions)
     } catch (e: any) {
       displayWarning((e as Error).message)
       return 
@@ -722,8 +762,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     
     //setOutputMap(res);
     console.log('Evaluation completed. Outputs of the custom function are: ', res);
+    displaySuccess("Evaluation completed")
     setEvalResult(new Map(res));
-    setOutputStore([res ]);
+    setOutputStore([res]);
   }, [savedFunction]);
 
   const downloadFunction = useCallback(() => {
@@ -731,12 +772,16 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     saveAs(blob, "hello world.json");
   }, [savedFunction])
 
+  /**
+   * Saves the current function
+   * @returns -1 if any error occurs
+   */
   const saveFunction = useCallback(() => {
     
     const outputObjs = runTypeCheck()
 
     if (outputObjs == -1) { //there is disconnection
-      return
+      return -1
     } 
 
 
@@ -767,24 +812,27 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
 
     // try to evaluate and catch any errors
-    const tmp = new Set()
+    const tmp = new Set<string>()
     tmp.add(props.functionId)
+    console.log(customFunctions)
+    //func_interpreter_new(JSON.stringify(res), paramMap, tmp, customFunctions)
     try {
-      func_interpreter_new(JSON.stringify(res), paramMap, tmp)
+      func_interpreter_new(JSON.stringify(res), paramMap, tmp, customFunctions)
     } catch(e: any) {
       displayWarning((e as Error).message)
-      return 
+      return -1
     }
 
 
     setSavedFunction(res);
     console.log('saved func', res);
-
     database.updateFunction(props.functionId, { rawJson: JSON.stringify(res) });
     reloadSavedCustomFunctions();
+    return 0;
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId, disconnErrMsgs])
+
   /**
-   * Given the node id the head of an arrow is connected to, backtrace the path and return it
+   * Given the node id of an arrow's head, backtrace the path and return it
    * @param arrowHead
    */
   const tracePath = function (arrowHead: string, disconnErrMsgs: DisconnErrMsg[]) {
@@ -862,7 +910,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             blockLocation: tailBlk.blockLocation,
             blockId: tailBlk.blockId,
             params: params,
-            body: (customFunctions.get(tailBlk.funcId) as CustomFunctionDBRecord).rawJson
+            //body: (customFunctions.get(tailBlk.funcId) as CustomFunctionDBRecord).rawJson
           }
         }
       }
@@ -884,8 +932,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       blockVal?: allowed_stack_components) => {
     const newId = blockId ? blockId : currInputBlockId + 1;
     const newIdx = blockIdx ? blockIdx : inputBlkIdxMap.size + 1;
-    // console.log("index", inputBlkIdxMap);
-    // console.log("ID", currInputBlockId);
+    
+    // Do not add duplicates
+    if (blockId != undefined && blkMap.has(blockId)) {
+      return
+    }
     let defaultVal : allowed_stack_components = 0
     if (inputType == data_types.dt_series) {
       defaultVal = [0, 0, 0, 0]
@@ -1612,6 +1663,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //   })
 
   const funcBlocksList = funcBlocks.map((blk: FuncBlockDS) => {
+    const desc = blk.funcType == FuncType.builtin ? id_to_builtin_func[blk.funcId].description : ""
     const element = (
       <FuncBlock
         key={blk.blockId}
@@ -1624,6 +1676,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         paramNames={blk.paramNames}
         outputTypes={blk.outputTypes}
         outputNames={blk.outputNames}
+        description={desc}
         updateBlkCB={editFuncBlock}
         removeBlkCB={removeFuncBlock}
         addArrow={addArrow}
@@ -1752,11 +1805,15 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         defaultAttr={['101', FuncType.builtin, [200,200]]} />
       <AddBlockButton onClick={addOutputBlock} buttonText="Add Output Block" 
         defaultAttr={["new output", undefined, [200,200]]} />
-      <Button variant='default' onClick={runTypeCheck}> run type check</Button>
-      <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
+      <Button id="run-type-check" variant='default' onClick={runTypeCheck}>Run Type Check</Button>
+      <Tooltip label="Only blocks connected to an output will be saved" color='gray'>
+        <Button id='save-custom-function' variant='default' onClick={() => { saveFunction() }}>Save</Button>
+      </Tooltip>
       <Button id='download-custom-function' variant='default' onClick={() => { downloadFunction() }}>Download as JSON</Button>
-      <Button id='eval-custom-function' variant='default' onClick={() => { evaluateFunction() }}>Evaluate</Button>
-      <h3>Function Builder</h3>
+      <Tooltip multiline label="N = Number, S = Series, DS = Double Series" color='gray'>
+        <Button id='eval-custom-function' variant='default' onClick={() => { const res = saveFunction(); if (res != -1) evaluateFunction() }}>Evaluate</Button>
+      </Tooltip>
+      
       {inputBlocksList}
       {funcBlocksList}
       {outputBlocksList}
@@ -1777,7 +1834,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         </div>
       </div> */}
       {errMsgsDisplay}
-      <Dialog opened={isTypeCheckDialogOpen} withCloseButton onClose={closeTypeCheckDialog} size="lg" radius="md" 
+      <Dialog opened={isSuccessDialogOpen} withCloseButton onClose={closeSuccessDialog} size="lg" radius="md" 
         transitionProps={{ transition: 'slide-left', duration: 100 }} withBorder
         styles={
           {root: {"background": "#66FF66", "max-width": "300px"}}
@@ -1786,7 +1843,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           <Group>
               <IconCheck/>
               <Text size="sm" fw={500}>
-                  {"Type check passed"}
+                  {successMsg.current}
               </Text>
           </Group>
       </Dialog>
