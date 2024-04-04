@@ -85,6 +85,7 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
                 }
                 for (let i = 0; i < ser1.length; i++) {
                     ser3[i] = ser1[i] * ser2[i];
+                    console.log(ser3)
                 }
                 return [ser3];
             } else {

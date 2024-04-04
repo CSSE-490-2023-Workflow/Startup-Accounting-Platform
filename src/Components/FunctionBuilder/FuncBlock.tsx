@@ -81,8 +81,6 @@ function FuncBlock(props: FuncProps) {
   const outputNodeInc: number = 100 / (outputCount + 1);
   const outputNodePos: string[] = [];
 
-  console.log(paramTypes)
-
   // the side param nodes are on
   const [ paramNodeDir, setParamNodeDir ] = useState(direction.left)
 
@@ -201,8 +199,6 @@ function FuncBlock(props: FuncProps) {
                 if (e.dataTransfer.getData("arrow") === handleId + "") {
                   console.log(e.dataTransfer.getData("arrow"), handleId + "");
                 } else {
-                  console.log("chiikawa")
-                  
                   const refs = { start: e.dataTransfer.getData("arrow"), end: handleId + "" };
                   // do not add arrow if the arrow starts and ends at the same block
                   if (refs.start.split('o')[0] == handleId.split('i')[0])  {

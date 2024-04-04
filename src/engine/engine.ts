@@ -154,12 +154,13 @@ const func_interpreter_new :
         //console.log("in function, return");
         //console.log(func_content['param'][0]);
         //const ret_arr : allowed_stack_components[] = [];
+        console.log(func_content)
         const outputDict : Map<number, ioObj> = new Map();
         let counter : number = 1;
         for (const func_param of func_content['outputs']) {
             // This should return null
-            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), args, funcCallStack, customFuncDict);
-            //console.log(`evalution of output no.${counter} finished. Got ${eval_res}`);
+            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), args, new Set<string>(funcCallStack), customFuncDict);
+            console.log(`evalution of output no.${counter} finished. Got ${eval_res}`);
             outputDict.set(counter, { name : func_content.outputNames[counter - 1], value : eval_res})
             counter++;
         }
@@ -178,6 +179,7 @@ const func_interpreter_new :
         console.log('in custom function call')
         const paramDict : Map<number, ioObj> = new Map();
         let counter : number = 1;
+        console.log(func_content)
         console.log(funcCallStack)
         if (funcCallStack.has(func_content.functionId)) {
             throw new NestedCallError("Nested function call. Please make sure that this function is not calling itself through the functions it uses")
@@ -185,7 +187,7 @@ const func_interpreter_new :
             funcCallStack.add(func_content.functionId)
         }
         for (const param of func_content.params) {
-            const paramValue : any = func_interpreter_new(JSON.stringify(param), args, funcCallStack, customFuncDict);
+            const paramValue : any = func_interpreter_new(JSON.stringify(param), args, new Set<string>(funcCallStack), customFuncDict);
             paramDict.set(counter, {name : func_content.paramNames[counter - 1], value : paramValue});
             counter++;
         } 
@@ -196,7 +198,7 @@ const func_interpreter_new :
             throw new Error(`Cannot find a custom function with id ${func_content.functionId}`)
         } 
         const customFuncBody = record.rawJson
-        const outputDict : Map<number, ioObj> = func_interpreter_new(customFuncBody, paramDict, funcCallStack, customFuncDict);
+        const outputDict : Map<number, ioObj> = func_interpreter_new(customFuncBody, paramDict, new Set<string>(funcCallStack), customFuncDict);
         
         // Logics for selecting what output(s) to use
         if (Number.isInteger(func_content['useOutput'])) {
@@ -212,7 +214,7 @@ const func_interpreter_new :
         }
 
     } else if (func_content['type'] == 'output') {
-        const outputEvalRes : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), args, funcCallStack, customFuncDict);
+        const outputEvalRes : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), args, new Set<string>(funcCallStack), customFuncDict);
         //console.log('evaluated output', outputEvalRes);
         //ret.set(func_content['outputIdx'], { name: func_content['outputName'], value: outputEvalRes });
         return outputEvalRes;
@@ -220,7 +222,7 @@ const func_interpreter_new :
         let param_arr : allowed_stack_components[] = [];
         for (const func_param of func_content['params']) {
         
-            const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), args, funcCallStack, customFuncDict);
+            const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), args, new Set<string>(funcCallStack), customFuncDict);
             //console.log('evaluting', func_content['functionName'], ', param is:', func_param, ', evaluated param is:', func_param_eval_res);    
             param_arr.push(func_param_eval_res);
         }
