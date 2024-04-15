@@ -11,16 +11,8 @@ import {data_types} from './datatype_def'
 import type {allowed_stack_components, custom_function} from './datatype_def'
 import { id_to_builtin_func } from './builtin_func_def';
 import { NestedCallError } from './error_def';
+import { FunctionData as CustomFunctionDBRecord } from '../auth/FirebaseRepository'
 
-let func_2 : custom_function = {
-    func_name : 'test_func2',
-    input_type: [data_types.dt_number, data_types.dt_number],
-    output_type: [data_types.dt_number],
-    param_idx: [false, false, true, true],
-    func_idx: [true, true, false, false],
-    operations: [0, 1, 1, 0],
-}
-export { func_2 };
 // series : [[1, 2], [2, 4], [3, 5]]
 
 /*
@@ -124,17 +116,6 @@ interface ioObj {
 }
 
 /**
- * Deprecated. Use func_interpreter_new instead
- * Evaluates a custom function
- * @param func_str JSON string representation of the custom function
- * @param args a map from input index to {name : inputName, value : inputValue}
- * @returns a map from output index to {name : outputName, value : outputValue}
- */
-export function func_interpreter_new_caller(func_str : string, args: Map<number, ioObj>) {
-    return func_interpreter_new(func_str, args);
-}
-
-/**
  * When useOutput = 'all', a custom function evaluation will return a MAP in the form
  * {
  *  outputIdx : {
@@ -144,27 +125,42 @@ export function func_interpreter_new_caller(func_str : string, args: Map<number,
  *  ...
  * }
  * a builtin function evaluation will return a LIST containing all outputs
- * When output = some integer, both builtin function and custom function will return a plain value
+ * When useOutput = some integer index, a function will
+ * choose and return that specific output (as a plain value)
  * NOTE: this function is designed for evaluting a custom function
  * @param func_str json string representation of the custom function
- * 
  * @param args a map from input index to {name : inputName, value : inputValue}
+ * @param funcCallStack a stack used to track all called functions. Used to verify if there is a nested call
+ * @param customFuncDict a map from a custom function's id to its record in the DB
  * @returns Map<number, ioObj> if custom function, allowed_stack_components[] if builtin function, an allowed_stack_component otherwise
  * @throws NestedCallError if there is a nested function call (i.e. if a function calls itself, either directly or through some function it uses)
  */
-const func_interpreter_new : any = function(func_str: string, args: Map<number, ioObj>, funcCallStack: Set<string>) {
+const func_interpreter_new : 
+    (
+        func_str: string, 
+        args: Map<number, ioObj>, 
+        funcCallStack: Set<string>,
+        customFuncDict: Map<string, CustomFunctionDBRecord>
+    ) => any = function
+    (
+        func_str: string, 
+        args: Map<number, ioObj>, 
+        funcCallStack: Set<string>,
+        customFuncDict: Map<string, CustomFunctionDBRecord>
+    ) {
     //console.log(func_str)
     const func_content = JSON.parse(func_str);
     if (func_content.type == 'custom_function') {
         //console.log("in function, return");
         //console.log(func_content['param'][0]);
         //const ret_arr : allowed_stack_components[] = [];
+        console.log(func_content)
         const outputDict : Map<number, ioObj> = new Map();
         let counter : number = 1;
         for (const func_param of func_content['outputs']) {
             // This should return null
-            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), args, funcCallStack);
-            //console.log(`evalution of output no.${counter} finished. Got ${eval_res}`);
+            const eval_res : any = func_interpreter_new(JSON.stringify(func_param), args, new Set<string>(funcCallStack), customFuncDict);
+            console.log(`evalution of output no.${counter} finished. Got ${eval_res}`);
             outputDict.set(counter, { name : func_content.outputNames[counter - 1], value : eval_res})
             counter++;
         }
@@ -183,26 +179,32 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         console.log('in custom function call')
         const paramDict : Map<number, ioObj> = new Map();
         let counter : number = 1;
+        console.log(func_content)
         console.log(funcCallStack)
         if (funcCallStack.has(func_content.functionId)) {
-            throw new NestedCallError("Nested function call. Please make sure that this function is not calling itself through the function it uses")
+            throw new NestedCallError("Nested function call. Please make sure that this function is not calling itself through the functions it uses")
         } else {
             funcCallStack.add(func_content.functionId)
         }
         for (const param of func_content.params) {
-            const paramValue : any = func_interpreter_new(JSON.stringify(param), args, funcCallStack);
+            const paramValue : any = func_interpreter_new(JSON.stringify(param), args, new Set<string>(funcCallStack), customFuncDict);
             paramDict.set(counter, {name : func_content.paramNames[counter - 1], value : paramValue});
             counter++;
         } 
-        const outputDict : Map<number, ioObj> = func_interpreter_new(func_content.body, paramDict, funcCallStack);
-        
+        console.log(customFuncDict)
 
+        const record = customFuncDict.get(func_content.functionId)
+        if (record == undefined) {
+            throw new Error(`Cannot find a custom function with id ${func_content.functionId}`)
+        } 
+        const customFuncBody = record.rawJson
+        const outputDict : Map<number, ioObj> = func_interpreter_new(customFuncBody, paramDict, new Set<string>(funcCallStack), customFuncDict);
+        
         // Logics for selecting what output(s) to use
         if (Number.isInteger(func_content['useOutput'])) {
             if (func_content['useOutput'] > outputDict.size) {
                 throw new Error(`Function interpreter: output index ${func_content['useOutput']} out of range for ${outputDict.size} outputs`);
             } else {
-
                 return (outputDict.get(func_content['useOutput']) as ioObj).value;
             }
         } else if (func_content['useOutput'] = 'all') {
@@ -212,7 +214,7 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         }
 
     } else if (func_content['type'] == 'output') {
-        const outputEvalRes : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), args, funcCallStack);
+        const outputEvalRes : any = func_interpreter_new(JSON.stringify(func_content['params'][0]), args, new Set<string>(funcCallStack), customFuncDict);
         //console.log('evaluated output', outputEvalRes);
         //ret.set(func_content['outputIdx'], { name: func_content['outputName'], value: outputEvalRes });
         return outputEvalRes;
@@ -220,7 +222,7 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
         let param_arr : allowed_stack_components[] = [];
         for (const func_param of func_content['params']) {
         
-            const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), args, funcCallStack);
+            const func_param_eval_res : allowed_stack_components = func_interpreter_new(JSON.stringify(func_param), args, new Set<string>(funcCallStack), customFuncDict);
             //console.log('evaluting', func_content['functionName'], ', param is:', func_param, ', evaluated param is:', func_param_eval_res);    
             param_arr.push(func_param_eval_res);
         }
@@ -258,6 +260,8 @@ const func_interpreter_new : any = function(func_str: string, args: Map<number, 
 }
 
 export {func_interpreter_new}
+
+
 
 
 

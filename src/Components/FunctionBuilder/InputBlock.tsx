@@ -177,9 +177,9 @@ function InputBlock(props: any) {
             </div>
     
           </Popover.Target>
-          <Popover.Dropdown>
+          {/* <Popover.Dropdown>
             {inputName}
-          </Popover.Dropdown>
+          </Popover.Dropdown> */}
         </Popover>
       </>
     )
@@ -365,10 +365,6 @@ function InputBlock(props: any) {
   const idxCombobox = useCombobox({
 
   })
-
-  const daat = typeOptions.map(([id, dt_name] : [data_types, string]) => (
-    <option value={id}>{dt_name}</option>
-  ))
 
   const dataTypeOptions = typeOptions.map(([typeId, dt_name] : [any, any]) => (
     <Combobox.Option value={typeId.toString()} key={dt_name} active={typeId === inputType}>

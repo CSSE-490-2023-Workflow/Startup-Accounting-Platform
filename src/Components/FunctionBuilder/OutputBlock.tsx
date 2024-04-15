@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState} from 'react';
 import { data_types, data_type_enum_name_pairs} from "../../engine/datatype_def"
-import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, useCombobox, Combobox, InputBase, Center } from '@mantine/core';
+import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, useCombobox, Combobox, InputBase, Center, Tooltip } from '@mantine/core';
 import Draggable, { DraggableEvent } from 'react-draggable';
 
 enum direction {
@@ -433,16 +433,18 @@ function OutputBlock(props: OutProps) {
           store={typeCombobox}
         >
           <Combobox.Target>
-            <InputBase
-              component="button"
-              type="button"
-              pointer
-              rightSection={<Combobox.Chevron />}
-              rightSectionWidth={20}
-              className='output-block-type-input'
-            >
-              {oType == undefined ? 'undefined' : data_type_enum_name_pairs[oType][1]}
-            </InputBase>
+            <Tooltip multiline w={250} label='Output type will be auto-evaluated upon a type check' position='top' color='gray'>
+              <InputBase
+                component="button"
+                type="button"
+                pointer
+                rightSection={<Combobox.Chevron />}
+                rightSectionWidth={20}
+                className='output-block-type-input'
+              >
+                {oType == undefined ? 'undefined' : data_type_enum_name_pairs[oType][1]}
+              </InputBase>
+            </Tooltip>
           </Combobox.Target>
           <Combobox.Dropdown>
             {}

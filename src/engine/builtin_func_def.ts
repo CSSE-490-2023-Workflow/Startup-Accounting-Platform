@@ -9,7 +9,8 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
     //addition for scalars
     '101' : {
         param_count: 2, 
-        func_name : 'scalar_addition',
+        func_name : 'Add',
+        description: "Addition on two numbers or two series. If two series were given, addition will be calculated per entry",
         param_types : [[data_types.dt_number, data_types.dt_number], [data_types.dt_series, data_types.dt_series]],
         param_names : ['addend_1', 'addend_2'],
         output_types : [[data_types.dt_number], [data_types.dt_series]],
@@ -29,7 +30,7 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
                 }
                 return [ser3];
             } else {
-                throw new Error(`scalar_addition: unknown input types`)
+                throw new Error(`Add: unknown input types`)
             }
         }
     },
@@ -37,52 +38,96 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
     //subtraction
     '102' : {
         param_count: 2, 
-        func_name : 'scalar_subtraction',
-        param_types : [[data_types.dt_number, data_types.dt_number]],
+        func_name : 'Subtract',
+        description: "Subtraction on two numbers or two series. If two series were given, subtraction will be calculated per entry",
+        param_types : [[data_types.dt_number, data_types.dt_number], [data_types.dt_series, data_types.dt_series]],
         param_names : ['minuend', 'subtrahend'],
-        output_types : [[data_types.dt_number]],
+        output_types : [[data_types.dt_number], [data_types.dt_series]],
         output_names : ['difference'],
         func : (...args : allowed_stack_components[]) => {
-            if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
-                throw new FuncArgError('Built in function 1: scalar_substrating receives two scalars as parameters')
-            return [Number(args[0]) - Number(args[1])];
+            if (is_number(args[0]) && is_number(args[1])) {
+                return [(args[0] as number) - (args[1] as number)];
+            } else if (is_series(args[0]) && is_series(args[1])) {
+                const ser1 : series = args[0] as series;
+                const ser2 : series = args[1] as series;
+                const ser3 : series = []
+                if (ser1.length != ser2.length) {
+                    throw new Error(`Subtract: input series must be the same length`)
+                }
+                for (let i = 0; i < ser1.length; i++) {
+                    ser3[i] = ser1[i] - ser2[i];
+                }
+                return [ser3];
+            } else {
+                throw new Error(`Subtract: unknown input types`)
+            }
         }
     },
 
     //multiplication
     '103' : {
         param_count: 2, 
-        func_name : 'scalar_multiplication',
-        param_types : [[data_types.dt_number, data_types.dt_number]],
+        func_name : 'Multiply',
+        description: "Multiplication on two numbers or two series. If two series were given, multiplication will be calculated per entry",
+        param_types : [[data_types.dt_number, data_types.dt_number], [data_types.dt_series, data_types.dt_series]],
         param_names : ['multiplicand', 'multiplier'],
-        output_types : [[data_types.dt_number]],
+        output_types : [[data_types.dt_number], [data_types.dt_series]],
         output_names : ['product'],
         func : (...args : allowed_stack_components[]) => {
-            if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
-                throw new FuncArgError('Built in function 2: scalar_multiplication receives two scalars as parameters')
-            return [Number(args[0]) * Number(args[1])];
+            if (is_number(args[0]) && is_number(args[1])) {
+                return [(args[0] as number) * (args[1] as number)];
+            } else if (is_series(args[0]) && is_series(args[1])) {
+                const ser1 : series = args[0] as series;
+                const ser2 : series = args[1] as series;
+                const ser3 : series = []
+                if (ser1.length != ser2.length) {
+                    throw new Error(`Multiply: input series must be the same length`)
+                }
+                for (let i = 0; i < ser1.length; i++) {
+                    ser3[i] = ser1[i] * ser2[i];
+                    console.log(ser3)
+                }
+                return [ser3];
+            } else {
+                throw new Error(`Multiply: unknown input types`)
+            }
         }
     },
 
     //division
     '104' : {
         param_count: 2, 
-        func_name : 'scalar_division',
-        param_types : [[data_types.dt_number, data_types.dt_number]],
+        func_name : 'Divide',
+        description: "Division on two numbers or two series. If two series were given, division will be calculated per entry",
+        param_types : [[data_types.dt_number, data_types.dt_number], [data_types.dt_series, data_types.dt_series]],
         param_names : ['dividend', 'divisor'],
-        output_types : [[data_types.dt_number]],
+        output_types : [[data_types.dt_number], [data_types.dt_series]],
         output_names : ['quotient'],
         func : (...args : allowed_stack_components[]) => {
-            if (!is_number(args[0]) || !is_number(args[1]) || args.length !== 2)
-                throw new FuncArgError('Built in function 3: scalar_division receives two scalars as parameters')
-            return [Number(args[0]) / Number(args[1])];
+            if (is_number(args[0]) && is_number(args[1])) {
+                return [(args[0] as number) / (args[1] as number)];
+            } else if (is_series(args[0]) && is_series(args[1])) {
+                const ser1 : series = args[0] as series;
+                const ser2 : series = args[1] as series;
+                const ser3 : series = []
+                if (ser1.length != ser2.length) {
+                    throw new Error(`Divide: input series must be the same length`)
+                }
+                for (let i = 0; i < ser1.length; i++) {
+                    ser3[i] = ser1[i] / ser2[i];
+                }
+                return [ser3];
+            } else {
+                throw new Error(`Divide: unknown input types`)
+            }
         }
     },
 
     //number to function points
     '105' : {
         param_count: 2, 
-        func_name : 'scalar_to_function_points',
+        func_name : 'Create Double Series',
+        description: "Given value and length, returns the double series [[0, val], [1, val], [2, val], ... , [length-1, val]]",
         param_types : [[data_types.dt_number, data_types.dt_number]],
         param_names : ['value', 'length'],
         output_types : [[data_types.dt_double_series]],
@@ -108,9 +153,10 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
     //apply interest rate
     '106' : {
         param_count : 2,
-        func_name : 'apply_interest_rate',
+        func_name : 'Apply Interest Rate',
+        description: "Given an interest rate and a double series, returns a new double series in which every y value is equal to (1 + rate) multiplied by the previous y value",
         param_types : [[data_types.dt_number, data_types.dt_double_series]],
-        param_names : ['interest rate', 'func pts'],
+        param_names : ['interest rate', 'double series'],
         output_types : [[data_types.dt_double_series]],
         output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
@@ -125,18 +171,6 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
         }
     },
 
-    '107': {
-        param_count: 1,
-        func_name: 'test_func',
-        param_types : [[data_types.dt_number]],
-        param_names : ['param 1'],
-        output_types: [[data_types.dt_number, data_types.dt_number, data_types.dt_series]],
-        output_names : ['output 1', 'output 2', 'output 3'],
-        func: (...args : allowed_stack_components[]) => {
-            return [1];
-        }
-    },
-
     /**
      * Merge two double series by summing the corresponding y values 
      * Example inputs:
@@ -148,6 +182,7 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
     '108': {
         param_count: 2,
         func_name: 'Merge double series',
+        description: "Given two double series, returns a new double series in which y-values with the same x-value will be added",
         param_types : [[data_types.dt_double_series, data_types.dt_double_series]],
         param_names : ['double series 1', 'double series 2'],
         output_types: [[data_types.dt_double_series]],

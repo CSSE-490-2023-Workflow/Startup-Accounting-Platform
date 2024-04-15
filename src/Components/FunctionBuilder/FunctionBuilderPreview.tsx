@@ -1,18 +1,15 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import AddBlockButton from './AddBlockButton';
 import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series } from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
 import '../../Styles/FuncBuilderBlk.css'
-import { func_interpreter_new, func_interpreter_new_caller } from '../../engine/engine'
 //import '../../lib/font-awesome-4.7.0/css/font-awesome.min.css'
 import * as utils from './utils.json'
 import OutputBlock from './OutputBlock';
 import Xarrow from 'react-xarrows';
 import { AuthContext, database } from "../../auth/firebase";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
-import SeriesInput from '../Inputs/DoubleSeriesInput';
 import { MyDraggable } from './MyDraggable';
 
 interface InputBlockDS {
@@ -591,7 +588,7 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
 
   const builtinFuncOptions: funcInfo[] = Object.entries(id_to_builtin_func).map(
     ([funcId, funcBody]: [string, builtin_function]) => {
-      return { id: funcId, name: funcBody.func_name };
+      return { id: funcId, name: funcBody.func_name};
     })
 
   const customFuncOptions: funcInfo[] = Array.from(customFunctions.values()).map(
@@ -644,6 +641,7 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
         paramNames={blk.paramNames}
         outputTypes={blk.outputTypes}
         outputNames={blk.outputNames}
+        description={""}
         updateBlkCB={() => {}}
         removeBlkCB={() => {}}
         addArrow={() => {}}
