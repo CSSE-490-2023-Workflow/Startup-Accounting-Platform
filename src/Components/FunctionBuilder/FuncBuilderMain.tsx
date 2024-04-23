@@ -1194,7 +1194,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         console.log('edit input block. Input blk idx map', inputBlkIdxMap);
       }
 
-    }, [blkMap])
+    }, [inputBlkIdxMap, inputBlocks])
 
   const updateInputBlkLoc = useCallback(
     (blkId: number, newLocation: [number, number]) => {
@@ -1298,7 +1298,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       console.log('remove output block. Output blk idx map', outputBlkIdxMap);
     }
 
-  }, [outputBlkIdxMap])
+  }, [outputBlkIdxMap, outputBlocks])
 
   // Updates the information of the block with the given id
   // params that are null will NOT be updated
@@ -1344,7 +1344,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         console.log('edit output block. Output blk idx map', outputBlkIdxMap);
       }
 
-    }, [outputBlkIdxMap])
+    }, [outputBlkIdxMap, outputBlocks])
 
   const updateOutputBlkLoc = useCallback(
     (blkId: number, newLocation: [number, number]) => {
