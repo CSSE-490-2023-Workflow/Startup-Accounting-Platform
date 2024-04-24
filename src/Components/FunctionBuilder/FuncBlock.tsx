@@ -5,6 +5,7 @@ import { data_types } from '../../engine/datatype_def';
 import DotlessConnectPointsWrapper from '../DotlessConnectPointsWrapper';
 import { FuncType } from './FuncBuilderMain'
 import { IconInfoCircle, IconInfoCircleFilled, IconInfoHexagon } from '@tabler/icons-react';
+import { IconChevronRight, IconChevronLeft, IconChevronUp, IconChevronDown } from '@tabler/icons-react';
 
 const NODE_NAME_POPOVER_WIDTH : any = '40px';
 
@@ -137,8 +138,9 @@ function FuncBlock(props: FuncProps) {
       nodeStyle.height = '15px';
       nodeNamePos = 'left';
       nodeNameStyle.textAlign = 'right';
-      faIconStyle.transform = 'translate(0px, -5px)'
-      faIcon = <><i className="fa-solid fa-chevron-right fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIconStyle.transform = 'translate(-2px, -5px)'
+      //faIcon = <><i className="fa-solid fa-chevron-left fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronRight color="#000000" style={faIconStyle} width={15} /></>
     } else if (paramNodeDir === direction.right) {
       nodeStyle.top = offset;
       nodeStyle.right = '0';
@@ -146,8 +148,9 @@ function FuncBlock(props: FuncProps) {
       nodeStyle.height = '15px';
       nodeNamePos = 'right';
       nodeNameStyle.textAlign = 'left';
-      faIconStyle.transform = 'translate(0px, -5px)'
-      faIcon = <><i className="fa-solid fa-chevron-left fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIconStyle.transform = 'translate(-2px, -5px)';
+      //faIcon = <><i className="fa-solid fa-chevron-right fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronLeft color="#000000" style={faIconStyle} width={15} /></>
     } else if (paramNodeDir === direction.bot) {
       nodeStyle.left = offset;
       nodeStyle.bottom = '0';
@@ -156,7 +159,8 @@ function FuncBlock(props: FuncProps) {
       nodeNamePos = 'bottom';
       nodeNameWidth = NODE_NAME_POPOVER_WIDTH;
       faIconStyle.transform = 'translate(0px, -7px)'
-      faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      //faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronUp color="#000000" style={faIconStyle} width={15} /></>
     } else {
       nodeStyle.left = offset;
       nodeStyle.top = '0';
@@ -165,7 +169,8 @@ function FuncBlock(props: FuncProps) {
       nodeNamePos = 'top';
       nodeNameWidth = NODE_NAME_POPOVER_WIDTH;
       faIconStyle.transform = 'translate(0px, -7px)'
-      faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      //faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronDown color="#000000" style={faIconStyle} width={15} /></>
     }
     const handleId : string = blkId.toString() + 'i' + (index+1).toString();
     
@@ -244,8 +249,9 @@ function FuncBlock(props: FuncProps) {
       nodeStyle.height = '15px';
       nodeNamePos = 'left';
       nodeNameStyle.textAlign = 'right';
-      faIconStyle.transform = 'translate(0px, -5px)'
-      faIcon = <><i className="fa-solid fa-chevron-left fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIconStyle.transform = 'translate(-2px, -5px)'
+      //faIcon = <><i className="fa-solid fa-chevron-left fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronLeft color="#000000" style={faIconStyle} width={15} /></>
     } else if (outputNodeDir === direction.right) {
       nodeStyle.top = offset;
       nodeStyle.right = '0';
@@ -253,8 +259,9 @@ function FuncBlock(props: FuncProps) {
       nodeStyle.height = '15px';
       nodeNamePos = 'right';
       nodeNameStyle.textAlign = 'left';
-      faIconStyle.transform = 'translate(0px, -5px)'
-      faIcon = <><i className="fa-solid fa-chevron-right fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIconStyle.transform = 'translate(-2px, -5px)';
+      //faIcon = <><i className="fa-solid fa-chevron-right fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronRight color="#000000" style={faIconStyle} width={15} /></>
     } else if (outputNodeDir === direction.bot) {
       nodeStyle.left = offset;
       nodeStyle.bottom = '0';
@@ -263,7 +270,8 @@ function FuncBlock(props: FuncProps) {
       nodeNamePos = 'bottom';
       nodeNameWidth = NODE_NAME_POPOVER_WIDTH;
       faIconStyle.transform = 'translate(0px, -7px)'
-      faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      //faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronDown color="#000000" style={faIconStyle} width={15} /></>
     } else {
       nodeStyle.left = offset;
       nodeStyle.top = '0';
@@ -272,7 +280,8 @@ function FuncBlock(props: FuncProps) {
       nodeNamePos = 'top';
       nodeNameWidth = NODE_NAME_POPOVER_WIDTH;
       faIconStyle.transform = 'translate(0px, -7px)'
-      faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      //faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronUp color="#000000" style={faIconStyle} width={15} /></>
     }
     const handleId : string = blkId.toString() + 'o' + (index+1).toString();
     return (

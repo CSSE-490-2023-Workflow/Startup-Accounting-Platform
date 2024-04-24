@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState} from 'react';
 import { data_types, data_type_enum_name_pairs} from "../../engine/datatype_def"
 import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popover, Pagination, useCombobox, Combobox, InputBase, Center, Tooltip } from '@mantine/core';
 import Draggable, { DraggableEvent } from 'react-draggable';
+import { IconChevronRight, IconChevronLeft, IconChevronUp, IconChevronDown } from '@tabler/icons-react';
 
 enum direction {
   'top'= 0,
@@ -105,8 +106,9 @@ function OutputBlock(props: OutProps) {
       nodeStyle.height = '15px';
       nodeNamePos = 'left';
       nodeNameStyle.textAlign = 'right';
-      faIconStyle.transform = 'translate(0px, -5px)'
-      faIcon = <><i className="fa-solid fa-chevron-right fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIconStyle.transform = 'translate(-2px, -5px)'
+      //faIcon = <><i className="fa-solid fa-chevron-left fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronRight color="#000000" style={faIconStyle} width={15} /></>
     } else if (paramNodeDir === direction.right) {
       nodeStyle.top = offset;
       nodeStyle.right = '0';
@@ -114,8 +116,9 @@ function OutputBlock(props: OutProps) {
       nodeStyle.height = '15px';
       nodeNamePos = 'right';
       nodeNameStyle.textAlign = 'left';
-      faIconStyle.transform = 'translate(0px, -5px)'
-      faIcon = <><i className="fa-solid fa-chevron-left fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIconStyle.transform = 'translate(-2px, -5px)';
+      //faIcon = <><i className="fa-solid fa-chevron-right fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronLeft color="#000000" style={faIconStyle} width={15} /></>
     } else if (paramNodeDir === direction.bot) {
       nodeStyle.left = offset;
       nodeStyle.bottom = '0';
@@ -124,7 +127,8 @@ function OutputBlock(props: OutProps) {
       nodeNamePos = 'bottom';
       nodeNameWidth = '50px';
       faIconStyle.transform = 'translate(0px, -7px)'
-      faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      //faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronUp color="#000000" style={faIconStyle} width={15} /></>
     } else {
       nodeStyle.left = offset;
       nodeStyle.top = '0';
@@ -133,7 +137,8 @@ function OutputBlock(props: OutProps) {
       nodeNamePos = 'top';
       nodeNameWidth = '50px';
       faIconStyle.transform = 'translate(0px, -7px)'
-      faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      //faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronDown color="#000000" style={faIconStyle} width={15} /></>
     }
     const handleId : string = outputId.toString() + 'i1'
     return (
