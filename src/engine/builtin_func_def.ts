@@ -1,6 +1,6 @@
 import { data } from 'jquery'
 import {data_types, declared_type_verifier, is_integer, is_number, is_series} from './datatype_def'
-import type {func_pt, func_pt_series, series, allowed_stack_components, custom_function, builtin_function} from './datatype_def'
+import type {multi_series, series, allowed_stack_components, custom_function, builtin_function} from './datatype_def'
 import { FuncArgError } from './error_def'
 
 export {id_to_builtin_func} //name_to_builtin_func}
@@ -130,7 +130,7 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
         description: "Given value and length, returns the double series [[0, val], [1, val], [2, val], ... , [length-1, val]]",
         param_types : [[data_types.dt_number, data_types.dt_number]],
         param_names : ['value', 'length'],
-        output_types : [[data_types.dt_double_series]],
+        output_types : [[data_types.dt_multi_series]],
         output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_integer(args[1]) || args.length !== 2)
@@ -142,7 +142,7 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
              * outputs: [[0, val], [1, val], [2, val], ... , [length-1, val]]
              */
             // check if length is integer
-            let series_out : func_pt_series = [];
+            let series_out : multi_series = [];
             for (let i : number = 0; i < length; i++) {
                 series_out[i] = [i, val];
             }
@@ -155,9 +155,9 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
         param_count : 2,
         func_name : 'Apply Interest Rate',
         description: "Given an interest rate and a double series, returns a new double series in which every y value is equal to (1 + rate) multiplied by the previous y value",
-        param_types : [[data_types.dt_number, data_types.dt_double_series]],
+        param_types : [[data_types.dt_number, data_types.dt_multi_series]],
         param_names : ['interest rate', 'double series'],
-        output_types : [[data_types.dt_double_series]],
+        output_types : [[data_types.dt_multi_series]],
         output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
             if (!declared_type_verifier[0](args[0]) || !declared_type_verifier[1](args[1]))
@@ -183,9 +183,9 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
         param_count: 2,
         func_name: 'Merge double series',
         description: "Given two double series, returns a new double series in which y-values with the same x-value will be added",
-        param_types : [[data_types.dt_double_series, data_types.dt_double_series]],
+        param_types : [[data_types.dt_multi_series, data_types.dt_multi_series]],
         param_names : ['double series 1', 'double series 2'],
-        output_types: [[data_types.dt_double_series]],
+        output_types: [[data_types.dt_multi_series]],
         output_names : ['merged series'],
         func: (...args : allowed_stack_components[]) => {
             console.log(args)
@@ -203,6 +203,49 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
             const res = Array.from(m)
             res.sort((a, b) => a[0] - b[0])
             return [res];
+        }
+    },
+
+    '109': {
+        param_count: -1, //arbitrary # of params
+        func_name: 'Build multi-series',
+        description: "Given n double series, merge them into one multi-series with n columns in which each column represents one double series",
+        param_types: [[data_types.dt_multi_series]],
+        param_names: ['double series'],
+        output_types: [[data_types.dt_multi_series]],
+        output_names: ['multi series'],
+        func: (...args: allowed_stack_components[]) => {
+            for (let arg of args) {
+                if (!declared_type_verifier[3](arg)) {
+                    throw new FuncArgError('Build multi-series receives double series as parameters')
+                }
+            }
+            let num_cols : number = 0
+            for (let arg of args) {
+                arg = arg as multi_series
+                num_cols += arg[0].length - 1 // we need to remove the first column b/c it's treated as the index column
+            }
+            let res : Map<number, number[]> = new Map()
+            let curr_col_acc : number = 0
+            for (let arg of args) {
+                arg = arg as multi_series
+                for (let ser of arg) {
+                    const idx : number = ser[0]
+                    if ( !res.has(idx)) {//index not in map
+                        res.set(idx, Array(num_cols).fill(0));
+                    }
+                    for (let j = 1; j < ser.length; j++) {
+                        (res.get(idx) as number[])[curr_col_acc + j - 1] = ser[j]
+                    }
+                }
+                curr_col_acc += arg[0].length - 1
+            }
+            let sorted_key = Array.from(res.keys()).sort()
+            let ret : multi_series = []
+            for (let k of sorted_key) {
+                ret.push([k, ...(res.get(k) as number[])])
+            }
+            return [ret]
         }
     }
 
