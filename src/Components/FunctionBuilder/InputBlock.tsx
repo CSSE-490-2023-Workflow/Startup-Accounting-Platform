@@ -5,6 +5,7 @@ import { Card, Input, CloseButton, CardSection, NavLink, Group, HoverCard, Popov
 import '../../assets/font-awesome/css/all.css'
 import Draggable, { DraggableEvent } from 'react-draggable';
 import DotlessConnectPointsWrapper from "../DotlessConnectPointsWrapper";
+import { IconChevronRight, IconChevronLeft, IconChevronUp, IconChevronDown } from '@tabler/icons-react';
 
 enum direction {
   'top'= 0,
@@ -122,8 +123,9 @@ function InputBlock(props: any) {
       nodeStyle.height = '15px';
       nodeNamePos = 'left';
       nodeNameStyle.textAlign = 'right';
-      faIconStyle.transform = 'translate(0px, -5px)'
-      faIcon = <><i className="fa-solid fa-chevron-left fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIconStyle.transform = 'translate(-2px, -5px)'
+      //faIcon = <><i className="fa-solid fa-chevron-left fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronLeft color="#000000" style={faIconStyle} width={15} /></>
     } else if (outputNodeDir === direction.right) {
       nodeStyle.top = offset;
       nodeStyle.right = '0';
@@ -131,17 +133,19 @@ function InputBlock(props: any) {
       nodeStyle.height = '15px';
       nodeNamePos = 'right';
       nodeNameStyle.textAlign = 'left';
-      faIconStyle.transform = 'translate(0px, -5px)';
-      faIcon = <><i className="fa-solid fa-chevron-right fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIconStyle.transform = 'translate(-2px, -5px)';
+      //faIcon = <><i className="fa-solid fa-chevron-right fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronRight color="#000000" style={faIconStyle} width={15} /></>
     } else if (outputNodeDir === direction.bot) {
       nodeStyle.left = offset;
       nodeStyle.bottom = '0';
       nodeStyle.width = '15px';
       nodeStyle.height = '10px';
       nodeNamePos = 'bottom';
-      faIconStyle.transform = 'translate(0px, -7px)'
       nodeNameWidth = '50px'
-      faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIconStyle.transform = 'translate(0px, -7px)'
+      //faIcon = <><i className="fa-solid fa-chevron-down fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronDown color="#000000" style={faIconStyle} width={15} /></>
     } else {
       nodeStyle.left = offset;
       nodeStyle.top = '0';
@@ -150,7 +154,8 @@ function InputBlock(props: any) {
       nodeNamePos = 'top';
       faIconStyle.transform = 'translate(0px, -7px)'
       nodeNameWidth = '50px'
-      faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      //faIcon = <><i className="fa-solid fa-chevron-up fa-xs connection-handle-icon" style={faIconStyle}></i></>
+      faIcon = <><IconChevronUp color="#000000" style={faIconStyle} width={15} /></>
     }
 
     const handleId : string = inputId.toString() + 'o1';
