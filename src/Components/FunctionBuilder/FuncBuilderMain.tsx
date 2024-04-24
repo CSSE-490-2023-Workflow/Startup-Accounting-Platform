@@ -1671,23 +1671,71 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   let outputListCount: number = 0;
   const outputList: React.JSX.Element[] = [];
   for (const [outputIdx, outputObj] of evalResult) {
+    let minx = 0;
+    let maxx = 5;
+    let miny = Math.min(0, outputObj.value as number);
+    let maxy = Math.max(0, outputObj.value as number)
     let data = [{
       x: 0,
       y: outputObj.value as number
     }]
     if ((typeof outputObj.value) !== "number") {
+      minx = 1000000;
+      maxx = -1000000;
+      miny = 1000000;
+      maxy = -1000000;
       data = []
       for (let i = 0; i < (outputObj.value as series).length; i++) {
-        data.push({ x: i, y: (outputObj.value as series)[i] as number })
+        const yval = (outputObj.value as series)[i] as number;
+        data.push({ x: i, y: yval})
+        if(minx > i) {
+          minx = i;
+        }
+        if(maxx < i) {
+          maxx = i;
+        }
+        if(miny > yval) {
+          miny = yval;
+        }
+        if(maxy < yval) {
+          maxy = yval;
+        }
         if((typeof (outputObj.value as series)[0]) !== "number") {
           data = []
           for (let i = 0; i < (outputObj.value as number[][]).length; i++) {
-            data.push({ x: (outputObj.value as func_pt_series)[i][0], y: (outputObj.value as func_pt_series)[i][1]})
+            const xval = (outputObj.value as func_pt_series)[i][0];
+            const yval = (outputObj.value as func_pt_series)[i][1];
+            data.push({ x: xval, y: yval})
+            if(minx > xval) {
+              minx = xval;
+            }
+            if(maxx < xval) {
+              maxx = xval;
+            }
+            if(miny > yval) {
+              miny = yval;
+            }
+            if(maxy < yval) {
+              maxy = yval;
+            }
           }
         } else {
           data = []
           for (let i = 0; i < (outputObj.value as series).length; i++) {
-            data.push({ x: i, y: (outputObj.value as series)[i]})
+            const yval = (outputObj.value as series)[i];
+            data.push({ x: i, y: yval})
+            if(minx > i) {
+              minx = i;
+            }
+            if(maxx < i) {
+              maxx = i;
+            }
+            if(miny > yval) {
+              miny = yval;
+            }
+            if(maxy < yval) {
+              maxy = yval;
+            }
           }
         }
       }
@@ -1701,8 +1749,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           <XYPlot
             width={200}
             height={200}
-            xDomain={[0, 5.5]}
-            yDomain={[0, 20]}
+            xDomain={[minx, maxx]}
+            yDomain={[miny, maxy]}
           >
             <HorizontalGridLines />
             <VerticalBarSeries data={data} barWidth={0.2} />
