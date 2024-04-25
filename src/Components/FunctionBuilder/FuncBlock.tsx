@@ -38,11 +38,12 @@ interface FuncProps {
   outputTypes: data_types[][] | data_types[];
   outputNames: string[];
   description: string;
+  varLenParam: number;
   // blockLocation: [number, number];
   updateBlkCB: (funcBlockId: number, funcType: FuncType | null, funcId: string | null) => void;
   removeBlkCB:  (id: number) => void;
   setArrows: React.Dispatch<React.SetStateAction<StartAndEnd[]>>;
-  addArrow: (value: StartAndEnd) => void;
+  addArrow: (value: StartAndEnd, varLenparam: number) => void;
   removeArrow: (value: string[]) => void;
   // updateBlkLoc: (blkId: number, blockLocation: [number, number]) => void;
   displayWarningCB: (msg: string) => void
@@ -52,7 +53,7 @@ const allDirs = [direction.top, direction.bot, direction.left, direction.right];
 
 function FuncBlock(props: FuncProps) {
   const [ blkId, funcId, funcType, funcName, funcOptions, paramTypes, paramNames, 
-          outputTypes, outputNames, desc, editCB, removeCB, 
+          outputTypes, outputNames, desc, varLenParam, editCB, removeCB, 
           setArrows, addArrow, removeArrow, displayWarningCB] = [
     props.blockId, 
     props.funcId, 
@@ -64,6 +65,7 @@ function FuncBlock(props: FuncProps) {
     props.outputTypes, 
     props.outputNames,
     props.description,
+    props.varLenParam,
     props.updateBlkCB, 
     props.removeBlkCB, 
     props.setArrows, 
@@ -181,7 +183,7 @@ function FuncBlock(props: FuncProps) {
         nodeType = "N"
       } else if ((paramTypes as data_types[])[index] == data_types.dt_series) {
         nodeType = 'S'
-      } else if ((paramTypes as data_types[])[index] == data_types.dt_double_series) {
+      } else if ((paramTypes as data_types[])[index] == data_types.dt_multi_series) {
         nodeType = 'DS'
       }
     }
@@ -211,8 +213,7 @@ function FuncBlock(props: FuncProps) {
                     return 
                   }
                     
-                  addArrow(refs);
-                  console.log("dropped!", refs);
+                  addArrow(refs, varLenParam);
                 }
               }}
               onDragStart={e => {setShowParamNodeName(false); e.stopPropagation()}}

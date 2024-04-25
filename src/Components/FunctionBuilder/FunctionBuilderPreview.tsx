@@ -51,6 +51,7 @@ interface FuncBlockDS {
   paramNames: string[]
   outputTypes: data_types[][]
   outputNames: string[]
+  varLenParam: number
   blockLocation: [number, number]
 }
 
@@ -493,6 +494,7 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
       paramNames: isBuiltin ? (f as builtin_function).param_names : customFuncBody.paramNames,
       outputTypes: isBuiltin ? (f as builtin_function).output_types : customFuncBody.outputTypes,
       outputNames: isBuiltin ? (f as builtin_function).output_names : customFuncBody.outputNames,
+      varLenParam: isBuiltin ? ((f as builtin_function).param_count == -1 ? 1 : 0) : 0,
       blockLocation: funcBlkLoc
     }
 
@@ -642,6 +644,7 @@ function FuncBuilderPreview(props: FuncBuilderMainProps) {
         outputTypes={blk.outputTypes}
         outputNames={blk.outputNames}
         description={""}
+        varLenParam={blk.varLenParam}
         updateBlkCB={() => {}}
         removeBlkCB={() => {}}
         addArrow={() => {}}

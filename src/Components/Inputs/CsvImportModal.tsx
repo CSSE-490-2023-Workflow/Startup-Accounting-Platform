@@ -55,7 +55,7 @@ function CsvImportModal(props: any) {
         }
         editCB(vals)
         parsing.current = false;
-      } else if (type == data_types.dt_double_series) {
+      } else if (type == data_types.dt_multi_series) {
         if (parseBy.current == 'row') {
           for (let i = 0; i < rows_delim[0].length; i++) {
             const tmp = Number(rows_delim[0][i])
@@ -158,7 +158,7 @@ function CsvImportModal(props: any) {
   let instructions = []
   if (type == data_types.dt_series) {
     instructions.push("Values should be separated by ,")
-  } else if (type == data_types.dt_double_series) {
+  } else if (type == data_types.dt_multi_series) {
     instructions.push("Values should be separated by ,")
   }
 
@@ -171,7 +171,7 @@ function CsvImportModal(props: any) {
   let title = ""
   if (type == data_types.dt_series) {
     title = "Import a series from a csv file"
-  } else if (type == data_types.dt_double_series) {
+  } else if (type == data_types.dt_multi_series) {
     title = "Import a double series from a csv file"
   }
 
@@ -190,7 +190,7 @@ function CsvImportModal(props: any) {
           parseBy.current = e.currentTarget.value
         }}
         data={parseMethods}
-        disabled={type != data_types.dt_double_series}
+        disabled={type != data_types.dt_multi_series}
       />
       {parsing.current ? <div>Parsing...</div> : <></>}
       <Text style={{

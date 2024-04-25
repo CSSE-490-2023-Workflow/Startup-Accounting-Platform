@@ -1,25 +1,24 @@
 enum data_types {
     dt_number = 0,
-    dt_double_series,
+    dt_multi_series,
     dt_series
 }
 
-type func_pt = [number, number]
-type double_series = Array<func_pt>
+type multi_series = Array<series>
 type series = Array<number>
 
-type allowed_stack_components = number | double_series | series 
+type allowed_stack_components = number | multi_series | series 
 
 const data_type_enum_name_pairs: [data_types, string][] = [
     [data_types.dt_number, "Number"], 
-    [data_types.dt_double_series, "Double Series"],
+    [data_types.dt_multi_series, "Double Series"],
     [data_types.dt_series, "Series"]
 ];
 
 const data_type_name_to_enum : {[name: string] : number} = {};   
 
 data_type_name_to_enum["Number"] = data_types.dt_number;
-data_type_name_to_enum["Double Series"] = data_types.dt_double_series;
+data_type_name_to_enum["Double Series"] = data_types.dt_multi_series;
 data_type_name_to_enum["Series"] = data_types.dt_series;
 
 //type checking function for each data type
@@ -52,6 +51,28 @@ let declared_type_verifier : {[ind: number] : ((to_check : allowed_stack_compone
         let res: boolean = true;
         to_check.forEach((val: any) => {
             res &&= !isNaN(Number(to_check));
+        })
+        return res;
+    },
+
+    3 : (to_check: allowed_stack_components) => { // checks if is multi-series
+        if (!Array.isArray(to_check)) 
+            return false;
+        let res: boolean = true;
+        to_check = to_check as multi_series
+        let len : number = to_check[0].length
+        to_check.forEach((val: any) => {
+            if (!Array.isArray(val)) {
+                res = false
+            }
+            if (val.length != len) {
+                res = false
+            }
+            val.forEach((v: any) => {
+                if (isNaN(Number(v))) { 
+                    res = false
+                }
+            })
         })
         return res;
     }
@@ -108,4 +129,4 @@ export function is_series(val: any) {
 
 export { data_types, declared_type_verifier }
 export { data_type_enum_name_pairs, data_type_name_to_enum }
-export type {func_pt, double_series as func_pt_series, series, allowed_stack_components, custom_function, builtin_function}
+export type {multi_series, series, allowed_stack_components, custom_function, builtin_function}

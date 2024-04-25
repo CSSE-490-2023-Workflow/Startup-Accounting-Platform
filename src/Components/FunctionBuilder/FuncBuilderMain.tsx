@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AddBlockButton from './AddBlockButton';
-import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series, func_pt_series } from '../../engine/datatype_def'
+import { data_types, builtin_function, data_type_enum_name_pairs, allowed_stack_components, custom_function, series, multi_series } from '../../engine/datatype_def'
 import { id_to_builtin_func } from '../../engine/builtin_func_def'
 import InputBlock from './InputBlock';
 import FuncBlock from './FuncBlock';
@@ -65,6 +65,7 @@ interface FuncBlockDS {
   currentParamTypes: data_types[]
   currentOutputTypes: data_types[]
   blockLocation: [number, number]
+  varLenParam: number //takes an arbitrary number of parameters
 }
 
 interface OutputBlockDS {
@@ -439,15 +440,22 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   }
 
 
-  const addArrow = useCallback((v: StartAndEnd) => {
-    console.log(arrows)
+  /**
+   * @param endBlkVarLenInput: Whether the end block accepts an arbitrary number of inputs
+   */
+  const addArrow = useCallback((v: StartAndEnd, endBlkVarLenInput = 0) => {
+    console.log(endBlkVarLenInput)
     let isValid = true
-    for (const a of arrows) {
-      if (a.end == v.end) {
-        console.log(a)
-        console.log(v)
-        isValid = false
-        displayWarning("Only one arrow can be connected to an input node")
+    if (endBlkVarLenInput == 1) {
+      //
+    } else {
+      for (const a of arrows) {
+        if (a.end == v.end) {
+          console.log(a)
+          console.log(v)
+          isValid = false
+          displayWarning("Only one arrow can be connected to an input node")
+        }
       }
     }
     if (isValid) {
@@ -591,6 +599,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
     setDisconnErrMsgs(msgs => localDisconnErrMsgs)
     if (localDisconnErrMsgs.length == 0) {
+      console.log(tmp)
       return tmp
     } else {
       return -1
@@ -665,7 +674,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         return 'N'
       } else if (type == data_types.dt_series) {
         return 'S'
-      } else if (type == data_types.dt_double_series) {
+      } else if (type == data_types.dt_multi_series) {
         return 'DS'
       }
     }
@@ -685,63 +694,79 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         // node index is 1-indexed
         const endBlk = blkMap.get(endBlkId) as FuncBlockDS
         //update current param types
-        endBlk.currentParamTypes[endNodeIdx - 1] = arrowStartType
-        console.log(endBlk)
+        if (endBlk.varLenParam == 1) { //end blk accepts arbitrary # of params 
+          if (arrowStartType != (endBlk.paramTypes[0] as data_types[])[0]) {
+            locTypeErrMsgs.push({
+              blkId: endBlk.blockId,
+              msg: `Expecting all params to be ${stringifyType((endBlk.paramTypes[0] as data_types[])[0])}. One connection is found to be ${stringifyType(arrowStartType)}`
+            })
+            badFuncBlks.add(endBlk.blockId)
+          } else {
+            endBlk.currentParamTypes.push(arrowStartType)
+            endBlk.currentOutputTypes = endBlk.outputTypes[0] as data_types[]
+          }
+          //console.log(endBlk.currentParamTypes[0])
+          endBlk.currentParamTypes = endBlk.currentParamTypes.filter(t => t != undefined)
+          
+        } else {
+          endBlk.currentParamTypes[endNodeIdx - 1] = arrowStartType
+          if (endBlk.funcType == FuncType.custom) {
+            const paramIsUndefined = endBlk.currentParamTypes.map(p => p != undefined)
+            const sum = paramIsUndefined.reduce((acc, e) => acc + Number(e), 0)
+            console.log(endBlk.currentParamTypes)
+            if (sum == endBlk.currentParamTypes.length) { // all parameters have types defined
+              // compare declared input types and current inputTypes
+              if (JSON.stringify(endBlk.currentParamTypes) != JSON.stringify(endBlk.paramTypes)) { //declared param types don't match with actual ones
+                locTypeErrMsgs.push({
+                  blkId: endBlk.blockId,
+                  msg: `Expecting: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`
+                })
+                badFuncBlks.add(endBlk.blockId)
+                // badFuncBlks.push(endBlk.blockId)
+                // errorMsgs.push(`Expecting input types: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`)
+              } else { //match
+                endBlk.currentOutputTypes = Array.from(endBlk.outputTypes as data_types[])
+              }
+              
+            } 
+            
+          } else if (endBlk.funcType == FuncType.builtin) { 
+            //builtin functions can accept different combinations of input types, it's in form [[x, y], [x', y'], ...]
+            //each inner array is a valid combination of input types
+            
+            const paramIsUndefined = endBlk.currentParamTypes.map(p => p != undefined)
+            const sum = paramIsUndefined.reduce((acc, e) => acc + Number(e), 0)
+            if (sum == endBlk.currentParamTypes.length) { // all parameters have types defined
+              // compare declared input types and current inputTypes
+              let useInputCombination: number = -1;
 
-        if (endBlk.funcType == FuncType.custom) {
-          const paramIsUndefined = endBlk.currentParamTypes.map(p => p != undefined)
-          const sum = paramIsUndefined.reduce((acc, e) => acc + Number(e), 0)
-          console.log(endBlk.currentParamTypes)
-          if (sum == endBlk.currentParamTypes.length) { // all parameters have types defined
-            // compare declared input types and current inputTypes
-            if (JSON.stringify(endBlk.currentParamTypes) != JSON.stringify(endBlk.paramTypes)) { //declared param types don't match with actual ones
-              locTypeErrMsgs.push({
-                blkId: endBlk.blockId,
-                msg: `Expecting: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`
-              })
-              badFuncBlks.add(endBlk.blockId)
-              // badFuncBlks.push(endBlk.blockId)
-              // errorMsgs.push(`Expecting input types: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`)
-            } else { //match
-              endBlk.currentOutputTypes = Array.from(endBlk.outputTypes as data_types[])
+              // traverse to see if the current input types combination is a valid one
+              for (let i = 0; i < endBlk.paramTypes.length; i++) {
+                const validCombination = endBlk.paramTypes[i]
+                if (JSON.stringify(validCombination) == JSON.stringify(endBlk.currentParamTypes)) {
+                  useInputCombination = i
+                  break
+                }
+              }
+              if (useInputCombination == -1) { // all parameters have type defined, but it's not a valid input types combination
+                locTypeErrMsgs.push({
+                  blkId: endBlk.blockId,
+                  msg: `Expecting one of: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`
+                })
+
+                //current function block is a bad one. Type check fails
+                badFuncBlks.add(endBlk.blockId)
+                
+                // errorMsgs.push(`Expecting one of the following input types: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`)
+              } else {
+                endBlk.currentOutputTypes = Array.from((endBlk.outputTypes as data_types[][])[useInputCombination])
+              } 
             }
             
-          } 
-          
-        } else if (endBlk.funcType == FuncType.builtin) { 
-          //builtin functions can accept different combinations of input types, it's in form [[x, y], [x', y'], ...]
-          //each inner array is a valid combination of input types
-          const paramIsUndefined = endBlk.currentParamTypes.map(p => p != undefined)
-          const sum = paramIsUndefined.reduce((acc, e) => acc + Number(e), 0)
-          if (sum == endBlk.currentParamTypes.length) { // all parameters have types defined
-            // compare declared input types and current inputTypes
-            let useInputCombination: number = -1;
-
-            // traverse to see if the current input types combination is a valid one
-            for (let i = 0; i < endBlk.paramTypes.length; i++) {
-              const validCombination = endBlk.paramTypes[i]
-              if (JSON.stringify(validCombination) == JSON.stringify(endBlk.currentParamTypes)) {
-                useInputCombination = i
-                break
-              }
-            }
-            if (useInputCombination == -1) { // all parameters have type defined, but it's not a valid input types combination
-              locTypeErrMsgs.push({
-                blkId: endBlk.blockId,
-                msg: `Expecting one of: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`
-              })
-
-              //current function block is a bad one. Type check fails
-              badFuncBlks.add(endBlk.blockId)
-              
-              // errorMsgs.push(`Expecting one of the following input types: ${stringifyTypes(endBlk.paramTypes)}. Actual: ${stringifyTypes(endBlk.currentParamTypes)}`)
-            } else {
-              endBlk.currentOutputTypes = Array.from((endBlk.outputTypes as data_types[][])[useInputCombination])
-            } 
+            
           }
         }
       }
-      
     }
 
     while (localArrows.size > 0) {
@@ -820,12 +845,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     evalPending.current = false
     const paramMap: Map<number, ioObj> = new Map<number, ioObj>();
     for (let inputBlk of inputBlocks) {
-      if(inputBlk.inputType === data_types.dt_double_series) {
-        paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
-      } else {
-        paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
-      }
+      // if(inputBlk.inputType === data_types.dt_multi_series) {
+      //   paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: inputBlk.val });
+      // } else {
+      // }
+      paramMap.set(inputBlk.inputIdx, { name: inputBlk.inputName, value: JSON.parse(JSON.stringify(inputBlk.val)) });
     }
+    console.log(JSON.stringify(paramMap.get(2)))
     console.log(`starting evaluation`)
     for (const [i, v] of paramMap.entries()) {
       console.log('param:', i, v.value)
@@ -843,6 +869,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     //setOutputMap(res);
     console.log('Evaluation completed. Outputs of the custom function are: ', res);
     displaySuccess("Evaluation completed")
+    console.log(paramMap)
     setEvalResult(new Map(res));
     setOutputStore([res]);
     
@@ -897,7 +924,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     // run an evaluation to make sure there's no error
     const paramMap : Map<number, ioObj> = new Map()
     for (let [idx, blk] of inputBlkIdxMap.entries()) {
-      paramMap.set(idx, {name: blk.inputName, value: blk.val})
+      paramMap.set(idx, {name: blk.inputName, value: JSON.parse(JSON.stringify(blk.val))})
     }
 
     // try to evaluate and catch any errors
@@ -931,12 +958,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     console.log('arrow head', arrowHead);
     //console.log(arrows);
     
-    let arrow: StartAndEnd | undefined = undefined
+    let loc_arrows: StartAndEnd[] | undefined = undefined
     let tmp: StartAndEnd[] = arrows.filter((sae: StartAndEnd) => {
       return sae.end == arrowHead
     })
     if (tmp.length == 0) {
-      console.log('in')
       let newMsg: DisconnErrMsg = {
         blkId: Number(arrowHead.split('i')[0]),
         msg: "Disconnected node"
@@ -944,71 +970,81 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       disconnErrMsgs.push(newMsg)
       return 
     } else {
-      arrow = tmp[0]
+      loc_arrows = tmp
     }
-    arrow = arrow as StartAndEnd
-    const tailBlkId: number = Number(arrow.start.split('o')[0]);
-    const tailBlk: blk | undefined = blkMap.get(tailBlkId);
+    let l = []
+    for (let arrow of loc_arrows) {
+      const tailBlkId: number = Number(arrow.start.split('o')[0]);
+      const tailBlk: blk | undefined = blkMap.get(tailBlkId);
+      console.log(tailBlk)
+      /**
+       * tail block  ------>   head block
+       */
+  
+      // which output of the tail block to use
+      const tailBlkOutputIdx: number | undefined = Number(arrow.start.split('o')[1]);
 
-    /**
-     * tail block  ------>   head block
-     */
-    // which output of the tail block to use
-    const tailBlkOutputIdx: number | undefined = Number(arrow.start.split('o')[1]);
-
-    if (tailBlk == undefined) {
-      throw new Error(`Arrow tail does not exist: ${arrow.start} to ${arrow.end}`);
-    }
-    if ('inputName' in tailBlk) { // input block
-      return {
-        type: 'input',
-        inputName: tailBlk.inputName,
-        inputType: tailBlk.inputType,
-        inputIdx: tailBlk.inputIdx,
-        inputVal: tailBlk.val,
-        inputBlkLoc: tailBlk.blockLocation,
-        blockId: tailBlk.blockId
+      if (tailBlk == undefined) {
+        throw new Error(`Arrow tail does not exist: ${arrow.start} to ${arrow.end}`);
       }
-    } if ('funcType' in tailBlk) { //func block
-      const params: any[] = [];
-      for (const i of [...Array(tailBlk.paramNames.length).keys()].map(e => e + 1)) { //for i in [1, 2, ..., # of params]
-        params.push(tracePath(tailBlk.blockId.toString() + 'i' + i.toString(), disconnErrMsgs))
-      }
-      //console.log('params', params);
-      if (tailBlk.funcType == FuncType.builtin) {
-        return {
-          type: 'builtin_function',
-          useOutput: tailBlkOutputIdx,
-          functionName: tailBlk.funcName,
-          functionId: tailBlk.funcId,
-          paramNames: tailBlk.paramNames,
-          paramTypes: tailBlk.paramTypes,
-          outputNames: tailBlk.outputNames,
-          outputTypes: tailBlk.outputTypes,
-          funcBlkLoc: tailBlk.blockLocation,
-          blockId: tailBlk.blockId,
-          params: params
+      if ('inputName' in tailBlk) { // input block
+        console.log('in')
+        l.push( {
+          type: 'input',
+          inputName: tailBlk.inputName,
+          inputType: tailBlk.inputType,
+          inputIdx: tailBlk.inputIdx,
+          inputVal: tailBlk.val,
+          inputBlkLoc: tailBlk.blockLocation,
+          blockId: tailBlk.blockId
+        } )
+      } if ('funcType' in tailBlk) { //func block
+        let params: any[] = [];
+        for (const i of [...Array(tailBlk.paramNames.length).keys()].map(e => e + 1)) { //for i in [1, 2, ..., # of params]
+          params.push(tracePath(tailBlk.blockId.toString() + 'i' + i.toString(), disconnErrMsgs))
         }
-      } else { // custom
-        if (customFunctions.get(tailBlk.funcId) == undefined) {
-          throw new Error(`Custom function cannot be found ${tailBlk.funcId}`)
-        } else {
-          return {
-            type: 'custom_function_call',
-            functionId: tailBlk.funcId,
+        //console.log('params', params);
+        if (tailBlk.funcType == FuncType.builtin) {
+          if (tailBlk.varLenParam == 1) { //arbitrary # of parameters
+            params = params[0]
+          }
+          l.push( {
+            type: 'builtin_function',
             useOutput: tailBlkOutputIdx,
+            functionName: tailBlk.funcName,
+            functionId: tailBlk.funcId,
             paramNames: tailBlk.paramNames,
             paramTypes: tailBlk.paramTypes,
-            blockLocation: tailBlk.blockLocation,
+            outputNames: tailBlk.outputNames,
+            outputTypes: tailBlk.outputTypes,
+            funcBlkLoc: tailBlk.blockLocation,
             blockId: tailBlk.blockId,
-            params: params,
-            //body: (customFunctions.get(tailBlk.funcId) as CustomFunctionDBRecord).rawJson
+            varLenParam: tailBlk.varLenParam,
+            params: params
+          } )
+        } else { // custom
+          if (customFunctions.get(tailBlk.funcId) == undefined) {
+            throw new Error(`Custom function cannot be found ${tailBlk.funcId}`)
+          } else {
+            l.push( {
+              type: 'custom_function_call',
+              functionId: tailBlk.funcId,
+              useOutput: tailBlkOutputIdx,
+              paramNames: tailBlk.paramNames,
+              paramTypes: tailBlk.paramTypes,
+              blockLocation: tailBlk.blockLocation,
+              blockId: tailBlk.blockId,
+              params: params,
+              //body: (customFunctions.get(tailBlk.funcId) as CustomFunctionDBRecord).rawJson
+            } )
           }
         }
-      }
-    } else {
-      throw new Error(`Arrow tail is a block of an illegal type: ${arrow.start} ${arrow.end}`);
+      } 
+      // else {
+      //   throw new Error(`Arrow tail is a block of an illegal type: ${arrow.start} ${arrow.end}`);
+      // }
     }
+    return l.length == 1 ? l[0] : l
   }
 
   /**
@@ -1046,7 +1082,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     let defaultVal : allowed_stack_components = 0
     if (inputType == data_types.dt_series) {
       defaultVal = [0, 0, 0, 0]
-    } else if (inputType == data_types.dt_double_series) {
+    } else if (inputType == data_types.dt_multi_series) {
       defaultVal = [[1, 0], [2, 0], [3, 0], [4, 0], [5, 0]]
     }
     setCurrInputBlockId(id => id + 1);
@@ -1148,7 +1184,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             }
             if (inputType != null) {
               blk.inputType = inputType;
-              if (inputType == data_types.dt_double_series) {
+              if (inputType == data_types.dt_multi_series) {
                 const temp = [];
                 for (let i = 0; i < 5; i++) {
                   temp.push([i, 0])
@@ -1400,7 +1436,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       outputNames: isBuiltin ? (f as builtin_function).output_names : customFuncBody.outputNames,
       currentParamTypes: [],
       currentOutputTypes: [],
-      blockLocation: funcBlkLoc
+      blockLocation: funcBlkLoc,
+      varLenParam: isBuiltin ? ((f as builtin_function).param_count == -1 ? 1 : 0) : 0
     }
 
     setFuncBlocks(funcBlks => [...funcBlks, newBlock])
@@ -1447,7 +1484,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       blk.paramNames = f.param_names;
       blk.outputTypes = f.output_types;
       blk.outputNames = f.output_names;
-      console.log(f.param_types)
+      blk.varLenParam = (f as builtin_function).param_count == -1 ? 1 : 0
     } else { // is custom function
       console.log('setting to custom function', blk)
       console.log(customFunctions)
@@ -1466,6 +1503,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         blk.paramNames = [];
         blk.outputTypes = [];
         blk.outputNames = [];
+        blk.varLenParam = 0;
       } else {
         blk.funcId = funcId;
         blk.funcType = FuncType.custom;
@@ -1479,6 +1517,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
 
   }
+
+  useEffect(()=>{
+    console.log(funcBlocks)
+  }, [funcBlocks])
   const editFuncBlock = useCallback((
     blkId: number,
     funcType: FuncType | null,
@@ -1536,26 +1578,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     )
 
   }, [funcBlocks, arrows, customFunctions])
-
-  const updateFuncBlkLoc = useCallback(
-    (blkId: number, newLocation: [number, number]) => {
-
-      console.log("func block location in func builder: ", newLocation);
-
-      // Map over the outputBlocks array and update the specified block's location
-      const updatedBlocks: FuncBlockDS[] = funcBlocks.map((blk: FuncBlockDS) => {
-        if (blk.blockId === blkId) {
-          // Update the block's location
-          blk.blockLocation = newLocation;
-        }
-        return blk;
-      });
-
-      // Update the state with the modified outputBlocks array
-      setFuncBlocks(updatedBlocks);
-    },
-    [funcBlocks] // Include dependencies if needed
-  );
 
   interface funcInfo {
     id: string;
@@ -1703,8 +1725,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         if((typeof (outputObj.value as series)[0]) !== "number") {
           data = []
           for (let i = 0; i < (outputObj.value as number[][]).length; i++) {
-            const xval = (outputObj.value as func_pt_series)[i][0];
-            const yval = (outputObj.value as func_pt_series)[i][1];
+            const xval = (outputObj.value as multi_series)[i][0];
+            const yval = (outputObj.value as multi_series)[i][1];
             data.push({ x: xval, y: yval})
             if(minx > xval) {
               minx = xval;
@@ -1867,6 +1889,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         outputTypes={blk.outputTypes}
         outputNames={blk.outputNames}
         description={desc}
+        varLenParam={blk.varLenParam}
         updateBlkCB={editFuncBlock}
         removeBlkCB={removeFuncBlock}
         addArrow={addArrow}
@@ -1997,7 +2020,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       <Tooltip multiline label="N = Number, S = Series, DS = Double Series" color='gray'>
         <Button id="run-type-check" variant='default' onClick={runTypeCheck}>Run Type Check</Button>  
       </Tooltip>
-      <Button id="run-type-check" variant='default' onClick={runTypeCheck}>Run Type Check</Button>
       <Tooltip label="Only blocks connected to an output will be saved" color='gray'>
         <Button id='save-custom-function' variant='default' onClick={() => { 
           savePending.current = true

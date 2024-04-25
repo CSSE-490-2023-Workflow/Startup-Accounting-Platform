@@ -29,7 +29,7 @@ function InputModal(props: any) {
   }
   
 
-  if (type == data_types.dt_double_series) {
+  if (type == data_types.dt_multi_series) {
     inputInterface = (
       <>
         <h3>{name}</h3>
