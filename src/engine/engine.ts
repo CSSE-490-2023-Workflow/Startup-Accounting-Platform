@@ -253,7 +253,7 @@ const func_interpreter_new :
             return arg['value'];
         }
     } else {
-        //console.log(func_content)
+        console.log(func_content)
         throw new Error(`Unrecognized function component type`);
     } 
 

@@ -1005,7 +1005,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
         //console.log('params', params);
         if (tailBlk.funcType == FuncType.builtin) {
-          if (tailBlk.varLenParam == 1) { //arbitrary # of parameters
+          if (tailBlk.varLenParam == 1 && Array.isArray(params[0])) { //arbitrary # of parameters
             params = params[0]
           }
           l.push( {
@@ -1044,6 +1044,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       //   throw new Error(`Arrow tail is a block of an illegal type: ${arrow.start} ${arrow.end}`);
       // }
     }
+    console.log(l)
+    // if (l.length == 1 && !Array.isArray(l[0])) {
+    //   if (l[0].type == 'output') {
+    //     return l[0]
+    //   }
+    // }
     return l.length == 1 ? l[0] : l
   }
 
