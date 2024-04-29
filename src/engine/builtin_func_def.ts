@@ -235,7 +235,7 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
 
     '109': {
         param_count: -1, //arbitrary # of params
-        func_name: 'Merge multi-series',
+        func_name: 'Merge Double Series',
         description: "Given n double series, merge them into one multi-series with n columns in which each column represents one double series",
         param_types: [[data_types.dt_multi_series]],
         param_names: ['double series'],
