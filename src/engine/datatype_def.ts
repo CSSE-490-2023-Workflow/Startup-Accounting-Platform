@@ -24,11 +24,11 @@ data_type_name_to_enum["Series"] = data_types.dt_series;
 //type checking function for each data type
 let declared_type_verifier : {[ind: number] : ((to_check : allowed_stack_components) => boolean)} = {
 
-    0 : (to_check: allowed_stack_components) => {
+    0 : (to_check: allowed_stack_components) => { //number
         return !isNaN(Number(to_check));
     },
 
-    1 : (to_check: allowed_stack_components) => {
+    1 : (to_check: allowed_stack_components) => { //double series
         if (!Array.isArray(to_check)) 
             return false;
         let res: boolean = true;
@@ -45,7 +45,7 @@ let declared_type_verifier : {[ind: number] : ((to_check : allowed_stack_compone
         return res;
     },
 
-    2 : (to_check: allowed_stack_components) => {
+    2 : (to_check: allowed_stack_components) => { //series
         if (!Array.isArray(to_check)) 
             return false;
         let res: boolean = true;

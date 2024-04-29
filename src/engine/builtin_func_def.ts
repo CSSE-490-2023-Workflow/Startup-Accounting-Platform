@@ -134,9 +134,12 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
         output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
             if (!is_number(args[0]) || !is_integer(args[1]) || args.length !== 2)
-                throw new FuncArgError('Built in function 5: number_to_function_points receives one scalar and one integer as parameters')
+                throw new FuncArgError('Create Double Series receives one scalar and one integer as parameters')
             const val : number = Number(args[0]);
             const length : number = Number(args[1]);
+            if (length <= 0) {
+                throw new FuncArgError("Create Double Series: series length must be > 0")
+            }
             /**
              * Converts a number to an array of length 2 tuples
              * outputs: [[0, val], [1, val], [2, val], ... , [length-1, val]]
@@ -153,7 +156,31 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
     //apply interest rate
     '106' : {
         param_count : 2,
-        func_name : 'Apply Interest Rate',
+        func_name : 'Apply Interest Rate to Number',
+        description: "The initial deposit will grow by the interest rate given for k times. K will be rounded up if not an integer",
+        param_types : [[data_types.dt_number, data_types.dt_number, data_types.dt_number]],
+        param_names : ['initial deposit', 'interest rate', 'after k cycles'],
+        output_types : [[data_types.dt_number]],
+        output_names : ['ending deposit'],
+        func : (...args : allowed_stack_components[]) => {
+            if (!declared_type_verifier[0](args[0]) || !declared_type_verifier[0](args[1]) || !declared_type_verifier[0](args[2]))
+                throw new FuncArgError('Apply Interest Rate to Number receives three numbers as parameters');
+            let init  : any = args[0];
+            const rate : any = args[1];
+            const k : any = args[2];
+            if (k <= 0) {
+                throw new FuncArgError("Apply Interest Rate to Number: k must be > 0")
+            }
+            for (let i = 0; i < k; i++) {
+                init *= (1 + rate) 
+            }
+            return [init];
+        }
+    },
+
+    '107': {
+        param_count : 2,
+        func_name : 'Apply Interest Rate to Double Series',
         description: "Given an interest rate and a double series, returns a new double series in which every y value is equal to (1 + rate) multiplied by the previous y value",
         param_types : [[data_types.dt_number, data_types.dt_multi_series]],
         param_names : ['interest rate', 'double series'],
@@ -161,7 +188,7 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
         output_names : ['func pts'],
         func : (...args : allowed_stack_components[]) => {
             if (!declared_type_verifier[0](args[0]) || !declared_type_verifier[1](args[1]))
-                throw new FuncArgError('Built in function 6: apply_interest_rate receives one scalar and one function points series as parameters');
+                throw new FuncArgError('Apply Interest Rate to Double Series receives one scalar and one double series as parameters');
             const rate : any = args[0];
             const ser  : any = args[1];
             for (let i = 1; i < ser.length; i++) {
@@ -181,7 +208,7 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
      */
     '108': {
         param_count: 2,
-        func_name: 'Merge double series',
+        func_name: 'Double Series Entry-wise Add',
         description: "Given two double series, returns a new double series in which y-values with the same x-value will be added",
         param_types : [[data_types.dt_multi_series, data_types.dt_multi_series]],
         param_names : ['double series 1', 'double series 2'],
@@ -208,7 +235,7 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
 
     '109': {
         param_count: -1, //arbitrary # of params
-        func_name: 'Build multi-series',
+        func_name: 'Merge multi-series',
         description: "Given n double series, merge them into one multi-series with n columns in which each column represents one double series",
         param_types: [[data_types.dt_multi_series]],
         param_names: ['double series'],
@@ -246,6 +273,28 @@ let id_to_builtin_func : {[id: string] : builtin_function} = {
                 ret.push([k, ...(res.get(k) as number[])])
             }
             return [ret]
+        }
+    },
+
+    '110': {
+        param_count: 1, //arbitrary # of params
+        func_name: 'Sum y-values',
+        description: "Given a double series, returns the sum of all y values",
+        param_types: [[data_types.dt_multi_series]],
+        param_names: ['double series'],
+        output_types: [[data_types.dt_number]],
+        output_names: ['y sum'],
+        func: (...args: allowed_stack_components[]) => {
+            
+            if (!declared_type_verifier[1](args[0])) {
+                throw new FuncArgError('Sum y-values receives a double series as its parameter')
+            }
+            
+            let s : number = 0
+            for (const entry of (args[0] as multi_series)) {
+                s += entry[1]
+            }
+            return [s]
         }
     }
 
