@@ -12,7 +12,7 @@ import OutputBlock from './OutputBlock';
 import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
 import { FunctionNotExistError } from './ErrorDef';
-import { HorizontalGridLines, VerticalBarSeries, XAxis, XYPlot, YAxis } from 'react-vis';
+import { HorizontalGridLines, VerticalBarSeries, VerticalBarSeriesPoint, XAxis, XYPlot, YAxis } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
 import { Button, Dialog, Group, Alert, Text, Modal, FileInput, Tooltip} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
@@ -209,6 +209,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   const successMsg = useRef("Success")
   const [ focusedInput, setFocusedInput ] = useState<number | null>(null)
   //const [ focusedInputVal, setFocusedInputVal ] = useState(null)
+
+  const [nearestPoint, setNearestPoint] = useState<VerticalBarSeriesPoint | null>(null);
+
+  const handleNearestX = (datapoint: VerticalBarSeriesPoint) => {
+    setNearestPoint(datapoint);
+  };
 
 
   const requestFocus = (id: number) => {
@@ -1693,6 +1699,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //   }))
   // }, [inputBlocks])
 
+  const formatValue = (value: string | number): string => {
+    if (typeof value === 'string') {
+      return value;
+    }
+    return value.toFixed(2);
+  };
+
 
 
 
@@ -1778,12 +1791,27 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
             width={200}
             height={200}
             xDomain={[minx, maxx]}
-            yDomain={[miny, maxy]}
+            yDomain={[miny - Math.floor(0.5*Math.abs(maxy-miny)), maxy + Math.floor(0.5*Math.abs(maxy-miny))]}
+            onMouseLeave={(event)=>{setNearestPoint(null)}}
           >
             <HorizontalGridLines />
-            <VerticalBarSeries data={data} barWidth={0.2} />
+            <VerticalBarSeries data={data} barWidth={0.2} onNearestX={(datapoint, event)=>{
+              console.log(datapoint);
+              handleNearestX(datapoint); 
+              }} 
+              />
+              
             <XAxis />
             <YAxis />
+
+            {nearestPoint && (
+              <g transform={`translate(${nearestPoint.x}, ${nearestPoint.y})`}>
+                <rect x={5} y={-30} width={80} height={20} fill="white" stroke="black" strokeWidth={1} />
+                <text x={10} y={-15} fontSize="10">
+                  {`X: ${formatValue(nearestPoint.x)}, Y: ${formatValue(nearestPoint.y)}`}
+                </text>
+              </g>
+            )}
 
           </XYPlot>
         </>
