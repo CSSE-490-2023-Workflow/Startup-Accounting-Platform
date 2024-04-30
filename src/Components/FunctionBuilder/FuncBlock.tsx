@@ -130,6 +130,9 @@ function FuncBlock(props: FuncProps) {
     let nodeNamePos : any = '';
     let nodeNameWidth : any = '100px';
     let nodeNameStyle : any = {};
+    if (varLenParam == 1) {
+      nodeStyle.backgroundColor = '#B0C4DE'
+    }
     nodeNameStyle.padding = '1px';
     nodeNameStyle.fontSize = '12px';
     nodeNameStyle.wordWrap = 'break-word';
@@ -189,6 +192,8 @@ function FuncBlock(props: FuncProps) {
     }
     //
 
+    const varLenMsg : string = varLenParam == 1 ? "[multi-input]" : ""
+
     return (
       <>
         <Popover opened={showParamNodeName} position={nodeNamePos} width={nodeNameWidth} styles={{
@@ -226,7 +231,7 @@ function FuncBlock(props: FuncProps) {
             </div>
           </Popover.Target>
           <Popover.Dropdown>
-            {paramNames[index]}
+            {paramNames[index] + '\n' + varLenMsg}
           </Popover.Dropdown>
         </Popover>
       </>
