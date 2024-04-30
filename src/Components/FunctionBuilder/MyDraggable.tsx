@@ -26,14 +26,14 @@ function MyDraggable (props: any) {
       const boundingRect = 
         (e.currentTarget as HTMLElement).getBoundingClientRect();
       setDiffPos({
-        diffX: e.pageX - boundingRect.left,
-        diffY: e.pageY - boundingRect.top,
+        diffX: Math.max(0, e.pageX - boundingRect.left),
+        diffY: Math.max(0, e.pageY - boundingRect.top),
       });
     }
 
     const dragEnd = useCallback((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-      const left = e.pageX - diffPos.diffX;
-      const top = e.pageY - diffPos.diffY;
+      const left = Math.max(0, e.pageX - diffPos.diffX);
+      const top = Math.max(0, e.pageY - diffPos.diffY);
       if (top > 100) {
         setStyles({ left: left, top: top });
       }
