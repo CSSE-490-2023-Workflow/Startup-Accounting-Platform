@@ -12,7 +12,7 @@ import OutputBlock from './OutputBlock';
 import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
 import { FunctionNotExistError } from './ErrorDef';
-import { HorizontalGridLines, VerticalBarSeries, VerticalBarSeriesPoint, XAxis, XYPlot, YAxis, LineSeries, LineMarkSeries } from 'react-vis';
+import { HorizontalGridLines, VerticalBarSeries, VerticalBarSeriesPoint, XAxis, XYPlot, YAxis, LineSeries, LineMarkSeries, LineMarkSeriesPoint } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
 import { Button, Dialog, Group, Alert, Text, Modal, FileInput, Tooltip} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
@@ -212,6 +212,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //const [ focusedInputVal, setFocusedInputVal ] = useState(null)
 
   const [nearestPoint, setNearestPoint] = useState<VerticalBarSeriesPoint | null>(null);
+  const [nearestLinePoint, setNearestLinePoint] = useState<LineMarkSeriesPoint | null>(null);
 
   const [chartType, setChartType] = useState('line');
 
@@ -221,6 +222,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   const handleNearestX = (datapoint: VerticalBarSeriesPoint) => {
     setNearestPoint(datapoint);
+  };
+
+  const handleNearestLineX = (datapoint: LineMarkSeriesPoint) => {
+    setNearestLinePoint(datapoint);
   };
 
 
@@ -1872,6 +1877,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               maxy = yval;
             }
           }
+          console.log("data is ", minx, maxx);
         } else {
           data = []
           for (let i = 0; i < (outputObj.value as series).length; i++) {
@@ -1893,6 +1899,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
       }
     }
+
+    
 
     outputList.push(
       (
@@ -1932,25 +1940,41 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       </select>
 
       {chartType === 'line' ? (
-        <XYPlot width={200} height={200}>
+        <XYPlot width={200} height={200}
+        onMouseLeave={(event) => {
+          setNearestLinePoint(null);
+        }}>
+          
           {graph_obj.map((dataSeries, index) => (
                 <LineMarkSeries
                     key={index}
                     color="red"
                     style={{ fill: 'none' }}
                     data={dataSeries}
-                    
+                    onNearestX={(datapoint, event) => {
+                      console.log(datapoint);
+                      handleNearestLineX(datapoint);
+                    }}
                 />
             ))}
           <XAxis />
           <YAxis />
+          {nearestLinePoint && (
+            <g transform={`translate(${nearestLinePoint.x}, ${nearestLinePoint.y})`}>
+              <rect x={5} y={-30} width={80} height={20} fill="white" stroke="black" strokeWidth={1} />
+              <text x={10} y={-15} fontSize="10">
+                {`X: ${formatValue(nearestLinePoint.x as number)}, Y: ${formatValue(nearestLinePoint.y as number)}`}
+              </text>
+            </g>
+          )}
         </XYPlot>
       ) : (
         <XYPlot
           width={200}
           height={200}
           xDomain={[minx, maxx]}
-          yDomain={[miny - Math.floor(0.5 * Math.abs(maxy - miny)), maxy + Math.floor(0.5 * Math.abs(maxy - miny))]}
+          yDomain={[0, 1.2*maxy]}
+          // yDomain={[miny - Math.floor(0.5 * Math.abs(maxy - miny)), maxy + Math.floor(0.5 * Math.abs(maxy - miny))]}
           onMouseLeave={(event) => {
             setNearestPoint(null);
           }}
