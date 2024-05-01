@@ -12,7 +12,7 @@ import { AuthContext, database } from "../../auth/firebase";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
 import { MyDraggable } from './MyDraggable';
 
-interface InputBlockDS {
+interface InputBlockDS { 
   blockId: number
   inputName: string
   inputType: data_types
