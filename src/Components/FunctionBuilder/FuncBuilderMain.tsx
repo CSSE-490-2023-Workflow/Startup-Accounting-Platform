@@ -1801,12 +1801,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           for (let i = 1; i < result[0].length; i++) {
             const object = result.map(innerArray => ({ x: Array.isArray(innerArray)? innerArray[0]: 0, y: Array.isArray(innerArray)? innerArray[i]: 0 }));
             graph_obj.push(object);
-        }
-        }
-        console.log("final objs ", graph_obj)
-      }
+          }
 
-    let minx = 0;
+          let minx = 0;
     let maxx = 5;
     let miny = Math.min(0, outputObj.value as number);
     let maxy = Math.max(0, outputObj.value as number)
@@ -1875,7 +1872,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         }
       }
     }
-  
+
     outputList.push(
       (
         <>
@@ -1961,6 +1958,26 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         </XYPlot>
                 )}</>
                 ))
+
+        }
+        
+      
+      }
+      else {
+          console.log("number?", evalResult);
+          //if (!isNaN(Number(evalResult.get(1)))) {
+            const result: any = evalResult.get(1);
+            console.log(result);
+            outputList.push(
+              <h3>{outputObj.name} = {result.value}</h3>
+            )
+          //}
+          
+      }
+
+    
+  
+//here
               }
 
 {/* <XYPlot
