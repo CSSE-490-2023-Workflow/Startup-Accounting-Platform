@@ -395,7 +395,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
                 addFuncBlock(param.functionId, FuncType.builtin, param.funcBlkLoc, param.blockId);
               }
               console.log({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)})
-              addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+              //addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
               loadParams(param.blockId, param.params);
             } else if (isInput(param)) {
               if (!unique.has(param.blockId)) {
@@ -403,7 +403,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
                 addInputBlock(param.inputName, param.inputType, param.inputBlkLoc, param.blockId, param.inputIdx, param.inputVal);  
               }
               unique.add(param.blockId)
-              addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+              //addArrow({start: param.blockId + "o1", end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
             } else if (isCustomFunctionCall(param)) {
               let flag : boolean = false
               if (!unique.has(param.blockId)) {
@@ -418,7 +418,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               }
               unique.add(param.blockId)
               if (!flag) {
-                addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
+                //addArrow({start: param.blockId + "o" + param.useOutput, end: parentBlockId + "i" + (paramIndex + 1)} as StartAndEnd);
                 loadParams(param.blockId, param.params)
               }
             }
@@ -439,6 +439,10 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           // }
           addOutputBlock(output.outputName, output.outputType, output.outputBlkLoc, output.blockId, c++);
           loadParams(output.blockId, output.params);
+      }
+
+      for (const arr of JSON.parse(JSON.parse(rawJSON).arrows)){
+        addArrow(arr)
       }
 
       setSavedFunction(data)
@@ -486,6 +490,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     setTypeErrMsgs(msgs => msgs.filter(msg => msg.blkId != blkId))
   }, [arrows, typeErrMsgs])
 
+  /**
+   * Removes an arrow if the arrow's head is in param v
+   */
   const removeArrow = useCallback((v: string[]) => {
     const newArrows: StartAndEnd[] = []
     console.log(arrows);
@@ -924,7 +931,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       paramTypes: inputBlksSorted.map(iBlk => iBlk.inputType),
       outputNames: outputBlksSorted.map(oBlk => oBlk.outputName),
       outputTypes: outputBlksSorted.map(oBlk => oBlk.outputType),
-      outputs: outputObjs
+      outputs: outputObjs,
+      arrows: JSON.stringify(arrows)
     }
 
     // run an evaluation to make sure there's no error
@@ -936,8 +944,6 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     // try to evaluate and catch any errors
     const tmp = new Set<string>()
     tmp.add(props.functionId)
-    console.log(customFunctions)
-    //func_interpreter_new(JSON.stringify(res), paramMap, tmp, customFunctions)
     try {
       func_interpreter_new(JSON.stringify(res), paramMap, tmp, customFunctions)
     } catch(e: any) {
@@ -953,6 +959,8 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     reloadSavedCustomFunctions();
     saveResolved.current = true
     displaySuccess("Saved")
+
+    console.log(res)
 
   }, [inputBlocks, outputBlocks, funcBlocks, arrows, props.functionId, reloadResolved.current, savePending.current, customFunctions])
 
@@ -1487,7 +1495,9 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
    * @param funcId new function to designate
    */
   function setFuncBlockFunction(blk: FuncBlockDS, funcId: string) {
-    if (Number(funcId) > 100) { // is builtin function
+    if (Number(funcId) > 100) {             // is builtin function
+
+      const isVarLenBefore = blk.varLenParam
       blk.funcId = funcId;
       blk.funcType = FuncType.builtin;
       const f: builtin_function = id_to_builtin_func[funcId];
@@ -1497,7 +1507,14 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
       blk.outputTypes = f.output_types;
       blk.outputNames = f.output_names;
       blk.varLenParam = (f as builtin_function).param_count == -1 ? 1 : 0
-    } else { // is custom function
+      const isVarLenAfter = blk.varLenParam
+      
+      if (isVarLenBefore == 1 && isVarLenAfter == 0) { 
+        setArrows(arrows => {
+          return arrows.filter(a => Number(a.end.split('i')[0]) != blk.blockId)
+        })
+      }
+    } else {                                // is custom function
       console.log('setting to custom function', blk)
       console.log(customFunctions)
       const f: CustomFunctionDBRecord | undefined = customFunctions.get(funcId);
@@ -1526,6 +1543,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
         blk.outputNames = customFuncBody.outputNames;
         console.log(customFuncBody.paramTypes)
       }
+
     }
 
   }
