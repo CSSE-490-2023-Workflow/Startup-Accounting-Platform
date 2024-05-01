@@ -12,7 +12,7 @@ import OutputBlock from './OutputBlock';
 import { saveAs } from 'file-saver';
 import Xarrow from 'react-xarrows';
 import { FunctionNotExistError } from './ErrorDef';
-import { HorizontalGridLines, VerticalBarSeries, VerticalBarSeriesPoint, XAxis, XYPlot, YAxis } from 'react-vis';
+import { HorizontalGridLines, VerticalBarSeries, VerticalBarSeriesPoint, XAxis, XYPlot, YAxis, LineSeries, LineMarkSeries } from 'react-vis';
 import { AuthContext, database } from "../../auth/firebase";
 import { Button, Dialog, Group, Alert, Text, Modal, FileInput, Tooltip} from "@mantine/core";
 import { FunctionData as CustomFunctionDBRecord } from '../../auth/FirebaseRepository'
@@ -20,6 +20,7 @@ import { MyDraggable } from './MyDraggable';
 import { IconAlertCircle, IconCheck, IconInfoCircle } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 import InputModal from '../Inputs/InputModal';
+import { gray } from 'd3-color';
 
 interface Pair {
   x: number
@@ -211,6 +212,12 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
   //const [ focusedInputVal, setFocusedInputVal ] = useState(null)
 
   const [nearestPoint, setNearestPoint] = useState<VerticalBarSeriesPoint | null>(null);
+
+  const [chartType, setChartType] = useState('line');
+
+  const handleChartTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setChartType(event.target.value);
+  };
 
   const handleNearestX = (datapoint: VerticalBarSeriesPoint) => {
     setNearestPoint(datapoint);
@@ -1729,8 +1736,92 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
 
   let outputListCount: number = 0;
   const outputList: React.JSX.Element[] = [];
-  for (const [outputIdx, outputObj] of evalResult) {
-    let minx = 0;
+  console.log("the eval result is ", evalResult)
+  // for (const [outputIdx, outputObj] of evalResult) {
+  //   let minx = 0;
+  //   let maxx = 5;
+  //   let miny = Math.min(0, outputObj.value as number);
+  //   let maxy = Math.max(0, outputObj.value as number)
+  //   let data = [{
+  //     x: 0,
+  //     y: outputObj.value as number
+  //   }]
+  //   if ((typeof outputObj.value) !== "number") {
+  //     minx = 1000000;
+  //     maxx = -1000000;
+  //     miny = 1000000;
+  //     maxy = -1000000;
+  //     data = []
+  //     for (let i = 0; i < (outputObj.value as series).length; i++) {
+  //       const yval = (outputObj.value as series)[i] as number;
+  //       data.push({ x: i, y: yval})
+  //       if(minx > i) {
+  //         minx = i;
+  //       }
+  //       if(maxx < i) {
+  //         maxx = i;
+  //       }
+  //       if(miny > yval) {
+  //         miny = yval;
+  //       }
+  //       if(maxy < yval) {
+  //         maxy = yval;
+  //       }
+  //       if((typeof (outputObj.value as series)[0]) !== "number") {
+  //         data = []
+  //         for (let i = 0; i < (outputObj.value as number[][]).length; i++) {
+  //           const xval = (outputObj.value as multi_series)[i][0];
+  //           const yval = (outputObj.value as multi_series)[i][1];
+  //           data.push({ x: xval, y: yval})
+  //           if(minx > xval) {
+  //             minx = xval;
+  //           }
+  //           if(maxx < xval) {
+  //             maxx = xval;
+  //           }
+  //           if(miny > yval) {
+  //             miny = yval;
+  //           }
+  //           if(maxy < yval) {
+  //             maxy = yval;
+  //           }
+  //         }
+  //       } else {
+  //         data = []
+  //         for (let i = 0; i < (outputObj.value as series).length; i++) {
+  //           const yval = (outputObj.value as series)[i];
+  //           data.push({ x: i, y: yval})
+  //           if(minx > i) {
+  //             minx = i;
+  //           }
+  //           if(maxx < i) {
+  //             maxx = i;
+  //           }
+  //           if(miny > yval) {
+  //             miny = yval;
+  //           }
+  //           if(maxy < yval) {
+  //             maxy = yval;
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+
+
+    for (const [outputIdx, outputObj] of evalResult) {
+      let result = outputObj.value;
+      let graph_obj: { x: number; y: number }[][] = [];
+      if (Array.isArray(result)) {
+        console.log("output object is ", result);
+        
+        if (Array.isArray(result[0])) {
+          for (let i = 1; i < result[0].length; i++) {
+            const object = result.map(innerArray => ({ x: Array.isArray(innerArray)? innerArray[0]: 0, y: Array.isArray(innerArray)? innerArray[i]: 0 }));
+            graph_obj.push(object);
+          }
+
+          let minx = 0;
     let maxx = 5;
     let miny = Math.min(0, outputObj.value as number);
     let maxy = Math.max(0, outputObj.value as number)
@@ -1798,14 +1889,13 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           }
         }
       }
-
     }
-    console.log(data)
+
     outputList.push(
       (
         <>
-          <h3>{outputObj.name}</h3>
-          <XYPlot
+          {/* <h3>{outputObj.name}</h3> */}
+          {/* <XYPlot
             width={200}
             height={200}
             xDomain={[minx, maxx]}
@@ -1831,11 +1921,100 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
               </g>
             )}
 
-          </XYPlot>
+          </XYPlot> */}
+
+<select value={chartType} onChange={handleChartTypeChange}>
+        <option value="line">Line Chart</option>
+        <option value="bar">Bar Chart</option>
+      </select>
+
+      {chartType === 'line' ? (
+        <XYPlot width={200} height={200}>
+          {graph_obj.map((dataSeries, index) => (
+                <LineMarkSeries
+                    key={index}
+                    color="red"
+                    style={{ fill: 'none' }}
+                    data={dataSeries}
+                    
+                />
+            ))}
+          <XAxis />
+          <YAxis />
+        </XYPlot>
+      ) : (
+        <XYPlot
+          width={200}
+          height={200}
+          xDomain={[minx, maxx]}
+          yDomain={[miny - Math.floor(0.5 * Math.abs(maxy - miny)), maxy + Math.floor(0.5 * Math.abs(maxy - miny))]}
+          onMouseLeave={(event) => {
+            setNearestPoint(null);
+          }}
+        >
+          <HorizontalGridLines />
+          <VerticalBarSeries
+            data={data}
+            barWidth={0.2}
+            onNearestX={(datapoint, event) => {
+              console.log(datapoint);
+              handleNearestX(datapoint);
+            }}
+          />
+
+          <XAxis />
+          <YAxis />
+
+          {nearestPoint && (
+            <g transform={`translate(${nearestPoint.x}, ${nearestPoint.y})`}>
+              <rect x={5} y={-30} width={80} height={20} fill="white" stroke="black" strokeWidth={1} />
+              <text x={10} y={-15} fontSize="10">
+                {`X: ${formatValue(nearestPoint.x)}, Y: ${formatValue(nearestPoint.y)}`}
+              </text>
+            </g>
+          )}
+        </XYPlot>
+                )}</>
+                ))
+
+        }
+        
+      
+      }
+      else {
+          console.log("number?", evalResult);
+          //if (!isNaN(Number(evalResult.get(1)))) {
+            const result: any = evalResult.get(1);
+            console.log(result);
+            outputList.push(
+              <h3>{outputObj.name} = {result.value}</h3>
+            )
+          //}
+          
+      }
+
+    
+  
+//here
+              }
+
+{/* <XYPlot
+            width={200}
+            height={200}
+            >
+{graph_obj.map((dataSeries, index) => (
+                <LineMarkSeries
+                    key={index}
+                    color="red"
+                    style={{ fill: 'none' }}
+                    data={dataSeries}
+                />
+            ))}
+<XAxis />
+  <YAxis />
+</XYPlot>
         </>
-      )
-    )
-  }
+      ) */}
 
   // const outputList = Object.entries(evalResult).map(([outputIdx, outputObj]) => {
   //   console.log(outputIdx, outputObj)

@@ -417,7 +417,7 @@ function OutputBlock(props: OutProps) {
                 onClick={() => {setShowValue((value) => !value)}}
               >
                 <div className='connection-handle connection-handle-out'>
-                  Graph:
+                  Result:
                 </div>
               </div>
             </Popover.Target>
