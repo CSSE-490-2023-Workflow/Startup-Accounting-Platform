@@ -433,7 +433,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
     }
 
       if (rawJSON === "{}") {
-          rawJSON = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[]}';
+          rawJSON = '{"type":"custom_function","paramNames":[],"paramTypes":[],"outputNames":[],"outputTypes":[],"outputs":[],"arrows":[]}';
       }
 
       //const data: JSONCustomFunction = JSON.parse(rawJSON);
@@ -448,8 +448,11 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           loadParams(output.blockId, output.params);
       }
 
-      for (const arr of JSON.parse(JSON.parse(rawJSON).arrows)){
-        addArrow(arr)
+      console.log(JSON.parse(rawJSON).arrows)
+      if (JSON.parse(rawJSON).arrows.length != 0) {
+        for (const arr of JSON.parse(JSON.parse(rawJSON).arrows)){
+          addArrow(arr)
+        }
       }
 
       setSavedFunction(data)
