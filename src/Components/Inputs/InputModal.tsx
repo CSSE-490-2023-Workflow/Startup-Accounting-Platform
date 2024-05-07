@@ -42,7 +42,7 @@ function InputModal(props: any) {
       </>
     )
   } else if (type == 2) {
-    console.log(val)
+    //console.log(val)
     inputInterface = (
       <>
         <h3>{name}</h3>
@@ -70,15 +70,15 @@ function InputModal(props: any) {
       </>
     )
   } else {
-    console.log('else')
+    //console.log('else')
   }
 
   const csvImportCB = (vals: any) => {
     editCB(id, null, null, null, vals)
-    console.log(vals)
+    //console.log(vals)
     setVal(vals)
   }
-  console.log(type == data_types.dt_number)
+  //console.log(type == data_types.dt_number)
 
   const title = `${name}`
   return (
