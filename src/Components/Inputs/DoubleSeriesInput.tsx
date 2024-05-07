@@ -13,7 +13,7 @@ function DoubleSeriesInput(props: any) {
   const handleStateChange = props.handleStateChange
   const inputId = props.inputId
   const val = props.val
-  console.log(val)
+  //console.log(val)
   
   const [disabledInc, setDisabledInc] = useState<boolean>(false);
   const [disabledDec, setDisabledDec] = useState<boolean>(false);
@@ -23,12 +23,12 @@ function DoubleSeriesInput(props: any) {
 //     for(let i = 0; i < numberOfInputs; i++) {
 //         temp.push({handleStateChange: changeInput, ind: i, inValue: curValues[i], inputId: i})
 //     }
-//     console.log(temp);
+//     //console.log(temp);
 //     setInpValues(temp);
 //   }, [numberOfInputs])
   const changeInput = (inputIdx: number, placeholder0: any, placeholder1: any, placeholder2: any, newValue: number | string) => {
     handleStateChange(inputId, null, null, null, val.map((currVal: number[], index: number) => {
-      console.log(index, inputIdx)
+      //console.log(index, inputIdx)
       if (index == inputIdx) {
         return [Number(newValue), currVal[1]]       
       } else if (index + val.length == inputIdx){
@@ -36,7 +36,7 @@ function DoubleSeriesInput(props: any) {
       }
       return currVal;
     }))
-    // console.log('tmp', inputBlocks);
+    // //console.log('tmp', inputBlocks);
   }
 
   

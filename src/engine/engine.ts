@@ -11,9 +11,19 @@ import {data_types} from './datatype_def'
 import type {allowed_stack_components, custom_function} from './datatype_def'
 import { id_to_builtin_func } from './builtin_func_def';
 import { NestedCallError } from './error_def';
-import { FunctionData as CustomFunctionDBRecord } from '../auth/FirebaseRepository'
 
 // series : [[1, 2], [2, 4], [3, 5]]
+
+interface CustomFunctionDBRecord {
+    id: string;
+    ownerUid: string;
+    name: string;
+    type: string,
+    fromTemplate: string,
+    fromFunction: string,
+    allowAccess: string[] | string,
+    rawJson: string;
+}
 
 /*
 builtin_func_dict[0] = {param_count: 2, func : (p0: allowed_stack_components, p1 : allowed_stack_components) => {
@@ -151,16 +161,13 @@ const func_interpreter_new :
     //console.log(func_str)
     const func_content = JSON.parse(func_str);
     if (func_content.type == 'custom_function') {
-        //console.log("in function, return");
-        //console.log(func_content['param'][0]);
-        //const ret_arr : allowed_stack_components[] = [];
-        console.log(func_content)
+        //console.log(func_content)
         const outputDict : Map<number, ioObj> = new Map();
         let counter : number = 1;
         for (const func_param of func_content['outputs']) {
             // This should return null
             const eval_res : any = func_interpreter_new(JSON.stringify(func_param), args, new Set<string>(funcCallStack), customFuncDict);
-            console.log(`evalution of output no.${counter} finished. Got ${eval_res}`);
+            //console.log(`evalution of output no.${counter} finished. Got ${eval_res}`);
             outputDict.set(counter, { name : func_content.outputNames[counter - 1], value : eval_res})
             counter++;
         }
@@ -176,11 +183,9 @@ const func_interpreter_new :
             throw new Error('useOutput should either be the index of the output to use, or \'all\' to use all outputs');
         }
     } else if (func_content.type == 'custom_function_call') {
-        console.log('in custom function call')
+        //console.log('in custom function call')
         const paramDict : Map<number, ioObj> = new Map();
         let counter : number = 1;
-        console.log(func_content)
-        console.log(funcCallStack)
         if (funcCallStack.has(func_content.functionId)) {
             throw new NestedCallError("Nested function call. Please make sure that this function is not calling itself through the functions it uses")
         } else {
@@ -191,7 +196,7 @@ const func_interpreter_new :
             paramDict.set(counter, {name : func_content.paramNames[counter - 1], value : paramValue});
             counter++;
         } 
-        console.log(customFuncDict)
+        //console.log(customFuncDict)
 
         const record = customFuncDict.get(func_content.functionId)
         if (record == undefined) {
@@ -253,7 +258,7 @@ const func_interpreter_new :
             return arg['value'];
         }
     } else {
-        console.log(func_content)
+        //console.log(func_content)
         throw new Error(`Unrecognized function component type`);
     } 
 
