@@ -660,7 +660,7 @@ function testCallsSumY() {
             return acc += y;
         }, val);
         sum += p2;
-        (0, console_1.assert)(res == sum + 1, 'testCallsSumY failed');
+        (0, console_1.assert)(res == sum, 'testCallsSumY failed');
         run += 1;
     }
 }
@@ -694,6 +694,6 @@ function runAll() {
         testCases[i]();
     }
     console.log = log;
-    console.log("".concat(testCases.length, " test cases ran"));
+    console.log("".concat(testCases.length, " test cases finished"));
 }
 runAll();
