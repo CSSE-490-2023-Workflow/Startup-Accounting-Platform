@@ -2288,7 +2288,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
           //When reload is resolved, useEffect() will trigger and begin saving
         }}>Save</Button>
       </Tooltip>
-      <Button id='download-custom-function' variant='default' onClick={() => { downloadFunction() }}>Download as JSON</Button>
+      {/* <Button id='download-custom-function' variant='default' onClick={() => { downloadFunction() }}>Download as JSON</Button> */}
       <Tooltip multiline label="N = Number, S = Series, DS = Double Series" color='gray'>
         <Button id='eval-custom-function' variant='default' onClick={() => { 
           //set status to good

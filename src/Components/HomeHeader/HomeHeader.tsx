@@ -13,7 +13,7 @@ import { useDisclosure } from '@mantine/hooks';
 import classes from './HeaderTabs.module.css';
 import {UserMenu} from "../../auth/firebase"
 import Demo from "../../pages/Demo/Demo";
-import {WEBSITE_NAME_ABBREV} from "../../constants/constants";
+import {WEBSITE_NAME, WEBSITE_NAME_ABBREV} from "../../constants/constants";
 import Models from "../../pages/Models/Models";
 import Functions from "../../pages/Functions/Functions";
 import Workflows from "../../pages/Workflow/Workflows";
@@ -23,11 +23,11 @@ import React from 'react';
 import { memo } from 'react'
 
 const tabs = [
-  'Demo',
-  'Models',
+//   'Demo',
+//   'Models',
   'Functions',
   'Templates',
-  'Workflows',
+//   'Workflows',
 ];
 
 const HomeHeader = memo((props: any) => {
@@ -52,7 +52,7 @@ const HomeHeader = memo((props: any) => {
           <Container className={classes.mainSection} size="md">
               <Group justify="space-between">
 
-                  <h1>{WEBSITE_NAME_ABBREV}</h1>
+                  <h1>{WEBSITE_NAME}</h1>
 
                   <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm"/>
 
@@ -79,12 +79,12 @@ const HomeHeader = memo((props: any) => {
           </Container>
       </div>
       <div>
-          {activeTab === 'Demo' && <Demo/>}
-          {activeTab === 'Models' && <Models/>}
+          {/* {activeTab === 'Demo' && <Demo/>} */}
+          {/* {activeTab === 'Models' && <Models/>} */}
           {activeTab === 'Functions' && <Functions/>}
           {activeTab === 'Templates' && <Templates/>}
           {/* {activeTab === 'FunctionBuilderTesting' && <FunctionBuilderTesting/>} */}
-          {activeTab === 'Workflows' && <Workflows />}
+          {/* {activeTab === 'Workflows' && <Workflows />} */}
           {/* {activeTab === 'Arrows' && <ArrowExample/>} */}
       </div>
     </div>
