@@ -132,18 +132,9 @@ function Templates(props: any) {
         
     }
 
-    const testTemplate = useCallback(() => {
-        if (!currentUser) {
-            return 
-        }
-        console.log('testTemplate called');
-        database.createTemplateFromFunction(currentUser.uid, '0C6QeIK4lht5i2T7STFK')
-    }, [currentUser])
-
     const handleTemplateFromFunction = (option: string) => {
         //console.log("reached");
         //console.log(option);
-        console.log(option.length);
         if (option.length==0) {
             return
         }
@@ -176,7 +167,10 @@ function Templates(props: any) {
                         openSelectionModal();
                         if (currentUser) {
                             database.getFunctionsForUser(currentUser.uid).then((functionData: FunctionData[]) => {
-                                const funcNames = functionData.map(option => option.name + " " + option.id);
+                                //Only allow creating template from custom functions
+                                const funcNames = functionData.filter(
+                                    (fd: FunctionData) => fd.type == 'Custom Function'
+                                ).map(option => option.name + " " + option.id);
                                 setOptions(funcNames);
                             })
                         }

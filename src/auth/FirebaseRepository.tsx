@@ -92,6 +92,7 @@ export class FirestoreRepository {
     }
 
     async updateFunction(functionId: string, data: object) {
+        console.log(data)
         return updateDoc(doc(this.functionsRef, functionId), data);
     }
 
@@ -257,6 +258,8 @@ export class FirestoreRepository {
             if (body.type == 'custom_function_call') {
                 const res = await this.getFunction(body.functionId);
                 const srcFunction: string = body.functionId;
+                console.log(body)
+                console.log(res.rawJson)
                 const tmp : FunctionData = {
                     id: "",
                     ownerUid: uid,
@@ -265,7 +268,7 @@ export class FirestoreRepository {
                     fromTemplate: templateId,
                     fromFunction: srcFunction,
                     allowAccess: "",
-                    rawJson: body.body
+                    rawJson: res.rawJson
                 }
                 const docRefId : any = await this.createFunction(tmp);
                 body.functionId = docRefId;
@@ -280,7 +283,7 @@ export class FirestoreRepository {
                     await recursivelyCreateTemplateFunctions(param)
                 }
                 //search the body of the custom function
-                await recursivelyCreateTemplateFunctions(JSON.parse(body.body))
+                await recursivelyCreateTemplateFunctions(JSON.parse(res.rawJson))
                 return body
             } else if (body.type == 'input') {
                 return body
