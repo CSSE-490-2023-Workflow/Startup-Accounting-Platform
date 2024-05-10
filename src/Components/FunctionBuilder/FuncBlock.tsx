@@ -74,6 +74,7 @@ function FuncBlock(props: FuncProps) {
     props.displayWarningCB
   ]
 
+
   const dragRef = useRef<Draggable>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const paramCount: number = paramNames.length;
@@ -122,7 +123,7 @@ function FuncBlock(props: FuncProps) {
 
   //const [func, setFunc] = useState(funcId);
 
-  const paramNodes = paramNodePos.map((offset: string, index: number) => {
+  let paramNodes = paramNodePos.map((offset: string, index: number) => {
     let node : any = null;
     const nodeStyle : any = {};
     let faIcon : any = '';
@@ -238,7 +239,7 @@ function FuncBlock(props: FuncProps) {
     )
   })
 
-  const outputNodes = outputNodePos.map((offset: string, index: number) => {
+  let outputNodes = outputNodePos.map((offset: string, index: number) => {
     let node : any = null;
     const nodeStyle : any = {};
     let faIcon : any = '';
@@ -318,6 +319,12 @@ function FuncBlock(props: FuncProps) {
       </>
     )
   })
+
+  // If the user doesn't have any custom functions, don't display nodes
+  if (funcOptions.length == 0) {
+    paramNodes = []
+    outputNodes = []
+  }
 
 
   const sideMenus = nodeMenuDir.map((dir) => {
@@ -504,6 +511,7 @@ function FuncBlock(props: FuncProps) {
       </Group>
     </Combobox.Option>
   ))
+
   
   return (
     <>
@@ -579,24 +587,27 @@ function FuncBlock(props: FuncProps) {
       
           >
             <Combobox.Target>
-              <InputBase
-                component="button"
-                type="button"
-                pointer
-                rightSection={
-                  <>
-                    <Tooltip multiline w={300} label={desc == "" ? "No description is provided" : desc} color='gray'>
-                      <IconInfoCircle /> 
-                    </Tooltip>
-                    <Combobox.Chevron />
-                  </>
-                }
-                rightSectionWidth={35}
-                onClick={() => {funcCombobox.toggleDropdown()}}
-                className='func-block-func-name-select'
-              >
-                {funcName}
-              </InputBase>
+                
+                  <InputBase
+                    component="button"
+                    type="button"
+                    pointer
+                    rightSection={
+                      <>
+                        <Tooltip multiline w={300} label={desc == "" ? (funcOptions.length == 0 ? "You don't have any custom functions": "No description is provided") : desc} color='gray'>
+                          <IconInfoCircle /> 
+                        </Tooltip>
+                        <Combobox.Chevron />
+                      </>
+                    }
+                    rightSectionWidth={35}
+                    onClick={() => {funcCombobox.toggleDropdown()}}
+                    className='func-block-func-name-select'
+                  >
+                    {funcSelectOptions.length == 0 ? "-": funcName}
+                  </InputBase>
+                
+                
             </Combobox.Target>
             <Combobox.Dropdown>
               <Combobox.Options>{funcSelectOptions}</Combobox.Options>
