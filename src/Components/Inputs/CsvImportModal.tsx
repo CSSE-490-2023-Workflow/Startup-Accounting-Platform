@@ -26,7 +26,7 @@ function CsvImportModal(props: any) {
     props.inputEditCB
   ]
 
-  console.log(props)
+  //console.log(props)
 
 
   function parse() {
@@ -38,7 +38,7 @@ function CsvImportModal(props: any) {
       const rows = res.split('\n')
       const rows_delim = rows.map(row => row.split(','))
       const vals = []
-      console.log(rows)
+      //console.log(rows)
       if (type == data_types.dt_series) {
         //only use the first row
         for (let i = 0; i < rows_delim[0].length; i++) {

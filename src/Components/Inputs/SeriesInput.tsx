@@ -39,7 +39,7 @@ function SeriesInput(props: IProps) {
 //     for(let i = 0; i < numberOfInputs; i++) {
 //         temp.push({handleStateChange: changeInput, ind: i, inValue: curValues[i], inputId: i})
 //     }
-//     console.log(temp);
+//     //console.log(temp);
 //     setInpValues(temp);
 //   }, [numberOfInputs])
 
@@ -50,7 +50,7 @@ function SeriesInput(props: IProps) {
      * This call will change the values stored in the InputBlockDS is main
      */
     handleStateChange(inputId, null, null, null, val.map((currVal: number, index: number) => {
-    //console.log('in changeInput',blk.inputId, inputId);
+    ////console.log('in changeInput',blk.inputId, inputId);
       if (index == inputIdx) {
         return Number(newValue)
       }
@@ -61,7 +61,7 @@ function SeriesInput(props: IProps) {
      */
     
     //setVal([...val]);
-   // console.log('tmp', inputBlocks);
+   // //console.log('tmp', inputBlocks);
   }, [val, numberOfInputs])
 //    setInpValues([])
 //   useEffect(() => {
@@ -108,15 +108,15 @@ function SeriesInput(props: IProps) {
     
 
     // useEffect(() => {
-    //   console.log('curvals')
-    //   console.log(curValues)
+    //   //console.log('curvals')
+    //   //console.log(curValues)
     //     setDisabledInc(numberOfInputs >= inputValueCap);
     //     setDisabledDec(numberOfInputs <= 0);
     //     setInputs(curValues.map((val: number, index: number) => {
     //         return <NumberInput handleStateChange={changeInput} inputIdx={index} inValue={val} inputId={null} />
     //     }));
     // }, [curValues, numberOfInputs])
-    console.log('rendering', val)
+    //console.log('rendering', val)
     const newInputs = val.map((currVal: number, index: number) => {
       return <NumberInput handleStateChange={changeInput} inputIdx={index} inValue={currVal} inputId={null} />
     });
