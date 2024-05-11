@@ -85,13 +85,13 @@ export const UserMenu = () => {
             </Menu.Target>
             <Menu.Dropdown>
                 <Menu.Label>Settings</Menu.Label>
-                <Menu.Item
+                {/* <Menu.Item
                     leftSection={
                         <IconSettings style={{width: rem(16), height: rem(16)}} stroke={1.5}/>
                     }
                 >
                     Account settings
-                </Menu.Item>
+                </Menu.Item> */}
                 <Menu.Item
                     leftSection={
                         <IconLogout style={{width: rem(16), height: rem(16)}} stroke={1.5}/>
