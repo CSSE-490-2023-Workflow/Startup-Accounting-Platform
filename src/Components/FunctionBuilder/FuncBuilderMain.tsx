@@ -1658,7 +1658,7 @@ function FuncBuilderMain(props: FuncBuilderMainProps) {
                   {graph_obj.map((dataSeries, index) => (
                     <LineMarkSeries
                       key={index}
-                      color="red"
+                      color="red" 
                       style={{ fill: 'none' }}
                       data={dataSeries}
                       onNearestX={(datapoint, event) => {
